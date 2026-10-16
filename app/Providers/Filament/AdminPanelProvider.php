@@ -4,6 +4,8 @@ namespace App\Providers\Filament;
 
 use App\Filament\Widgets\AdminStatsOverview;
 use App\Filament\Widgets\ExpiringDocumentsTable;
+use Elemind\PressFilamentTheme\Enums\PressVariant;
+use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\Enums\DatabaseNotificationsPosition;
 use Filament\Enums\GlobalSearchPosition;
 use Filament\Enums\UserMenuPosition;
@@ -65,6 +67,9 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->plugin(
+                PressFilamentTheme::make()->vellum()->rail(false)
+            )
             ->authMiddleware([
                 Authenticate::class,
             ]);

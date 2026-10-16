@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Transportir\Widgets\TransportirExpiringDocumentsTable;
 use App\Filament\Transportir\Widgets\TransportirStatsOverview;
+use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -38,6 +39,9 @@ class TransportirPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+             ->plugin(
+                PressFilamentTheme::make()->vellum()
+            )
             ->discoverWidgets(in: app_path('Filament/Transportir/Widgets'), for: 'App\Filament\Transportir\Widgets')
             ->widgets([
                 TransportirStatsOverview::class,
