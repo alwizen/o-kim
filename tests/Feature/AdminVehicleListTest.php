@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountStatus;
+use App\Filament\Resources\Vehicles\Pages\ViewVehicle;
+use App\Filament\Resources\Vehicles\RelationManagers\DocumentsRelationManager;
 use App\Models\DocumentType;
 use App\Models\Transporter;
 use App\Models\User;
@@ -11,6 +13,7 @@ use App\Models\VehicleDocument;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminVehicleListTest extends TestCase
@@ -85,8 +88,15 @@ class AdminVehicleListTest extends TestCase
             ->get('/admin/vehicles/'.$vehicle->getRouteKey())
             ->assertSuccessful()
             ->assertSee('G 5555 PRV')
+            ->assertSee('Dokumen Kendaraan');
+
+        // Tabel dokumen dimuat lazy via RelationManager — verifikasi lewat komponen Livewire.
+        Livewire::test(DocumentsRelationManager::class, [
+            'ownerRecord' => $vehicle,
+            'pageClass' => ViewVehicle::class,
+        ])
+            ->assertCanSeeTableRecords([$document])
             ->assertSee('STNK Pratinjau')
-            ->assertSee('Pratinjau')
-            ->assertSee(route('documents.preview', $document), escape: false);
+            ->assertSee('Pratinjau');
     }
 }

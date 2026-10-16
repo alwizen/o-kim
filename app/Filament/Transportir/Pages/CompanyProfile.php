@@ -34,12 +34,15 @@ class CompanyProfile extends Page implements HasForms
     {
         $transporter = $this->getTransporter();
 
-        $this->form->fill($transporter?->only([
-            'company_name',
-            'company_address',
-            'phone',
-            'legal_identifier',
-        ]) ?? []);
+        $this->form->fill(array_merge(
+            ['pic_name' => auth()->user()->name],
+            $transporter?->only([
+                'company_name',
+                'company_address',
+                'phone',
+                'legal_identifier',
+            ]) ?? []
+        ));
     }
 
     public function form(Schema $schema): Schema
@@ -47,6 +50,16 @@ class CompanyProfile extends Page implements HasForms
         return $schema
             ->statePath('data')
             ->components([
+                Section::make('Penanggung Jawab (PIC)')
+                    ->description('Nama PIC ini juga digunakan sebagai nama akun Anda.')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('pic_name')
+                            ->label('Nama PIC')
+                            ->required()
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Data Perusahaan')
                     ->description('Informasi ini digunakan pada dokumen pengajuan dan penerbitan KIM.')
                     ->columns(2)
@@ -82,7 +95,11 @@ class CompanyProfile extends Page implements HasForms
 
         abort_if(! $transporter, 403, 'Profil perusahaan belum terdaftar.');
 
-        $transporter->update($data);
+        $user = auth()->user();
+
+        $user->update(['name' => $data['pic_name']]);
+
+        $transporter->update(collect($data)->except('pic_name')->all());
 
         Notification::make()
             ->title('Profil perusahaan berhasil disimpan')

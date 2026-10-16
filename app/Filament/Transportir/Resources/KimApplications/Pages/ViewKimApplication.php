@@ -21,7 +21,8 @@ class ViewKimApplication extends ViewRecord
     {
         return $schema->components([
             Section::make('Informasi Pengajuan')
-                ->columns(2)
+                ->columnSpanFull()
+                ->columns(3)
                 ->schema([
                     TextEntry::make('application_number')->label('No. Pengajuan'),
                     TextEntry::make('status')
@@ -32,7 +33,7 @@ class ViewKimApplication extends ViewRecord
                         ->label('Jenis')
                         ->formatStateUsing(fn ($state) => $state->label()),
                     TextEntry::make('submitted_at')->label('Dikirim Pada')->dateTime('d M Y H:i')->placeholder('—'),
-                    TextEntry::make('vehicle.registration_number')->label('NOPOL'),
+                    TextEntry::make('vehicle.registration_number')->label('NOPOL')->badge(),
                     TextEntry::make('vehicle.brand')->label('Merek')->placeholder('—'),
                     TextEntry::make('rejection_reason')->label('Alasan Penolakan')->placeholder('—')->columnSpanFull(),
                 ]),

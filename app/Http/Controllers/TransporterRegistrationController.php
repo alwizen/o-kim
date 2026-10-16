@@ -33,6 +33,7 @@ class TransporterRegistrationController extends Controller
         }
 
         $validated = $request->validate([
+            'pic_name' => ['required', 'string', 'max:255'],
             'company_name' => ['required', 'string', 'max:255'],
             'company_address' => ['required', 'string', 'max:1000'],
             'phone' => ['required', 'string', 'max:30'],
@@ -40,12 +41,16 @@ class TransporterRegistrationController extends Controller
         ]);
 
         DB::transaction(function () use ($user, $validated) {
+            $user->update(['name' => $validated['pic_name']]);
+
+            $transporterData = collect($validated)->except('pic_name')->all();
+
             $transporter = $user->transporters()->first();
 
             if ($transporter) {
-                $transporter->update($validated);
+                $transporter->update($transporterData);
             } else {
-                $transporter = Transporter::create($validated);
+                $transporter = Transporter::create($transporterData);
                 $user->transporters()->attach($transporter->id);
             }
         });

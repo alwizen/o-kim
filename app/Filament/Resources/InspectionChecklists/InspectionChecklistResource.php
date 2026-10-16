@@ -12,6 +12,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class InspectionChecklistResource extends Resource
 {
@@ -25,7 +26,9 @@ class InspectionChecklistResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Checklist Pemeriksaan';
 
-    protected static ?int $navigationSort = 7;
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
+
+    protected static ?int $navigationSort = 12;
 
     protected static ?string $recordTitleAttribute = 'title';
 

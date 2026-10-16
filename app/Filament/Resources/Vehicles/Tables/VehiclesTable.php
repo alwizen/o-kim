@@ -20,7 +20,7 @@ class VehiclesTable
                     ->label('NOPOL')
                     ->searchable()
                     ->sortable()
-                    ->url(fn ($record) => VehicleResource::getUrl('view', ['record' => $record])),
+                    ->url(fn($record) => VehicleResource::getUrl('view', ['record' => $record])),
                 TextColumn::make('transporter.company_name')
                     ->label('Perusahaan')
                     ->searchable()
@@ -67,21 +67,22 @@ class VehiclesTable
                     ->badge()
                     ->color('warning')
                     ->counts([
-                        'documents as pending_documents_count' => fn ($query) => $query
+                        'documents as pending_documents_count' => fn($query) => $query
                             ->whereNull('replaced_by_id')
                             ->where('verification_status', DocumentVerificationStatus::Pending->value),
                     ]),
                 TextColumn::make('kimApplications_count')
                     ->label('Pengajuan')
-                    ->counts('kimApplications'),
+                    ->counts('kimApplications')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn (VehicleStatus $state) => $state->label())
-                    ->color(fn (VehicleStatus $state) => $state === VehicleStatus::Active ? 'success' : 'gray'),
+                    ->formatStateUsing(fn(VehicleStatus $state) => $state->label())
+                    ->color(fn(VehicleStatus $state) => $state === VehicleStatus::Active ? 'success' : 'gray'),
                 TextColumn::make('transporter.status')
                     ->label('Status Perusahaan')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->formatStateUsing(fn($state) => $state->label())
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -93,7 +94,7 @@ class VehiclesTable
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(collect(VehicleStatus::cases())->mapWithKeys(
-                        fn (VehicleStatus $s) => [$s->value => $s->label()]
+                        fn(VehicleStatus $s) => [$s->value => $s->label()]
                     )),
             ])
             ->defaultSort('created_at', 'desc')

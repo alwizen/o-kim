@@ -9,6 +9,7 @@ use App\Filament\Resources\DocumentTypes\DocumentTypeResource;
 use App\Filament\Resources\Findings\FindingResource;
 use App\Filament\Resources\InspectionChecklists\InspectionChecklistResource;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
+use App\Filament\Resources\KimCards\KimCardResource;
 use App\Filament\Resources\Transporters\TransporterResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Resources\Vehicles\VehicleResource;
@@ -48,6 +49,7 @@ class RoleAccessMatrixTest extends TestCase
             'super_admin' => [
                 UserResource::class => true,
                 TransporterResource::class => true,
+                KimCardResource::class => true,
                 KimApplicationResource::class => true,
                 FindingResource::class => true,
                 InspectionChecklistResource::class => true,
@@ -57,6 +59,7 @@ class RoleAccessMatrixTest extends TestCase
             'admin_verifikasi' => [
                 UserResource::class => false,
                 TransporterResource::class => true,
+                KimCardResource::class => false,
                 KimApplicationResource::class => false,
                 FindingResource::class => false,
                 InspectionChecklistResource::class => false,
@@ -66,6 +69,7 @@ class RoleAccessMatrixTest extends TestCase
             'hsse' => [
                 UserResource::class => false,
                 TransporterResource::class => false,
+                KimCardResource::class => false,
                 KimApplicationResource::class => true,
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
@@ -75,6 +79,7 @@ class RoleAccessMatrixTest extends TestCase
             'distribusi' => [
                 UserResource::class => false,
                 TransporterResource::class => false,
+                KimCardResource::class => false,
                 KimApplicationResource::class => true,
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
@@ -84,6 +89,7 @@ class RoleAccessMatrixTest extends TestCase
             'qq' => [
                 UserResource::class => false,
                 TransporterResource::class => false,
+                KimCardResource::class => false,
                 KimApplicationResource::class => true,
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
@@ -93,6 +99,7 @@ class RoleAccessMatrixTest extends TestCase
             'ftm' => [
                 UserResource::class => false,
                 TransporterResource::class => false,
+                KimCardResource::class => true,
                 KimApplicationResource::class => true,
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
@@ -102,6 +109,7 @@ class RoleAccessMatrixTest extends TestCase
             'transportir' => [
                 UserResource::class => false,
                 TransporterResource::class => false,
+                KimCardResource::class => false,
                 KimApplicationResource::class => false,
                 FindingResource::class => false,
                 InspectionChecklistResource::class => false,

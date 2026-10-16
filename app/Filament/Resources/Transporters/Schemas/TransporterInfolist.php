@@ -20,7 +20,7 @@ class TransporterInfolist
                     TextEntry::make('account_status')
                         ->label('Status Akun')
                         ->badge()
-                        ->formatStateUsing(fn($state) => $state->label()),
+                        ->formatStateUsing(fn ($state) => $state->label()),
                     TextEntry::make('created_at')
                         ->label('Terdaftar Pada')
                         ->dateTime('d M Y H:i'),

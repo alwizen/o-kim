@@ -68,6 +68,17 @@
 
             <div class="mt-6 space-y-6">
                 <div>
+                    <label for="pic_name" class="block text-sm font-semibold text-navy-800">
+                        Nama PIC <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="pic_name" name="pic_name" required
+                           value="{{ old('pic_name', auth()->user()->name ?? '') }}"
+                           placeholder="Nama penanggung jawab perusahaan"
+                           class="mt-2 block w-full rounded-xl border border-navy-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200">
+                    @error('pic_name') <p class="mt-2 flex items-center gap-1.5 text-sm text-red-600"><x-heroicon-o-exclamation-circle class="h-4 w-4" />{{ $message }}</p> @enderror
+                </div>
+
+                <div>
                     <label for="company_name" class="block text-sm font-semibold text-navy-800">
                         Nama Perusahaan <span class="text-red-500">*</span>
                     </label>

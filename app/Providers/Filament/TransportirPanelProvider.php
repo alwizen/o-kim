@@ -29,6 +29,9 @@ class TransportirPanelProvider extends PanelProvider
         return $panel
             ->id('transportir')
             ->path('transportir')
+             ->brandlogo(asset('img/logo.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
             ->globalSearch()
             ->colors([
@@ -39,7 +42,7 @@ class TransportirPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-             ->plugin(
+            ->plugin(
                 PressFilamentTheme::make()->vellum()
             )
             ->discoverWidgets(in: app_path('Filament/Transportir/Widgets'), for: 'App\Filament\Transportir\Widgets')

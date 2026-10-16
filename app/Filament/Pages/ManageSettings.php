@@ -15,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
+use UnitEnum;
 
 class ManageSettings extends Page implements HasForms
 {
@@ -25,6 +26,8 @@ class ManageSettings extends Page implements HasForms
     protected static ?string $navigationLabel = 'Pengaturan Sistem';
 
     protected static ?string $title = 'Pengaturan Sistem';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
     protected static ?int $navigationSort = 14;
 

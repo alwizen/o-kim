@@ -105,6 +105,7 @@ class RegistrationTest extends TestCase
         $user->assignRole('transportir');
 
         $response = $this->actingAs($user)->post(route('registration.profile.update'), [
+            'pic_name' => 'Budi Santoso',
             'company_name' => 'PT Angkutan Tegal',
             'company_address' => 'Jl. Raya Tegal No. 1',
             'phone' => '0283-123456',
@@ -116,6 +117,7 @@ class RegistrationTest extends TestCase
         $transporter = Transporter::where('company_name', 'PT Angkutan Tegal')->first();
         $this->assertNotNull($transporter);
         $this->assertTrue($user->fresh()->transporters->contains($transporter));
+        $this->assertSame('Budi Santoso', $user->fresh()->name);
 
         Notification::assertSentTo($user, TransporterRegistered::class);
     }
@@ -127,7 +129,7 @@ class RegistrationTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('registration.profile.update'), [])
-            ->assertSessionHasErrors(['company_name', 'company_address', 'phone']);
+            ->assertSessionHasErrors(['pic_name', 'company_name', 'company_address', 'phone']);
     }
 
     public function test_approved_user_cannot_edit_registration_profile(): void

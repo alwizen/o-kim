@@ -127,6 +127,7 @@ perusahaan pengguna (isolasi data). Ambang peringatan kedaluwarsa dokumen diatur
 | Checklist Pemeriksaan | ✅ | — | — | — | — | — |
 | Pengajuan & Pemeriksaan | ✅ | — | ✅ | ✅ | ✅ | ✅ |
 | Temuan & Verifikasi | ✅ | — | ✅ | ✅ | ✅ | 👁 lihat saja |
+| KIM Terbit | ✅ | — | — | — | — | ✅ |
 | Pengaturan Sistem | ✅ | — | — | — | — | — |
 
 Catatan:
@@ -392,12 +393,12 @@ php artisan migrate --seed
 
 **A. Mendaftar**
 1. Buka `/daftar`, isi nama PIC, email, telepon, dan kata sandi (min. 8 karakter dengan huruf besar, kecil, dan angka) — atau klik **Daftar dengan Google**.
-2. Setelah akun dibuat, Anda diarahkan ke form **Profil Perusahaan**. Lengkapi nama, alamat, dan telepon perusahaan, lalu simpan.
+2. Setelah akun dibuat, Anda diarahkan ke form **Profil Perusahaan**. Lengkapi **nama PIC**, nama, alamat, dan telepon perusahaan, lalu simpan.
 3. Tunggu verifikasi admin. Status akun `pending` belum bisa mengakses panel.
 
 **B. Setelah Disetujui**
 1. Login di `/masuk`, Anda diarahkan ke panel `/transportir`.
-2. **Profil Perusahaan** — perbarui data perusahaan bila perlu.
+2. **Profil Perusahaan** — perbarui **nama PIC** (juga mengubah nama akun Anda) dan data perusahaan bila perlu. Berguna bagi pendaftar via Google yang belum sempat mengatur nama akun.
 3. **Kendaraan** — tambah kendaraan tangki (NOPOL, merek, model, tahun, kapasitas, **nomor rangka, nomor mesin, jenis angkutan, bahan tangki**).
 4. Buka kendaraan → **Dokumen Kendaraan** → unggah dokumen wajib (PDF/JPG/PNG, maks 5 MB). Dokumen lama otomatis tersimpan sebagai riwayat. Tombol **Pratinjau** membuka berkas di tab baru, **Unduh** menyimpan berkasnya.
 5. **Pengajuan KIM** → *Buat* → pilih kendaraan & jenis (Baru/Perpanjangan) → **Kirim Pengajuan**.
@@ -568,6 +569,7 @@ Cakupan pengujian business rule kritis:
 |---|---|
 | `FoundationTest` | Role, permission, akses panel |
 | `RegistrationTest` | Registrasi, approval akun, notifikasi |
+| `CompanyProfilePicNameTest` | Nama PIC di profil perusahaan & pendaftaran publik |
 | `EmailPasswordAuthTest` | Login/daftar email-password, jalur terpisah |
 | `VehicleDocumentTest` | Isolasi data, keamanan upload, riwayat dokumen |
 | `VehicleDocumentVerificationTest` | Verifikasi/tolak dokumen & dampaknya ke pengajuan |
@@ -584,6 +586,7 @@ Cakupan pengujian business rule kritis:
 | `UserManagementTest` | Pengguna Internal: create/edit role, proteksi nonaktifkan |
 | `RoleAccessMatrixTest` | Matriks akses role × resource + akses URL langsung |
 | `TransportirPanelAccessTest` | Isolasi akses panel transportir |
+| `KimCardListTest` | Daftar & detail KIM Terbit di panel admin (9 test) |
 | `ApprovalAndIssuanceTest` | Approval berjenjang, penerbitan, QR, anti-ganda |
 | `LandingNavigationTest` | Navigasi & redirect sesuai status akun |
 | `DashboardWidgetTest` | Widget dashboard, isolasi data, peringatan kedaluwarsa dokumen |

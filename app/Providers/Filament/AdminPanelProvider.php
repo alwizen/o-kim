@@ -4,7 +4,6 @@ namespace App\Providers\Filament;
 
 use App\Filament\Widgets\AdminStatsOverview;
 use App\Filament\Widgets\ExpiringDocumentsTable;
-use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\Enums\DatabaseNotificationsPosition;
 use Filament\Enums\GlobalSearchPosition;
@@ -35,6 +34,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandlogo(asset('img/logo.png'))
+            ->brandLogoHeight('4rem')
+            ->favicon(asset('img/fav.svg'))
+            ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar)
             ->globalSearch(position: GlobalSearchPosition::Sidebar)
             ->userMenu(position: UserMenuPosition::Sidebar)

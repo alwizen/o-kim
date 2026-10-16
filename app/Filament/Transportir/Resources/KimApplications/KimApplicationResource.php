@@ -46,7 +46,7 @@ class KimApplicationResource extends Resource
 
     protected static ?string $modelLabel = 'Pengajuan KIM';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 10;
 
     public static function getEloquentQuery(): Builder
     {
