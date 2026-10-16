@@ -14,9 +14,22 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class VehicleResource extends Resource
 {
+    protected static ?string $recordTitleAttribute = 'registration_number';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['registration_number', 'chassis_number', 'engine_number', 'brand', 'model'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return ['Merek' => $record->brand ?? '—', 'Tahun' => $record->manufacture_year ?? '—'];
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()?->hasRole('transportir') ?? false;

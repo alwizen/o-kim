@@ -31,7 +31,7 @@ class KimValidityService
     {
         $requiredDocs = $application->vehicle->documents()
             ->whereNull('replaced_by_id')
-            ->where('verification_status', '!=', DocumentVerificationStatus::Rejected)
+            ->where('verification_status', DocumentVerificationStatus::Verified)
             ->whereHas('documentType', fn ($q) => $q->where('is_required', true)->where('is_active', true))
             ->with('documentType')
             ->get();

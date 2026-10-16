@@ -8,14 +8,12 @@ use App\Enums\ApplicationType;
 use App\Enums\Department;
 use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
-use App\Models\DocumentType;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
-use App\Services\Document\VehicleDocumentService;
 use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionService;
 use Database\Seeders\DocumentTypeSeeder;
@@ -65,15 +63,9 @@ class InspectionWorkflowTest extends TestCase
     private function uploadRequiredDocuments(): void
     {
         Storage::fake('local');
-        $service = app(VehicleDocumentService::class);
 
         foreach (['STNK', 'KEUR', 'TERA'] as $code) {
-            $service->upload(
-                $this->vehicle,
-                DocumentType::where('code', $code)->value('id'),
-                UploadedFile::fake()->create("{$code}.pdf", 100, 'application/pdf'),
-                ['expires_at' => now()->addYear()->toDateString()]
-            );
+            $this->uploadVehicleDocument($this->vehicle, $code);
         }
     }
 

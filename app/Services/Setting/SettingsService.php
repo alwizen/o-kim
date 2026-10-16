@@ -17,6 +17,9 @@ class SettingsService
         'kim.number_prefix' => 'KIM/FT-TGL',
         'kim.number_period_format' => 'Y/m',
         'kim.number_sequence_digits' => '4',
+        'application.number_prefix' => 'APP',
+        'application.number_period_format' => 'Ymd',
+        'application.number_sequence_digits' => '4',
     ];
 
     /**
@@ -102,5 +105,45 @@ class SettingsService
     public function kimNumberSequenceDigits(): int
     {
         return $this->getInt('kim.number_sequence_digits', 4);
+    }
+
+    // ---------------------------------------------------------------
+    // Pengaturan Penomoran Pengajuan KIM
+    // ---------------------------------------------------------------
+
+    public function applicationNumberPrefix(): string
+    {
+        return (string) $this->get('application.number_prefix', 'APP');
+    }
+
+    public function applicationNumberPeriodFormat(): string
+    {
+        return (string) $this->get('application.number_period_format', 'Ymd');
+    }
+
+    public function applicationNumberSequenceDigits(): int
+    {
+        return $this->getInt('application.number_sequence_digits', 4);
+    }
+
+    /**
+     * Susun contoh nomor dari komponen pengaturan.
+     * Format: {prefix}/{periode}/{urutan} — periode dilewati bila 'none'.
+     */
+    public function buildNumberPreview(
+        string $prefix,
+        string $periodFormat,
+        int $sequenceDigits,
+        string $sequence = '1',
+    ): string {
+        $segments = [trim($prefix, '/')];
+
+        if ($periodFormat !== '' && $periodFormat !== 'none') {
+            $segments[] = now()->format($periodFormat);
+        }
+
+        $segments[] = str_pad($sequence, max($sequenceDigits, 1), '0', STR_PAD_LEFT);
+
+        return implode('/', array_filter($segments, fn ($segment) => $segment !== ''));
     }
 }

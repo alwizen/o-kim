@@ -29,6 +29,23 @@ class TransporterResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'transporters.company_name'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return ['Perusahaan' => $record->transporters->first()?->company_name ?? '—', 'Status' => $record->account_status->label()];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('transporters');
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()->can('review_transporter_registrations');

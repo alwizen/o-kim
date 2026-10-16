@@ -9,6 +9,10 @@ use App\Models\DocumentType;
 use App\Models\KimApplication;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\Setting\SettingsService;
+use App\Support\AppNotifier;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -56,6 +60,20 @@ class KimApplicationService
                 'submitted_by' => $submitter->id,
             ]);
         });
+
+        $this->notifyStaffOfSubmission($application);
+    }
+
+    private function notifyStaffOfSubmission(KimApplication $application): void
+    {
+        AppNotifier::toStaffWithPermission(
+            'view_applications',
+            'Pengajuan KIM Baru',
+            $application->application_number.' — NOPOL '.$application->vehicle->registration_number,
+            'heroicon-o-document-plus',
+            'info',
+            '/admin/kim-applications/'.$application->getRouteKey(),
+        );
     }
 
     public function transitionTo(KimApplication $application, ApplicationStatus $target, array $extra = []): void
@@ -71,38 +89,109 @@ class KimApplicationService
 
     public function ensureRequiredDocumentsComplete(Vehicle $vehicle): void
     {
-        $requiredTypes = DocumentType::where('is_required', true)
-            ->where('is_active', true)
-            ->pluck('id', 'code');
-
-        $uploadedTypeIds = $vehicle->documents()
-            ->whereNull('replaced_by_id')
-            ->whereIn('document_type_id', $requiredTypes->values())
-            ->where('verification_status', '!=', DocumentVerificationStatus::Rejected)
-            ->pluck('document_type_id')
-            ->unique();
-
-        $missing = $requiredTypes->keys()->filter(
-            fn (string $code) => ! $uploadedTypeIds->contains($requiredTypes[$code])
-        );
+        $missing = $this->missingRequiredDocumentCodes($vehicle);
 
         if ($missing->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'documents' => 'Dokumen wajib belum lengkap: '.$missing->implode(', '),
+                'documents' => 'Dokumen wajib belum lengkap atau belum diverifikasi: '.$missing->implode(', '),
             ]);
         }
     }
 
+    /**
+     * Kode jenis dokumen wajib yang belum ada / belum terverifikasi pada kendaraan.
+     *
+     * @return Collection<int, string>
+     */
+    public function missingRequiredDocumentCodes(Vehicle $vehicle): Collection
+    {
+        $requiredTypes = DocumentType::where('is_required', true)
+            ->where('is_active', true)
+            ->pluck('id', 'code');
+
+        $verifiedTypeIds = $vehicle->documents()
+            ->whereNull('replaced_by_id')
+            ->whereIn('document_type_id', $requiredTypes->values())
+            ->where('verification_status', DocumentVerificationStatus::Verified)
+            ->pluck('document_type_id')
+            ->unique();
+
+        return $requiredTypes->keys()->filter(
+            fn (string $code) => ! $verifiedTypeIds->contains($requiredTypes[$code])
+        )->values();
+    }
+
+    /**
+     * Kendaraan siap diajukan? Seluruh dokumen wajib sudah terverifikasi
+     * dan tidak ada pengajuan berjalan.
+     */
+    public function isReadyForApplication(Vehicle $vehicle): bool
+    {
+        if ($this->missingRequiredDocumentCodes($vehicle)->isNotEmpty()) {
+            return false;
+        }
+
+        return ! $vehicle->kimApplications()
+            ->whereIn('status', collect(ApplicationStatus::cases())
+                ->filter(fn (ApplicationStatus $s) => $s->isOpen())
+                ->map->value)
+            ->exists();
+    }
+
+    /**
+     * Query kendaraan yang siap diajukan untuk daftar pilihan transportir.
+     *
+     * @param  array<int, int|string>  $transporterIds
+     * @return Builder<Vehicle>
+     */
+    public function readyVehiclesQuery(array $transporterIds): Builder
+    {
+        $requiredTypeIds = DocumentType::where('is_required', true)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $openStatuses = collect(ApplicationStatus::cases())
+            ->filter(fn (ApplicationStatus $s) => $s->isOpen())
+            ->map->value
+            ->all();
+
+        return Vehicle::query()
+            ->whereIn('transporter_id', $transporterIds)
+            ->whereDoesntHave('kimApplications', fn ($query) => $query->whereIn('status', $openStatuses))
+            ->when($requiredTypeIds->isNotEmpty(), function ($query) use ($requiredTypeIds) {
+                foreach ($requiredTypeIds as $typeId) {
+                    $query->whereHas('documents', fn ($documentQuery) => $documentQuery
+                        ->whereNull('replaced_by_id')
+                        ->where('document_type_id', $typeId)
+                        ->where('verification_status', DocumentVerificationStatus::Verified));
+                }
+            });
+    }
+
     private function generateApplicationNumber(): string
     {
-        $date = now()->format('Ymd');
+        $settings = app(SettingsService::class);
 
-        return DB::transaction(function () use ($date) {
-            $sequence = KimApplication::where('application_number', 'like', "APP-{$date}-%")
+        $segments = [trim($settings->applicationNumberPrefix(), '/')];
+
+        $periodFormat = $settings->applicationNumberPeriodFormat();
+
+        if ($periodFormat !== '' && $periodFormat !== 'none') {
+            $segments[] = now()->format($periodFormat);
+        }
+
+        $prefix = implode('/', $segments).'/';
+
+        return DB::transaction(function () use ($prefix, $settings) {
+            $last = KimApplication::where('application_number', 'like', $prefix.'%')
                 ->lockForUpdate()
-                ->count() + 1;
+                ->orderByDesc('application_number')
+                ->value('application_number');
 
-            return sprintf('APP-%s-%04d', $date, $sequence);
+            $digits = max($settings->applicationNumberSequenceDigits(), 1);
+            $sequence = $last ? ((int) substr($last, -$digits)) + 1 : 1;
+
+            return $prefix.str_pad((string) $sequence, $digits, '0', STR_PAD_LEFT);
         });
     }
 }

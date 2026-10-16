@@ -20,6 +20,10 @@ class VehicleFactory extends Factory
             'model' => fake()->word(),
             'manufacture_year' => fake()->numberBetween(2015, 2024),
             'tank_capacity' => fake()->randomElement([8000, 16000, 24000, 32000]),
+            'chassis_number' => strtoupper(fake()->bothify('MH##???#########')),
+            'engine_number' => strtoupper(fake()->bothify('ENG#########')),
+            'transport_type' => fake()->randomElement(['BBM', 'Chemical', 'Gas']),
+            'tank_material' => fake()->randomElement(['Baja Karbon', 'Stainless Steel 304', 'Aluminium']),
         ];
     }
 }

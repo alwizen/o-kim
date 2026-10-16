@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountStatus;
+use App\Models\DocumentType;
 use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleDocument;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminVehicleListTest extends TestCase
@@ -57,5 +60,33 @@ class AdminVehicleListTest extends TestCase
         $user->assignRole('transportir');
 
         $this->actingAs($user)->get('/admin/vehicles')->assertForbidden();
+    }
+
+    public function test_admin_vehicle_detail_shows_documents_and_preview_link(): void
+    {
+        Storage::fake('local');
+
+        $transporter = Transporter::factory()->create();
+        $vehicle = Vehicle::factory()->create([
+            'transporter_id' => $transporter->id,
+            'registration_number' => 'G 5555 PRV',
+        ]);
+        $type = DocumentType::factory()->create(['name' => 'STNK Pratinjau', 'code' => 'STNKPRV']);
+
+        $path = 'vehicle-documents/'.$vehicle->id.'/stnk.pdf';
+        Storage::disk('local')->put($path, 'dummy');
+
+        $document = VehicleDocument::factory()->for($vehicle)->for($type)->create([
+            'file_path' => $path,
+            'original_filename' => 'stnk.pdf',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get('/admin/vehicles/'.$vehicle->getRouteKey())
+            ->assertSuccessful()
+            ->assertSee('G 5555 PRV')
+            ->assertSee('STNK Pratinjau')
+            ->assertSee('Pratinjau')
+            ->assertSee(route('documents.preview', $document), escape: false);
     }
 }

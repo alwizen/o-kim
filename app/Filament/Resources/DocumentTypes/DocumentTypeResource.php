@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class DocumentTypeResource extends Resource
 {
@@ -25,6 +26,18 @@ class DocumentTypeResource extends Resource
     protected static ?string $modelLabel = 'Jenis Dokumen';
 
     protected static ?int $navigationSort = 6;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'code'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return ['Kode' => $record->code, 'Wajib' => $record->is_required ? 'Ya' : 'Tidak'];
+    }
 
     public static function canAccess(): bool
     {

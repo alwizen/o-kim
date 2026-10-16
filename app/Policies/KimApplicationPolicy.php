@@ -27,7 +27,8 @@ class KimApplicationPolicy
 
     public function create(User $user): bool
     {
-        return false;
+        // Transportir membuat pengajuan dari panel transportir.
+        return $user->hasRole('transportir');
     }
 
     public function update(User $user, KimApplication $model): bool

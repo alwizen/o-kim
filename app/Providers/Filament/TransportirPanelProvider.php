@@ -28,6 +28,8 @@ class TransportirPanelProvider extends PanelProvider
         return $panel
             ->id('transportir')
             ->path('transportir')
+            ->databaseNotifications()
+            ->globalSearch()
             ->colors([
                 'primary' => Color::Green,
             ])

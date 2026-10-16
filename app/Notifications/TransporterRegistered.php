@@ -12,7 +12,17 @@ class TransporterRegistered extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Pendaftaran Diterima',
+            'body' => 'Pendaftaran akun transportir Anda telah kami terima dan akan diverifikasi admin.',
+            'icon' => 'heroicon-o-user-plus',
+            'color' => 'info',
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

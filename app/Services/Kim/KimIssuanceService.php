@@ -11,6 +11,7 @@ use App\Models\KimApplication;
 use App\Models\KimCard;
 use App\Services\Approval\ApprovalService;
 use App\Services\Setting\SettingsService;
+use App\Support\AppNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -49,6 +50,16 @@ class KimIssuanceService
                 'issued_at' => $issuedAt,
                 'expires_at' => $expiresAt,
             ]);
+
+            AppNotifier::toTransporter(
+                $application->transporter_id,
+                'KIM Telah Diterbitkan',
+                'KIM '.$card->kim_number.' untuk NOPOL '.$application->vehicle->registration_number
+                    .' berlaku hingga '.$expiresAt->translatedFormat('d M Y').'.',
+                'heroicon-o-identification',
+                'success',
+                '/transportir/kim-applications/'.$application->getRouteKey(),
+            );
 
             return $card;
         });

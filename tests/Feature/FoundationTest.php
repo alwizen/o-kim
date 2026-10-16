@@ -21,7 +21,7 @@ class FoundationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
 
         $this->assertSame(7, Role::count());
-        $this->assertSame(21, Permission::count());
+        $this->assertSame(22, Permission::count());
     }
 
     public function test_all_required_roles_are_seeded(): void

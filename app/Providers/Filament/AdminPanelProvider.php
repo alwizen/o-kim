@@ -4,6 +4,9 @@ namespace App\Providers\Filament;
 
 use App\Filament\Widgets\AdminStatsOverview;
 use App\Filament\Widgets\ExpiringDocumentsTable;
+use Filament\Enums\DatabaseNotificationsPosition;
+use Filament\Enums\GlobalSearchPosition;
+use Filament\Enums\UserMenuPosition;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,6 +33,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar)
+            ->globalSearch(position: GlobalSearchPosition::Sidebar)
+            ->userMenu(position: UserMenuPosition::Sidebar)
+            ->topbar(false)
             ->maxContentWidth(Width::Full)
             ->login()
             ->colors([

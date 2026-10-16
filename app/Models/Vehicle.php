@@ -20,6 +20,10 @@ class Vehicle extends Model
         'model',
         'manufacture_year',
         'tank_capacity',
+        'chassis_number',
+        'engine_number',
+        'transport_type',
+        'tank_material',
         'status',
     ];
 

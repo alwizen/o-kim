@@ -9,7 +9,6 @@ use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\InspectionResultValue;
 use App\Enums\KimCardStatus;
-use App\Models\DocumentType;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Models\Transporter;
@@ -17,7 +16,6 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
-use App\Services\Document\VehicleDocumentService;
 use App\Services\Inspection\InspectionService;
 use App\Services\Kim\KimIssuanceService;
 use App\Services\Kim\KimPdfService;
@@ -26,7 +24,6 @@ use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -59,13 +56,11 @@ class ApprovalAndIssuanceTest extends TestCase
             $this->officers[$role] = $officer;
         }
 
-        $docService = app(VehicleDocumentService::class);
         foreach (['STNK', 'KEUR', 'TERA'] as $code) {
-            $docService->upload(
+            $this->uploadVehicleDocument(
                 $this->vehicle,
-                DocumentType::where('code', $code)->value('id'),
-                UploadedFile::fake()->create("{$code}.pdf", 100, 'application/pdf'),
-                ['expires_at' => now()->addMonths(4)->toDateString()]
+                $code,
+                now()->addMonths(4)->toDateString(),
             );
         }
 
@@ -291,15 +286,13 @@ class ApprovalAndIssuanceTest extends TestCase
 
     public function test_validity_service_uses_settings_cap(): void
     {
-        $docService = app(VehicleDocumentService::class);
         $this->vehicle->documents()->delete();
 
         foreach (['STNK', 'KEUR', 'TERA'] as $code) {
-            $docService->upload(
+            $this->uploadVehicleDocument(
                 $this->vehicle,
-                DocumentType::where('code', $code)->value('id'),
-                UploadedFile::fake()->create("{$code}.pdf", 100, 'application/pdf'),
-                ['expires_at' => now()->addYears(5)->toDateString()]
+                $code,
+                now()->addYears(5)->toDateString(),
             );
         }
 

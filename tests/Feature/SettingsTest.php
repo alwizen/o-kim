@@ -108,4 +108,55 @@ class SettingsTest extends TestCase
         $this->assertSame('Y', $settings->kimNumberPeriodFormat());
         $this->assertSame(5, $settings->kimNumberSequenceDigits());
     }
+
+    // ---------- Penomoran Pengajuan ----------
+
+    public function test_application_number_defaults(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $this->assertSame('APP', $settings->applicationNumberPrefix());
+        $this->assertSame('Ymd', $settings->applicationNumberPeriodFormat());
+        $this->assertSame(4, $settings->applicationNumberSequenceDigits());
+    }
+
+    public function test_application_number_preview_uses_settings(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $this->assertSame(
+            'APP/'.now()->format('Ymd').'/0001',
+            $settings->buildNumberPreview('APP', 'Ymd', 4)
+        );
+
+        $this->assertSame(
+            'REG/'.now()->format('Y').'/001',
+            $settings->buildNumberPreview('REG', 'Y', 3)
+        );
+
+        $this->assertSame(
+            'APP/0001',
+            $settings->buildNumberPreview('APP', 'none', 4)
+        );
+    }
+
+    public function test_admin_can_save_application_number_settings(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm([
+                'application_number_prefix' => 'REG',
+                'application_number_period_format' => 'Y',
+                'application_number_sequence_digits' => '3',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $settings = app(SettingsService::class);
+
+        $this->assertSame('REG', $settings->applicationNumberPrefix());
+        $this->assertSame('Y', $settings->applicationNumberPeriodFormat());
+        $this->assertSame(3, $settings->applicationNumberSequenceDigits());
+    }
 }

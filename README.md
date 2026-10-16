@@ -61,7 +61,7 @@ Aplikasi terdiri dari tiga area:
 ### Transportir
 - Profil perusahaan
 - Manajemen kendaraan tangki (NOPOL dinormalisasi)
-- Unggah dokumen kendaraan (STNK, KEUR, TERA, dll.) dengan **riwayat versi**
+- Unggah dokumen kendaraan (STNK, KEUR, TERA, dll.) dengan **riwayat versi** dan **verifikasi oleh petugas**
 - Pengajuan KIM baru & perpanjangan
 - Melihat hasil pemeriksaan dan temuan
 - Menindaklanjuti temuan dengan bukti
@@ -122,7 +122,7 @@ perusahaan pengguna (isolasi data). Ambang peringatan kedaluwarsa dokumen diatur
 | Dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Verifikasi Transportir | ✅ | ✅ | — | — | — | — |
 | Pengguna Internal | ✅ | — | — | — | — | — |
-| Kendaraan | ✅ | — | — | — | — | — |
+| Kendaraan | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Jenis Dokumen | ✅ | — | — | — | — | — |
 | Checklist Pemeriksaan | ✅ | — | — | — | — | — |
 | Pengajuan & Pemeriksaan | ✅ | — | ✅ | ✅ | ✅ | ✅ |
@@ -170,6 +170,7 @@ dan menonaktifkan Super Admin aktif terakhir.
 
 ### 4.2 Pengajuan KIM
 1. Transportir menambahkan kendaraan dan mengunggah **dokumen wajib**.
+1a. Petugas memverifikasi dokumen (Terima/Tolak) melalui menu **Kendaraan**.
 2. Transportir membuat pengajuan lalu mengirimkannya.
 3. Pengajuan masuk antrean pemeriksaan (HSSE, Distribusi, QQ).
 4. Jika ada temuan → status `revision_required`, transportir mengirim tindak lanjut + bukti.
@@ -397,9 +398,12 @@ php artisan migrate --seed
 **B. Setelah Disetujui**
 1. Login di `/masuk`, Anda diarahkan ke panel `/transportir`.
 2. **Profil Perusahaan** — perbarui data perusahaan bila perlu.
-3. **Kendaraan** — tambah kendaraan tangki (NOPOL, merek, model, tahun, kapasitas).
-4. Buka kendaraan → **Dokumen Kendaraan** → unggah dokumen wajib (PDF/JPG/PNG, maks 5 MB). Dokumen lama otomatis tersimpan sebagai riwayat.
-5. **Pengajuan KIM** → *Buat* → pilih kendaraan & jenis (Baru/Perpanjangan) → **Kirim Pengajuan**. Pengajuan hanya bisa dikirim bila dokumen wajib lengkap.
+3. **Kendaraan** — tambah kendaraan tangki (NOPOL, merek, model, tahun, kapasitas, **nomor rangka, nomor mesin, jenis angkutan, bahan tangki**).
+4. Buka kendaraan → **Dokumen Kendaraan** → unggah dokumen wajib (PDF/JPG/PNG, maks 5 MB). Dokumen lama otomatis tersimpan sebagai riwayat. Tombol **Pratinjau** membuka berkas di tab baru, **Unduh** menyimpan berkasnya.
+5. **Pengajuan KIM** → *Buat* → pilih kendaraan & jenis (Baru/Perpanjangan) → **Kirim Pengajuan**.
+   Dropdown kendaraan **hanya menampilkan NOPOL yang seluruh dokumen wajibnya sudah Terverifikasi**
+   dan tidak memiliki pengajuan berjalan. Bila belum ada yang muncul, periksa kembali dokumen kendaraan
+   (harus diunggah **dan** diverifikasi petugas).
 6. Pantau status. Bila ada temuan, buka **Temuan & Tindak Lanjut** → kirim deskripsi perbaikan + bukti.
 7. Setelah KIM terbit, tombol **Unduh KIM** muncul pada halaman pengajuan.
 
@@ -413,8 +417,7 @@ Pindai QR Code pada KIM → halaman `/validasi-kim/{token}` menampilkan nomor KI
 Login di `/admin/login`.
 
 **A. Verifikasi Transportir**
-1. Menu **Verifikasi Transportir** → daftar pendaftar.
-2. Klik satu baris untuk melihat data perusahaan.
+1. Menu **Verifikasi Transportir** → daftar pendaftar.2. Klik satu baris untuk melihat data perusahaan.
 3. **Setujui Pendaftaran** atau **Tolak Pendaftaran** (alasan wajib diisi).
 4. Akun yang disetujui dapat mengakses panel transportir.
 
@@ -422,6 +425,20 @@ Login di `/admin/login`.
 - **Jenis Dokumen** — kelola STNK, KEUR, TERA, PTO (wajib/opsional, ada tanggal kedaluwarsa).
 - **Checklist Pemeriksaan** — kelola checklist per fungsi beserta **butir** dan **sub-butir** (poin rinci). Setiap butir punya kode, urutan, dan status wajib/aktif.
 - **Kendaraan** — lihat seluruh kendaraan dari semua transportir, filter per perusahaan/status.
+  Buka detail kendaraan untuk melihat & mengelola **dokumen kendaraan**: **Pratinjau** (buka berkas
+  di tab baru), **Unduh**, serta **Verifikasi** / **Tolak** dokumen. Kolom **Perlu Verifikasi** pada
+  daftar menandai kendaraan yang dokumennya masih menunggu verifikasi.
+
+**B2. Verifikasi Dokumen Kendaraan**
+Dokumen yang diunggah transportir berstatus **Menunggu Verifikasi**. Petugas dengan permission
+`verify_documents` (seluruh petugas internal) membuka **Kendaraan → detail → tabel Dokumen Kendaraan**
+lalu memilih:
+- **Verifikasi** — dokumen dinyatakan sah.
+- **Tolak** — wajib mengisi alasan; transportir menerima notifikasi dan harus mengunggah ulang.
+
+**Dampak:** pengajuan KIM **tidak dapat dikirim** dan KIM **tidak dapat diterbitkan** selama masih ada
+dokumen wajib yang belum berstatus *Terverifikasi*. Dokumen yang sudah digantikan versi baru tidak
+dapat diverifikasi.
 
 **C. Pemeriksaan**
 1. Menu **Pengajuan & Pemeriksaan** → buka pengajuan.
@@ -447,7 +464,42 @@ Pada halaman pengajuan, tersedia action sesuai kewenangan:
 
 **F. Penerbitan KIM**
 Setelah status `approved`, FTM klik **Terbitkan KIM**. Sistem membuat nomor unik, QR token, dan
-masa berlaku (mengikuti kedaluwarsa dokumen terawal, maksimum 12 bulan).
+masa berlaku (mengikuti kedaluwarsa dokumen terawal, dibatasi pengaturan masa berlaku).
+
+**G. Pengaturan Sistem** dan **Notifikasi**
+
+Menu **Pengaturan Sistem** (hanya super admin) berisi:
+| Pengaturan | Default | Keterangan |
+|---|---|---|
+| Masa berlaku KIM | 6 bulan | Batas maksimum; tetap diambil yang **paling awal** antara nilai ini dan kedaluwarsa dokumen wajib |
+| Penomoran KIM | `KIM/FT-TGL` · periode `Y/m` · 4 digit | Prefix + format periode + digit urutan → `KIM/FT-TGL/2026/10/0001` |
+| **Penomoran Pengajuan KIM** | `APP` · periode `Ymd` · 4 digit | Prefix + format periode + digit urutan → `APP/20261014/0001` |
+
+Setiap bagian penomoran menampilkan **pratinjau nomor** yang ikut berubah saat pengaturan disunting.
+Format periode tersedia: tanggal (`Ymd`), tahun/bulan (`Y/m`), tahun (`Y`), atau tanpa periode.
+
+**H. Notifikasi Database (Lonceng) & Pencarian Global**
+
+Kedua panel (`/admin` dan `/transportir`) menampilkan **ikon lonceng** di sudut kanan atas.
+Setiap peristiwa penting memicu notifikasi yang tersimpan di database:
+
+| Peristiwa | Penerima | Contoh |
+|---|---|---|
+| Pendaftaran transportir baru | Petugas verifikator | Akun + nama perusahaan |
+| Kendaraan baru ditambahkan | Petugas dokumen | Perusahaan + NOPOL |
+| Pengajuan KIM baru dikirim | Petugas pemeriksa | Nomor pengajuan + NOPOL |
+| Jadwal pemeriksaan ditetapkan | Transportir pemilik | Nomor pengajuan + jadwal |
+| Temuan pemeriksaan baru | Transportir pemilik | Fungsi + deskripsi temuan |
+| Tindak lanjut dikirim | Petugas fungsi terkait | Pengajuan + fungsi |
+| Approval fungsi selesai | FTM (menunggu final) | Pengajuan siap diputuskan |
+| Pengajuan disetujui / diterbitkan / ditolak | Transportir pemilik | Nomor pengajuan / nomor KIM |
+| Dokumen diverifikasi / ditolak | Transportir pemilik | Jenis dokumen + NOPOL |
+
+Klik notifikasi untuk menandainya dibaca; setiap notifikasi memiliki tombol **Lihat** yang menuju
+langsung ke data terkait.
+
+**Pencarian global** tersedia di kolom pencarian atas kedua panel (ketik NOPOL, nomor pengajuan,
+nomor KIM, nama perusahaan, nama/pic, atau email). Hasil difilter sesuai akses role masing-masing.
 
 ---
 
@@ -518,11 +570,16 @@ Cakupan pengujian business rule kritis:
 | `RegistrationTest` | Registrasi, approval akun, notifikasi |
 | `EmailPasswordAuthTest` | Login/daftar email-password, jalur terpisah |
 | `VehicleDocumentTest` | Isolasi data, keamanan upload, riwayat dokumen |
+| `VehicleDocumentVerificationTest` | Verifikasi/tolak dokumen & dampaknya ke pengajuan |
+| `VehicleDetailsTest` | Field kendaraan baru (rangka, mesin, jenis angkutan, bahan tangki) |
 | `InspectionWorkflowTest` | Checklist, temuan, transisi status |
 | `InspectionChecklistResourceTest` | CRUD checklist, butir, sub-butir (master data) |
 | `InspectionPointsTest` | Sub-butir pada form pemeriksaan & penyimpanannya |
 | `InspectionSchedulingTest` | Jadwal pelaksanaan pemeriksaan |
-| `SettingsTest` | Pengaturan sistem (masa berlaku & penomoran KIM) |
+| `SettingsTest` | Pengaturan sistem (masa berlaku & penomoran KIM/pengajuan) |
+| `ApplicationNumberingTest` | Penomoran pengajuan mengikuti pengaturan |
+| `DatabaseNotificationTest` | Helper notifikasi & pemicu event (10 test) |
+| `GlobalSearchTest` | Konfigurasi pencarian global per resource (8 test) |
 | `MakeAdminCommandTest` | Command `okim:make-admin` (akun admin & validasinya) |
 | `UserManagementTest` | Pengguna Internal: create/edit role, proteksi nonaktifkan |
 | `RoleAccessMatrixTest` | Matriks akses role × resource + akses URL langsung |

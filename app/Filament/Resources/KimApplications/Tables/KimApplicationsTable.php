@@ -4,6 +4,7 @@ namespace App\Filament\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
 use App\Models\KimApplication;
+use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -11,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 
 class KimApplicationsTable
 {
@@ -92,6 +94,16 @@ class KimApplicationsTable
                             'inspection_scheduled_at' => $data['inspection_scheduled_at'],
                             'inspection_scheduled_by' => auth()->id(),
                         ]);
+
+                        AppNotifier::toTransporter(
+                            $record->transporter_id,
+                            'Jadwal Pemeriksaan Ditetapkan',
+                            'Pengajuan '.$record->application_number.' dijadwalkan pada '
+                                .Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i').'.',
+                            'heroicon-o-calendar-days',
+                            'info',
+                            '/transportir/kim-applications/'.$record->getRouteKey(),
+                        );
 
                         Notification::make()
                             ->title('Jadwal pemeriksaan ditetapkan')

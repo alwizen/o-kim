@@ -70,15 +70,35 @@ class VehicleDocumentService
 
     public function download(VehicleDocument $document)
     {
-        abort_unless(
-            Storage::disk(self::DISK)->exists($document->file_path),
-            404,
-            'Berkas tidak ditemukan.'
-        );
+        $this->ensureFileExists($document);
 
         return Storage::disk(self::DISK)->download(
             $document->file_path,
             SafeFilename::make($document->original_filename)
+        );
+    }
+
+    /**
+     * Tampilkan berkas secara inline (pratinjau di tab baru).
+     */
+    public function preview(VehicleDocument $document)
+    {
+        $this->ensureFileExists($document);
+
+        return Storage::disk(self::DISK)->response(
+            $document->file_path,
+            SafeFilename::make($document->original_filename),
+            ['Content-Type' => $document->mime_type],
+            'inline'
+        );
+    }
+
+    private function ensureFileExists(VehicleDocument $document): void
+    {
+        abort_unless(
+            Storage::disk(self::DISK)->exists($document->file_path),
+            404,
+            'Berkas tidak ditemukan.'
         );
     }
 

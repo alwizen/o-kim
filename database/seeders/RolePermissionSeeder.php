@@ -20,6 +20,7 @@ class RolePermissionSeeder extends Seeder
             'manage_transporters',
             'manage_vehicles',
             'manage_document_types',
+            'verify_documents',
             'manage_checklists',
             'view_applications',
             'inspect_hsse',
@@ -47,6 +48,7 @@ class RolePermissionSeeder extends Seeder
                 'access_admin_panel',
                 'review_transporter_registrations',
                 'manage_transporters',
+                'verify_documents',
             ],
             'hsse' => [
                 'access_admin_panel',
@@ -56,6 +58,7 @@ class RolePermissionSeeder extends Seeder
                 'view_findings',
                 'verify_finding_actions',
                 'approve_hsse',
+                'verify_documents',
             ],
             'distribusi' => [
                 'access_admin_panel',
@@ -65,6 +68,7 @@ class RolePermissionSeeder extends Seeder
                 'view_findings',
                 'verify_finding_actions',
                 'approve_distribusi',
+                'verify_documents',
             ],
             'qq' => [
                 'access_admin_panel',
@@ -74,6 +78,7 @@ class RolePermissionSeeder extends Seeder
                 'view_findings',
                 'verify_finding_actions',
                 'approve_qq',
+                'verify_documents',
             ],
             'ftm' => [
                 'access_admin_panel',
@@ -81,6 +86,7 @@ class RolePermissionSeeder extends Seeder
                 'view_findings',
                 'approve_final',
                 'view_kim_cards',
+                'verify_documents',
             ],
             'transportir' => [],
         ];

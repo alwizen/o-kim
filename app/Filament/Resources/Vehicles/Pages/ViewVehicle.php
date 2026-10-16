@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\DocumentVerificationStatus;
 use App\Enums\KimCardStatus;
 use App\Filament\Resources\Vehicles\VehicleResource;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
@@ -29,6 +30,10 @@ class ViewVehicle extends ViewRecord
                     TextEntry::make('model')->label('Model')->placeholder('—'),
                     TextEntry::make('manufacture_year')->label('Tahun')->placeholder('—'),
                     TextEntry::make('tank_capacity')->label('Kapasitas Tangki (L)')->placeholder('—'),
+                    TextEntry::make('chassis_number')->label('Nomor Rangka')->placeholder('—'),
+                    TextEntry::make('engine_number')->label('Nomor Mesin')->placeholder('—'),
+                    TextEntry::make('transport_type')->label('Jenis Angkutan')->placeholder('—'),
+                    TextEntry::make('tank_material')->label('Bahan Tangki')->placeholder('—'),
                 ]),
             Section::make('Dokumen Kendaraan')
                 ->schema([
@@ -50,8 +55,14 @@ class ViewVehicle extends ViewRecord
                             TextEntry::make('is_current')
                                 ->label('Status Versi')
                                 ->state(fn ($record) => $record->isCurrentVersion() ? 'Berlaku' : 'Digantikan'),
+                            Action::make('preview')
+                                ->label('Pratinjau')
+                                ->icon('heroicon-o-eye')
+                                ->color('primary')
+                                ->url(fn ($record): string => route('documents.preview', ['document' => $record->id]))
+                                ->openUrlInNewTab(),
                         ])
-                        ->columns(5),
+                        ->columns(6),
                 ]),
             Section::make('Riwayat Pengajuan KIM')
                 ->schema([

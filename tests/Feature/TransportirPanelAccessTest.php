@@ -76,6 +76,15 @@ class TransportirPanelAccessTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_transportir_can_open_create_application_page(): void
+    {
+        [$user] = $this->transportirWithVehicle();
+
+        $this->actingAs($user)
+            ->get('/transportir/kim-applications/create')
+            ->assertSuccessful();
+    }
+
     public function test_transportir_panel_resources_require_transportir_role(): void
     {
         $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);

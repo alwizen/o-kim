@@ -46,6 +46,9 @@ class ManageSettings extends Page implements HasForms
             'kim_number_prefix' => $settings->kimNumberPrefix(),
             'kim_number_period_format' => $settings->kimNumberPeriodFormat(),
             'kim_number_sequence_digits' => (string) $settings->kimNumberSequenceDigits(),
+            'application_number_prefix' => $settings->applicationNumberPrefix(),
+            'application_number_period_format' => $settings->applicationNumberPeriodFormat(),
+            'application_number_sequence_digits' => (string) $settings->applicationNumberSequenceDigits(),
         ]);
     }
 
@@ -120,6 +123,56 @@ class ManageSettings extends Page implements HasForms
                                 (int) $get('kim_number_sequence_digits'),
                             )),
                     ]),
+
+                Section::make('Penomoran Pengajuan KIM')
+                    ->description('Format nomor pengajuan yang dibuat saat transportir membuat pengajuan baru.')
+                    ->icon('heroicon-o-document-plus')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('application_number_prefix')
+                            ->label('Prefix')
+                            ->required()
+                            ->live(onBlur: true)
+                            ->maxLength(50)
+                            ->helperText('Contoh: APP'),
+
+                        Select::make('application_number_period_format')
+                            ->label('Format Periode')
+                            ->options([
+                                'Ymd' => 'Tanggal (20261014)',
+                                'Y/m' => 'Tahun/Bulan (2026/10)',
+                                'Y' => 'Tahun (2026)',
+                                'none' => 'Tanpa periode',
+                            ])
+                            ->default('Ymd')
+                            ->required()
+                            ->live()
+                            ->native(false),
+
+                        Select::make('application_number_sequence_digits')
+                            ->label('Digit Urutan')
+                            ->options([
+                                '3' => '3 digit (001)',
+                                '4' => '4 digit (0001)',
+                                '5' => '5 digit (00001)',
+                            ])
+                            ->default('4')
+                            ->required()
+                            ->live()
+                            ->native(false),
+                    ]),
+
+                Section::make('Pratinjau Nomor Pengajuan')
+                    ->description('Nomor akan mengikuti urutan otomatis per periode.')
+                    ->schema([
+                        TextEntry::make('application_preview')
+                            ->hiddenLabel()
+                            ->state(fn ($get) => $this->buildPreview(
+                                $get('application_number_prefix'),
+                                $get('application_number_period_format'),
+                                (int) $get('application_number_sequence_digits'),
+                            )),
+                    ]),
             ]);
     }
 
@@ -132,6 +185,9 @@ class ManageSettings extends Page implements HasForms
             'kim.number_prefix' => (string) $data['kim_number_prefix'],
             'kim.number_period_format' => (string) $data['kim_number_period_format'],
             'kim.number_sequence_digits' => (string) $data['kim_number_sequence_digits'],
+            'application.number_prefix' => (string) $data['application_number_prefix'],
+            'application.number_period_format' => (string) $data['application_number_period_format'],
+            'application.number_sequence_digits' => (string) $data['application_number_sequence_digits'],
         ], SettingsService::GROUP_KIM);
 
         Notification::make()
@@ -147,15 +203,11 @@ class ManageSettings extends Page implements HasForms
 
     private function buildPreview(?string $prefix, ?string $periodFormat, int $digits): HtmlString
     {
-        $segments = [trim((string) $prefix, '/')];
-
-        if ($periodFormat && $periodFormat !== 'none') {
-            $segments[] = now()->format($periodFormat);
-        }
-
-        $segments[] = str_pad('1', max($digits, 1), '0', STR_PAD_LEFT);
-
-        $number = implode('/', $segments);
+        $number = app(SettingsService::class)->buildNumberPreview(
+            (string) $prefix,
+            (string) $periodFormat,
+            $digits,
+        );
 
         return new HtmlString(
             '<span class="font-mono text-base font-semibold text-primary-600 dark:text-primary-400">'.

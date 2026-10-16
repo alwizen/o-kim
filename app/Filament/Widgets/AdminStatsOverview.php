@@ -55,7 +55,7 @@ class AdminStatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-user-plus')
                 ->color($pendingRegistrations > 0 ? 'warning' : 'gray')
                 ->icon('heroicon-o-user-plus')
-                ->url('/admin/users'),
+                ->url('/admin/transporters'),
 
             Stat::make('Pengajuan Dalam Pemeriksaan', $inInspection)
                 ->description('Termasuk yang perlu perbaikan')

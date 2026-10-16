@@ -8,6 +8,7 @@ use App\Enums\Department;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Services\Approval\ApprovalService;
 use App\Services\Kim\KimIssuanceService;
+use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
@@ -17,6 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class ViewKimApplication extends ViewRecord
@@ -126,6 +128,16 @@ class ViewKimApplication extends ViewRecord
                         'inspection_scheduled_at' => $data['inspection_scheduled_at'],
                         'inspection_scheduled_by' => auth()->id(),
                     ]);
+
+                    AppNotifier::toTransporter(
+                        $this->record->transporter_id,
+                        'Jadwal Pemeriksaan Ditetapkan',
+                        'Pengajuan '.$this->record->application_number.' dijadwalkan pada '
+                            .Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i').'.',
+                        'heroicon-o-calendar-days',
+                        'info',
+                        '/transportir/kim-applications/'.$this->record->getRouteKey(),
+                    );
 
                     Notification::make()
                         ->title('Jadwal pemeriksaan ditetapkan')

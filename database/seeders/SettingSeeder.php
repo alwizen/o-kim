@@ -15,6 +15,9 @@ class SettingSeeder extends Seeder
             'kim.number_prefix' => 'KIM/FT-TGL',
             'kim.number_period_format' => 'Y/m',
             'kim.number_sequence_digits' => '4',
+            'application.number_prefix' => 'APP',
+            'application.number_period_format' => 'Ymd',
+            'application.number_sequence_digits' => '4',
         ];
 
         foreach ($defaults as $key => $value) {

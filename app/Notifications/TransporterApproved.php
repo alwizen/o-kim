@@ -12,7 +12,18 @@ class TransporterApproved extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Pendaftaran Disetujui',
+            'body' => 'Akun transportir Anda telah disetujui. Anda kini dapat mengakses panel transportir.',
+            'icon' => 'heroicon-o-check-badge',
+            'color' => 'success',
+            'url' => '/transportir',
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\Vehicles;
 
+use App\Filament\Resources\Vehicles\RelationManagers\DocumentsRelationManager;
 use App\Filament\Resources\Vehicles\Tables\VehiclesTable;
 use App\Models\Vehicle;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class VehicleResource extends Resource
 {
@@ -23,9 +26,31 @@ class VehicleResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    protected static ?string $recordTitleAttribute = 'registration_number';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['registration_number', 'chassis_number', 'engine_number', 'brand', 'model', 'transport_type'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Perusahaan' => $record->transporter?->company_name ?? '—',
+            'Merek' => $record->brand ?? '—',
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('transporter');
+    }
+
     public static function canAccess(): bool
     {
-        return auth()->user()->can('manage_vehicles');
+        // Petugas pengelola kendaraan atau petugas verifikasi dokumen.
+        return auth()->user()->can('manage_vehicles')
+            || auth()->user()->can('verify_documents');
     }
 
     public static function canCreate(): bool
@@ -36,6 +61,13 @@ class VehicleResource extends Resource
     public static function table(Table $table): Table
     {
         return VehiclesTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            DocumentsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

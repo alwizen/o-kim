@@ -101,6 +101,49 @@ class VehicleDocumentTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_owner_can_preview_own_document_inline(): void
+    {
+        $document = $this->uploadDocument($this->ownVehicle);
+
+        $response = $this->actingAs($this->owner)
+            ->get(route('documents.preview', $document));
+
+        $response->assertSuccessful();
+
+        $this->assertStringContainsString(
+            'inline',
+            $response->headers->get('content-disposition') ?? ''
+        );
+    }
+
+    public function test_transportir_cannot_preview_other_company_document(): void
+    {
+        $document = $this->uploadDocument($this->ownVehicle);
+
+        $this->actingAs($this->otherUser)
+            ->get(route('documents.preview', $document))
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_preview_any_document(): void
+    {
+        $document = $this->uploadDocument($this->ownVehicle);
+
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin)
+            ->get(route('documents.preview', $document))
+            ->assertSuccessful();
+    }
+
+    public function test_unauthenticated_user_cannot_preview_document(): void
+    {
+        $document = $this->uploadDocument($this->ownVehicle);
+
+        $this->get(route('documents.preview', $document))->assertRedirect();
+    }
+
     public function test_upload_rejects_disallowed_mime_type(): void
     {
         Storage::fake('local');

@@ -11,6 +11,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class InspectionChecklistResource extends Resource
 {
@@ -25,6 +26,18 @@ class InspectionChecklistResource extends Resource
     protected static ?string $pluralModelLabel = 'Checklist Pemeriksaan';
 
     protected static ?int $navigationSort = 7;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'code'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return ['Kode' => $record->code, 'Fungsi' => $record->department->label()];
+    }
 
     public static function canAccess(): bool
     {

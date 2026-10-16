@@ -8,6 +8,8 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class KimApplicationResource extends Resource
 {
@@ -20,6 +22,27 @@ class KimApplicationResource extends Resource
     protected static ?string $modelLabel = 'Pengajuan KIM';
 
     protected static ?int $navigationSort = 8;
+
+    protected static ?string $recordTitleAttribute = 'application_number';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['application_number', 'vehicle.registration_number', 'transporter.company_name'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'NOPOL' => $record->vehicle?->registration_number ?? '—',
+            'Perusahaan' => $record->transporter?->company_name ?? '—',
+            'Status' => $record->status->label(),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['vehicle', 'transporter']);
+    }
 
     public static function canAccess(): bool
     {

@@ -9,6 +9,7 @@ use App\Models\Approval;
 use App\Models\KimApplication;
 use App\Models\User;
 use App\Services\Inspection\InspectionService;
+use App\Support\AppNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -84,15 +85,42 @@ class ApprovalService
                     'status' => ApplicationStatus::Rejected,
                     'rejection_reason' => '['.$department->label().'] '.$notes,
                 ]);
+
+                AppNotifier::toTransporter(
+                    $application->transporter_id,
+                    'Pengajuan Ditolak',
+                    'Pengajuan '.$application->application_number.' ditolak oleh '.$department->label().'. Alasan: '.$notes,
+                    'heroicon-o-x-circle',
+                    'danger',
+                    '/transportir/kim-applications/'.$application->getRouteKey(),
+                );
             } elseif ($department !== Department::Ftm) {
                 if ($this->allFunctionalApprovalsComplete($application)) {
                     $application->update(['status' => ApplicationStatus::PendingApproval]);
+
+                    AppNotifier::toStaffWithPermission(
+                        'approve_final',
+                        'Pengajuan Menunggu Approval Final',
+                        $application->application_number.' siap diputuskan (3 fungsi telah menyetujui).',
+                        'heroicon-o-check-badge',
+                        'warning',
+                        '/admin/kim-applications/'.$application->getRouteKey(),
+                    );
                 }
             } else {
                 $application->update([
                     'status' => ApplicationStatus::Approved,
                     'final_approved_at' => now(),
                 ]);
+
+                AppNotifier::toTransporter(
+                    $application->transporter_id,
+                    'Pengajuan Disetujui',
+                    'Pengajuan '.$application->application_number.' telah disetujui. KIM akan segera diterbitkan.',
+                    'heroicon-o-check-circle',
+                    'success',
+                    '/transportir/kim-applications/'.$application->getRouteKey(),
+                );
             }
 
             return $approval;

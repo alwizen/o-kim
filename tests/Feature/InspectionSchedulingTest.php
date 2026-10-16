@@ -7,20 +7,17 @@ use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
 use App\Enums\InspectionResultValue;
 use App\Filament\Resources\KimApplications\Pages\ListKimApplications;
-use App\Models\DocumentType;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
-use App\Services\Document\VehicleDocumentService;
 use App\Services\Inspection\InspectionService;
 use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -52,14 +49,8 @@ class InspectionSchedulingTest extends TestCase
         $this->hsse = User::factory()->create(['account_status' => AccountStatus::Approved]);
         $this->hsse->assignRole('hsse');
 
-        $docService = app(VehicleDocumentService::class);
         foreach (['STNK', 'KEUR', 'TERA'] as $code) {
-            $docService->upload(
-                $this->vehicle,
-                DocumentType::where('code', $code)->value('id'),
-                UploadedFile::fake()->create("{$code}.pdf", 100, 'application/pdf'),
-                ['expires_at' => now()->addYear()->toDateString()]
-            );
+            $this->uploadVehicleDocument($this->vehicle, $code);
         }
 
         $this->application = app(KimApplicationService::class)->createDraft($this->vehicle, ApplicationType::New);

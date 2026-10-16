@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\VehicleDocument;
+use App\Services\Document\VehicleDocumentService;
+use Illuminate\Support\Facades\Gate;
+
+class VehicleDocumentPreviewController extends Controller
+{
+    public function __invoke(VehicleDocument $document, VehicleDocumentService $service)
+    {
+        Gate::authorize('view', $document);
+
+        return $service->preview($document);
+    }
+}

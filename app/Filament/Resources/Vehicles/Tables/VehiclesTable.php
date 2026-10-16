@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Vehicles\Tables;
 
+use App\Enums\DocumentVerificationStatus;
 use App\Enums\VehicleStatus;
 use App\Filament\Resources\Vehicles\VehicleResource;
 use Filament\Actions\ViewAction;
@@ -40,9 +41,36 @@ class VehiclesTable
                     ->label('Kapasitas (L)')
                     ->placeholder('—')
                     ->toggleable(),
+                TextColumn::make('chassis_number')
+                    ->label('No. Rangka')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('engine_number')
+                    ->label('No. Mesin')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('transport_type')
+                    ->label('Jenis Angkutan')
+                    ->placeholder('—')
+                    ->toggleable(),
+                TextColumn::make('tank_material')
+                    ->label('Bahan Tangki')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('documents_count')
                     ->label('Dokumen')
                     ->counts('documents'),
+                TextColumn::make('pending_documents_count')
+                    ->label('Perlu Verifikasi')
+                    ->badge()
+                    ->color('warning')
+                    ->counts([
+                        'documents as pending_documents_count' => fn ($query) => $query
+                            ->whereNull('replaced_by_id')
+                            ->where('verification_status', DocumentVerificationStatus::Pending->value),
+                    ]),
                 TextColumn::make('kimApplications_count')
                     ->label('Pengajuan')
                     ->counts('kimApplications'),

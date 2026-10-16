@@ -12,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -28,62 +29,71 @@ class ItemsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('item_code')
-                ->label('Kode Butir')
-                ->required()
-                ->maxLength(30)
-                ->helperText('Contoh: HSSE-01'),
-
-            TextInput::make('label')
-                ->label('Nama Butir')
-                ->required()
-                ->maxLength(255)
-                ->columnSpanFull(),
-
-            Textarea::make('description')
-                ->label('Deskripsi / Panduan')
-                ->rows(2)
-                ->maxLength(1000)
-                ->columnSpanFull(),
-
-            TextInput::make('sort_order')
-                ->label('Urutan')
-                ->numeric()
-                ->default(0)
-                ->minValue(0),
-
-            Toggle::make('is_required')
-                ->label('Wajib diselesaikan')
-                ->default(true),
-
-            Toggle::make('is_active')
-                ->label('Aktif')
-                ->default(true),
-
-            Repeater::make('points')
-                ->relationship('points')
-                ->label('Sub-butir Pemeriksaan')
-                ->helperText('Poin rinci yang dicek petugas pada butir ini (mis. lokasi pemasangan, kondisi komponen).')
-                ->addActionLabel('Tambah Sub-butir')
-                ->reorderableWithButtons()
-                ->orderColumn('sort_order')
-                ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                ->collapsible()
-                ->cloneable()
+            Section::make('Butir Pemeriksaan')
+                ->columns(2)
                 ->schema([
+                    TextInput::make('item_code')
+                        ->label('Kode Butir')
+                        ->required()
+                        ->maxLength(30)
+                        ->helperText('Contoh: HSSE-01'),
+
+                    TextInput::make('sort_order')
+                        ->label('Urutan')
+                        ->numeric()
+                        ->default(0)
+                        ->minValue(0),
+
                     TextInput::make('label')
-                        ->label('Sub-butir')
+                        ->label('Nama Butir')
                         ->required()
                         ->maxLength(255)
                         ->columnSpanFull(),
+
+                    Textarea::make('description')
+                        ->label('Deskripsi / Panduan')
+                        ->rows(2)
+                        ->maxLength(1000)
+                        ->columnSpanFull(),
+                ]),
+
+            Section::make('Status')
+                ->columns(2)
+                ->schema([
+                    Toggle::make('is_required')
+                        ->label('Wajib diselesaikan')
+                        ->default(true),
                     Toggle::make('is_active')
                         ->label('Aktif')
-                        ->default(true)
-                        ->columnSpanFull(),
-                ])
-                ->columns(1)
-                ->columnSpanFull(),
-        ])->columns(2);
+                        ->default(true),
+                ]),
+
+            Section::make('Sub-butir Pemeriksaan')
+                ->description('Poin rinci yang dicek petugas pada butir ini (mis. lokasi pemasangan, kondisi komponen).')
+                ->schema([
+                    Repeater::make('points')
+                        ->relationship('points')
+                        ->hiddenLabel()
+                        ->addActionLabel('Tambah Sub-butir')
+                        ->reorderableWithButtons()
+                        ->orderColumn('sort_order')
+                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                        ->collapsible()
+                        ->cloneable()
+                        ->schema([
+                            TextInput::make('label')
+                                ->label('Sub-butir')
+                                ->required()
+                                ->maxLength(255)
+                                ->columnSpanFull(),
+                            Toggle::make('is_active')
+                                ->label('Aktif')
+                                ->default(true)
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(1),
+                ]),
+        ]);
     }
 
     public function table(Table $table): Table

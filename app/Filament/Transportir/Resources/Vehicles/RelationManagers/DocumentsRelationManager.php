@@ -14,6 +14,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -29,27 +30,35 @@ class DocumentsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('document_type_id')
-                ->label('Jenis Dokumen')
-                ->options(DocumentType::where('is_active', true)->pluck('name', 'id'))
-                ->required()
-                ->live(),
-            TextInput::make('document_number')
-                ->label('Nomor Dokumen')
-                ->maxLength(100),
-            DatePicker::make('issued_at')
-                ->label('Tanggal Terbit'),
-            DatePicker::make('expires_at')
-                ->label('Tanggal Kedaluwarsa')
-                ->visible(fn ($get) => (bool) DocumentType::find($get('document_type_id'))?->has_expiry_date)
-                ->required(fn ($get) => (bool) DocumentType::find($get('document_type_id'))?->has_expiry_date),
-            FileUpload::make('file')
-                ->label('Berkas (PDF/JPG/PNG, maks 5 MB)')
-                ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                ->maxSize(5120)
-                ->disk('local')
-                ->required()
-                ->storeFiles(false),
+            Section::make('Detail Dokumen')
+                ->columns(2)
+                ->schema([
+                    Select::make('document_type_id')
+                        ->label('Jenis Dokumen')
+                        ->options(DocumentType::where('is_active', true)->pluck('name', 'id'))
+                        ->required()
+                        ->live(),
+                    TextInput::make('document_number')
+                        ->label('Nomor Dokumen')
+                        ->maxLength(100),
+                    DatePicker::make('issued_at')
+                        ->label('Tanggal Terbit'),
+                    DatePicker::make('expires_at')
+                        ->label('Tanggal Kedaluwarsa')
+                        ->visible(fn ($get) => (bool) DocumentType::find($get('document_type_id'))?->has_expiry_date)
+                        ->required(fn ($get) => (bool) DocumentType::find($get('document_type_id'))?->has_expiry_date),
+                ]),
+
+            Section::make('Berkas')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Berkas (PDF/JPG/PNG, maks 5 MB)')
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->maxSize(5120)
+                        ->disk('local')
+                        ->required()
+                        ->storeFiles(false),
+                ]),
         ]);
     }
 
@@ -101,6 +110,12 @@ class DocumentsRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
+                Action::make('preview')
+                    ->label('Pratinjau')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->url(fn (VehicleDocument $record) => route('documents.preview', $record))
+                    ->openUrlInNewTab(),
                 Action::make('download')
                     ->label('Unduh')
                     ->icon('heroicon-o-arrow-down-tray')

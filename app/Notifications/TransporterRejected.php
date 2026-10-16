@@ -14,7 +14,17 @@ class TransporterRejected extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Pendaftaran Ditolak',
+            'body' => 'Pendaftaran Anda ditolak. Alasan: '.$this->reason,
+            'icon' => 'heroicon-o-x-circle',
+            'color' => 'danger',
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

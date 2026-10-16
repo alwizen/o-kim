@@ -61,7 +61,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => false,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => false,
+                VehicleResource::class => true,
             ],
             'hsse' => [
                 UserResource::class => false,
@@ -70,7 +70,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => false,
+                VehicleResource::class => true,
             ],
             'distribusi' => [
                 UserResource::class => false,
@@ -79,7 +79,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => false,
+                VehicleResource::class => true,
             ],
             'qq' => [
                 UserResource::class => false,
@@ -88,7 +88,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => false,
+                VehicleResource::class => true,
             ],
             'ftm' => [
                 UserResource::class => false,
@@ -97,7 +97,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => false,
+                VehicleResource::class => true,
             ],
             'transportir' => [
                 UserResource::class => false,
@@ -152,8 +152,10 @@ class RoleAccessMatrixTest extends TestCase
         $this->actingAs($ftm)->get('/admin/users/create')->assertForbidden();
         $this->actingAs($ftm)->get('/admin/inspection-checklists')->assertForbidden();
         $this->actingAs($ftm)->get('/admin/document-types')->assertForbidden();
-        $this->actingAs($ftm)->get('/admin/vehicles')->assertForbidden();
         $this->actingAs($ftm)->get('/admin/manage-settings')->assertForbidden();
+
+        // FTM berwenang memverifikasi dokumen, sehingga daftar kendaraan dapat diakses.
+        $this->actingAs($ftm)->get('/admin/vehicles')->assertSuccessful();
     }
 
     public function test_hsse_cannot_access_transporter_verification_directly(): void

@@ -29,4 +29,12 @@ class VehicleDocumentPolicy
             ->where('transporters.id', $document->vehicle->transporter_id)
             ->exists();
     }
+
+    /**
+     * Verifikasi dokumen hanya oleh petugas internal berwenang.
+     */
+    public function verify(User $user, VehicleDocument $document): bool
+    {
+        return $user->can('verify_documents');
+    }
 }

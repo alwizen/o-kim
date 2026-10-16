@@ -7,6 +7,7 @@ use App\Http\Controllers\KimDownloadController;
 use App\Http\Controllers\KimValidationController;
 use App\Http\Controllers\TransporterRegistrationController;
 use App\Http\Controllers\VehicleDocumentDownloadController;
+use App\Http\Controllers\VehicleDocumentPreviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dokumen/{document}/unduh', VehicleDocumentDownloadController::class)
         ->name('documents.download');
+
+    Route::get('/dokumen/{document}/pratinjau', VehicleDocumentPreviewController::class)
+        ->name('documents.preview');
 
     Route::get('/kim/{card}/unduh', KimDownloadController::class)
         ->name('kim.download');
