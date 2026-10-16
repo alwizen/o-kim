@@ -12,21 +12,19 @@ class TransporterInfolist
     {
         return $schema->components([
             Section::make('Data Akun')
-                ->columns(2)
+                ->columnSpanFull()
+                ->columns(4)
                 ->schema([
                     TextEntry::make('name')->label('Nama PIC'),
                     TextEntry::make('email'),
                     TextEntry::make('account_status')
                         ->label('Status Akun')
                         ->badge()
-                        ->formatStateUsing(fn ($state) => $state->label()),
+                        ->formatStateUsing(fn($state) => $state->label()),
                     TextEntry::make('created_at')
                         ->label('Terdaftar Pada')
                         ->dateTime('d M Y H:i'),
-                ]),
-            Section::make('Data Perusahaan')
-                ->columns(2)
-                ->schema([
+
                     TextEntry::make('transporters.company_name')
                         ->label('Nama Perusahaan')
                         ->placeholder('Belum mengisi profil'),
@@ -40,10 +38,7 @@ class TransporterInfolist
                     TextEntry::make('transporters.legal_identifier')
                         ->label('Nomor Identitas Perusahaan')
                         ->placeholder('—'),
-                ]),
-            Section::make('Riwayat Keputusan')
-                ->columns(2)
-                ->schema([
+
                     TextEntry::make('reviewer.name')->label('Diputuskan Oleh')->placeholder('—'),
                     TextEntry::make('reviewed_at')->label('Waktu Keputusan')->dateTime('d M Y H:i')->placeholder('—'),
                     TextEntry::make('rejection_reason')->label('Alasan Penolakan')->placeholder('—')->columnSpanFull(),

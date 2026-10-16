@@ -21,7 +21,8 @@ class ViewVehicle extends ViewRecord
     {
         return $schema->components([
             Section::make('Data Kendaraan')
-                ->columns(3)
+                ->columns(4)
+                ->columnSpanFull()
                 ->schema([
                     TextEntry::make('registration_number')->label('NOPOL'),
                     TextEntry::make('transporter.company_name')->label('Perusahaan'),
@@ -36,6 +37,7 @@ class ViewVehicle extends ViewRecord
                     TextEntry::make('tank_material')->label('Bahan Tangki')->placeholder('—'),
                 ]),
             Section::make('Dokumen Kendaraan')
+                ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('documents')
                         ->label('')
@@ -55,16 +57,11 @@ class ViewVehicle extends ViewRecord
                             TextEntry::make('is_current')
                                 ->label('Status Versi')
                                 ->state(fn ($record) => $record->isCurrentVersion() ? 'Berlaku' : 'Digantikan'),
-                            Action::make('preview')
-                                ->label('Pratinjau')
-                                ->icon('heroicon-o-eye')
-                                ->color('primary')
-                                ->url(fn ($record): string => route('documents.preview', ['document' => $record->id]))
-                                ->openUrlInNewTab(),
                         ])
                         ->columns(6),
                 ]),
             Section::make('Riwayat Pengajuan KIM')
+                ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('kimApplications')
                         ->label('')
