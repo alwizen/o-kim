@@ -2,29 +2,30 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class TransporterRejected extends Notification
+class TransporterRejected extends AppNotification
 {
-    use Queueable;
-
     public function __construct(public string $reason) {}
 
-    public function via(object $notifiable): array
+    protected function title(): string
     {
-        return ['mail', 'database'];
+        return 'Pendaftaran Ditolak';
     }
 
-    public function toArray(object $notifiable): array
+    protected function body(object $notifiable): string
     {
-        return [
-            'title' => 'Pendaftaran Ditolak',
-            'body' => 'Pendaftaran Anda ditolak. Alasan: '.$this->reason,
-            'icon' => 'heroicon-o-x-circle',
-            'color' => 'danger',
-        ];
+        return 'Pendaftaran Anda ditolak. Alasan: '.$this->reason;
+    }
+
+    protected function icon(): string
+    {
+        return 'heroicon-o-x-circle';
+    }
+
+    protected function iconColor(): string
+    {
+        return 'danger';
     }
 
     public function toMail(object $notifiable): MailMessage

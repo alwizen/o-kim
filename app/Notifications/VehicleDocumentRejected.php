@@ -2,34 +2,39 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class VehicleDocumentRejected extends Notification
+class VehicleDocumentRejected extends AppNotification
 {
-    use Queueable;
-
     public function __construct(
         public string $documentTypeName,
         public string $registrationNumber,
         public string $reason,
     ) {}
 
-    public function via(object $notifiable): array
+    protected function title(): string
     {
-        return ['mail', 'database'];
+        return 'Dokumen Kendaraan Ditolak';
     }
 
-    public function toArray(object $notifiable): array
+    protected function body(object $notifiable): string
     {
-        return [
-            'title' => 'Dokumen Kendaraan Ditolak',
-            'body' => "Dokumen {$this->documentTypeName} ({$this->registrationNumber}) ditolak. Alasan: {$this->reason}",
-            'icon' => 'heroicon-o-document-text',
-            'color' => 'danger',
-            'url' => '/transportir',
-        ];
+        return "Dokumen {$this->documentTypeName} ({$this->registrationNumber}) ditolak. Alasan: {$this->reason}";
+    }
+
+    protected function icon(): string
+    {
+        return 'heroicon-o-document-text';
+    }
+
+    protected function iconColor(): string
+    {
+        return 'danger';
+    }
+
+    protected function url(object $notifiable): ?string
+    {
+        return '/transportir';
     }
 
     public function toMail(object $notifiable): MailMessage
