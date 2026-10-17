@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Transportir\Widgets\TransportirExpiringDocumentsTable;
 use App\Filament\Transportir\Widgets\TransportirStatsOverview;
+use App\Filament\Transportir\Widgets\VehicleProgressStepper;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -29,7 +30,7 @@ class TransportirPanelProvider extends PanelProvider
         return $panel
             ->id('transportir')
             ->path('transportir')
-             ->brandlogo(asset('img/logo.png'))
+            ->brandlogo(asset('img/logo.png'))
             ->brandLogoHeight('3rem')
             ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
@@ -48,6 +49,7 @@ class TransportirPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Transportir/Widgets'), for: 'App\Filament\Transportir\Widgets')
             ->widgets([
                 TransportirStatsOverview::class,
+                VehicleProgressStepper::class,
                 // AccountWidget::class,
                 TransportirExpiringDocumentsTable::class,
                 // FilamentInfoWidget::class,

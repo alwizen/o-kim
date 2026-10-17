@@ -91,12 +91,17 @@ Kedua panel memiliki dashboard yang **berbeda** sesuai kebutuhannya.
 | Widget | Isi |
 |---|---|
 | `TransportirStatsOverview` | Total kendaraan · pengajuan berjalan · temuan perlu tindak lanjut · KIM aktif · KIM mendekati kedaluwarsa · dokumen perlu diperbarui |
+| `VehicleProgressStepper` | **Stepper horizontal** progres pengajuan per kendaraan: Pendaftaran Kendaraan → Verifikasi Dokumen → Checklist Pemeriksaan → Temuan → KIM Terbit. Dropdown hanya memuat kendaraan yang **sudah memiliki pengajuan**; warna tiap tahap menunjukkan status (selesai/berjalan/perlu tindak lanjut/gagal/menunggu) |
 | `TransportirExpiringDocumentsTable` | Tabel peringatan dokumen **milik perusahaannya sendiri**, dengan tombol **Perbarui** menuju halaman kendaraan |
 
 Semua angka berasal dari query database nyata, dan setiap widget menyaring data sesuai
 perusahaan pengguna (isolasi data). Ambang peringatan kedaluwarsa dokumen diatur pada
 `DocumentExpiryService::WARNING_THRESHOLD_DAYS` (default **60 hari**; batas "kritis" 14 hari,
 "peringatan" 30 hari).
+
+Perhitungan tahapan stepper dipusatkan di `App\Services\Application\VehicleProgressService`
+(lima langkah dengan state `done`/`active`/`warning`/`failed`/`pending`), sehingga aturan progres
+tidak bergantung pada tampilan.
 
 ---
 
@@ -590,6 +595,7 @@ Cakupan pengujian business rule kritis:
 | `ApprovalAndIssuanceTest` | Approval berjenjang, penerbitan, QR, anti-ganda |
 | `LandingNavigationTest` | Navigasi & redirect sesuai status akun |
 | `DashboardWidgetTest` | Widget dashboard, isolasi data, peringatan kedaluwarsa dokumen |
+| `VehicleProgressStepperTest` | Stepper progres pengajuan: 5 tahap, dropdown, isolasi data |
 | `AdminVehicleListTest` | Daftar kendaraan lintas perusahaan |
 
 ---
