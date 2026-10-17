@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Notifications\Notification;
 
 class AppNotifier
 {
@@ -84,6 +85,39 @@ class AppNotifier
 
         foreach ($users as $user) {
             self::toUser($user, $title, $body, $icon, $color, $url);
+        }
+    }
+
+    /**
+     * Kirim notifikasi berbasis class (email + lonceng) ke pengguna internal berpermission tertentu.
+     *
+     * @param  string|array<int, string>  $permissions
+     */
+    public static function notifyStaffWithPermission(
+        string|array $permissions,
+        Notification $notification,
+    ): void {
+        $users = User::query()
+            ->where('account_status', AccountStatus::Approved)
+            ->permission((array) $permissions)
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify($notification);
+        }
+    }
+
+    /**
+     * Kirim notifikasi berbasis class (email + lonceng) ke seluruh PIC perusahaan transportir.
+     */
+    public static function notifyTransporter(int $transporterId, Notification $notification): void
+    {
+        $users = User::query()
+            ->whereHas('transporters', fn ($query) => $query->where('transporters.id', $transporterId))
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify($notification);
         }
     }
 

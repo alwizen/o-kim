@@ -8,6 +8,10 @@ use App\Enums\Department;
 use App\Models\Approval;
 use App\Models\KimApplication;
 use App\Models\User;
+use App\Notifications\ApplicationApproved;
+use App\Notifications\ApplicationApprovedByDepartment;
+use App\Notifications\ApplicationPendingFinalApproval;
+use App\Notifications\ApplicationRejected;
 use App\Services\Inspection\InspectionService;
 use App\Support\AppNotifier;
 use Illuminate\Support\Facades\DB;
@@ -86,26 +90,33 @@ class ApprovalService
                     'rejection_reason' => '['.$department->label().'] '.$notes,
                 ]);
 
-                AppNotifier::toTransporter(
+                DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                     $application->transporter_id,
-                    'Pengajuan Ditolak',
-                    'Pengajuan '.$application->application_number.' ditolak oleh '.$department->label().'. Alasan: '.$notes,
-                    'heroicon-o-x-circle',
-                    'danger',
-                    '/transportir/kim-applications/'.$application->getRouteKey(),
-                );
+                    new ApplicationRejected(
+                        $application->application_number,
+                        $department->label(),
+                        (string) $notes,
+                    ),
+                ));
             } elseif ($department !== Department::Ftm) {
+                DB::afterCommit(fn () => AppNotifier::notifyTransporter(
+                    $application->transporter_id,
+                    new ApplicationApprovedByDepartment(
+                        $application->application_number,
+                        $department->label(),
+                    ),
+                ));
+
                 if ($this->allFunctionalApprovalsComplete($application)) {
                     $application->update(['status' => ApplicationStatus::PendingApproval]);
 
-                    AppNotifier::toStaffWithPermission(
+                    DB::afterCommit(fn () => AppNotifier::notifyStaffWithPermission(
                         'approve_final',
-                        'Pengajuan Menunggu Approval Final',
-                        $application->application_number.' siap diputuskan (3 fungsi telah menyetujui).',
-                        'heroicon-o-check-badge',
-                        'warning',
-                        '/admin/kim-applications/'.$application->getRouteKey(),
-                    );
+                        new ApplicationPendingFinalApproval(
+                            $application->application_number,
+                            $application->vehicle->registration_number,
+                        ),
+                    ));
                 }
             } else {
                 $application->update([
@@ -113,14 +124,13 @@ class ApprovalService
                     'final_approved_at' => now(),
                 ]);
 
-                AppNotifier::toTransporter(
+                DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                     $application->transporter_id,
-                    'Pengajuan Disetujui',
-                    'Pengajuan '.$application->application_number.' telah disetujui. KIM akan segera diterbitkan.',
-                    'heroicon-o-check-circle',
-                    'success',
-                    '/transportir/kim-applications/'.$application->getRouteKey(),
-                );
+                    new ApplicationApproved(
+                        $application->application_number,
+                        $application->vehicle->registration_number,
+                    ),
+                ));
             }
 
             return $approval;

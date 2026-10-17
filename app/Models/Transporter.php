@@ -19,12 +19,14 @@ class Transporter extends Model
         'legal_identifier',
         'status',
         'rejection_reason',
+        'profile_submitted_at',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => TransporterStatus::class,
+            'profile_submitted_at' => 'datetime',
         ];
     }
 

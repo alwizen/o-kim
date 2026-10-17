@@ -9,6 +9,7 @@ use App\Models\DocumentType;
 use App\Models\KimApplication;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\KimApplicationSubmitted;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,13 +67,13 @@ class KimApplicationService
 
     private function notifyStaffOfSubmission(KimApplication $application): void
     {
-        AppNotifier::toStaffWithPermission(
+        AppNotifier::notifyStaffWithPermission(
             'view_applications',
-            'Pengajuan KIM Baru',
-            $application->application_number.' — NOPOL '.$application->vehicle->registration_number,
-            'heroicon-o-document-plus',
-            'info',
-            '/admin/kim-applications/'.$application->getRouteKey(),
+            new KimApplicationSubmitted(
+                $application->application_number,
+                $application->vehicle->registration_number,
+                $application->transporter->company_name,
+            ),
         );
     }
 

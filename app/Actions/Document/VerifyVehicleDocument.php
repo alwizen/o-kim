@@ -5,6 +5,7 @@ namespace App\Actions\Document;
 use App\Enums\DocumentVerificationStatus;
 use App\Models\User;
 use App\Models\VehicleDocument;
+use App\Notifications\VehicleDocumentVerified;
 use App\Support\AppNotifier;
 use Illuminate\Validation\ValidationException;
 
@@ -28,14 +29,12 @@ class VerifyVehicleDocument
             'rejection_reason' => null,
         ]);
 
-        AppNotifier::toTransporter(
+        AppNotifier::notifyTransporter(
             $document->vehicle->transporter_id,
-            'Dokumen Kendaraan Diverifikasi',
-            ($document->documentType?->name ?? 'Dokumen').' untuk kendaraan '
-                .($document->vehicle?->registration_number ?? '-').' telah diverifikasi.',
-            'heroicon-o-check-badge',
-            'success',
-            '/transportir/vehicles/'.$document->vehicle_id.'/edit',
+            new VehicleDocumentVerified(
+                $document->documentType?->name ?? 'Dokumen',
+                $document->vehicle?->registration_number ?? '-',
+            ),
         );
     }
 }

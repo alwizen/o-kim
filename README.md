@@ -298,17 +298,53 @@ GOOGLE_REDIRECT_URI=/auth/google/callback
 Daftarkan **Authorized redirect URI** di Google Cloud Console:
 `{APP_URL}/auth/google/callback`
 
-### Email
-Tahap awal menggunakan driver `log` (email tercatat di `storage/logs/laravel.log`).
-Untuk produksi, atur SMTP setelah penyedia diputuskan:
+### Email (SMTP)
+
+Tahap pengembangan memakai driver `log` — email **tidak terkirim**, hanya dicatat di
+`storage/logs/laravel.log`. Ini memudahkan pengujian alur notifikasi tanpa risiko mengirim email nyata.
+
+**Mengaktifkan Google Workspace SMTP:**
+
+1. Aktifkan **verifikasi 2 langkah** pada akun Google pengirim.
+2. Buat **App Password** di <https://myaccount.google.com/apppasswords>.
+3. Isi `.env`:
+
 ```env
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.contoh.com
+MAIL_SCHEME=tls
+MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
-MAIL_USERNAME=...
-MAIL_PASSWORD=...
-MAIL_FROM_ADDRESS=noreply@okim.co.id
+MAIL_USERNAME=noreply@domain-anda.com
+MAIL_PASSWORD=app-password-16-karakter
+MAIL_FROM_ADDRESS=noreply@domain-anda.com
+MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
 ```
+
+4. Bersihkan cache konfigurasi dan uji:
+
+```bash
+php artisan config:clear
+php artisan okim:test-mail alamat-uji@contoh.com
+```
+
+> **Batas Google Workspace:** ±2.000 penerima/hari. Satu pengajuan KIM dapat memicu
+> belasan email (setiap petugas berpermission menerima satu email). Bila volume bertambah,
+> pertimbangkan **Amazon SES** (~Rp 1.600 per 1.000 email).
+
+**DNS yang wajib disiapkan** agar email tidak masuk spam: **SPF**, **DKIM**, dan **DMARC**
+untuk domain pengirim.
+
+**Queue worker** — email dikirim melalui antrean, jadi worker harus berjalan:
+
+```bash
+php artisan queue:work --sleep=3 --tries=3 --backoff=60
+```
+
+Contoh konfigurasi Supervisor tersedia di `deploy/supervisor/okim-worker.conf`.
+Pantau kegagalan pengiriman dengan `php artisan queue:failed`.
+
+> Mengganti penyedia email **tidak perlu mengubah kode** — cukup ubah variabel `MAIL_*` di `.env`.
+> Untuk penyedia berbasis API (SES/Postmark/Resend), jalankan `composer require` SDK-nya lebih dulu.
 
 ### Storage
 Dokumen sensitif disimpan di **disk private** (`storage/app/private`).
@@ -517,6 +553,10 @@ Setiap peristiwa penting memicu notifikasi yang tersimpan di database:
 Klik notifikasi untuk menandainya dibaca; setiap notifikasi memiliki tombol **Lihat** yang menuju
 langsung ke data terkait.
 
+Semua peristiwa di atas **juga dikirim sebagai email** melalui queue (lihat bagian *Email (SMTP)*).
+Notifikasi email tidak memblokir request dan kegagalan pengiriman tidak membatalkan proses bisnis —
+kegagalan tercatat pada tabel `failed_jobs`.
+
 **Pencarian global** tersedia di kolom pencarian atas kedua panel (ketik NOPOL, nomor pengajuan,
 nomor KIM, nama perusahaan, nama/pic, atau email). Hasil difilter sesuai akses role masing-masing.
 
@@ -609,6 +649,7 @@ Cakupan pengujian business rule kritis:
 | `LandingNavigationTest` | Navigasi & redirect sesuai status akun |
 | `DashboardWidgetTest` | Widget dashboard, isolasi data, peringatan kedaluwarsa dokumen |
 | `VehicleProgressStepperTest` | Stepper progres pengajuan: 5 tahap, dropdown, isolasi data |
+| `NotificationEmailTest` | Email & lonceng untuk seluruh event pendaftaran/pengajuan (13 test) |
 | `AdminVehicleListTest` | Daftar kendaraan lintas perusahaan |
 
 ---

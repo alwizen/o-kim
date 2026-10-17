@@ -2,27 +2,28 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class TransporterRegistered extends Notification
+class TransporterRegistered extends AppNotification
 {
-    use Queueable;
-
-    public function via(object $notifiable): array
+    protected function title(): string
     {
-        return ['mail', 'database'];
+        return 'Pendaftaran Diterima';
     }
 
-    public function toArray(object $notifiable): array
+    protected function body(object $notifiable): string
     {
-        return [
-            'title' => 'Pendaftaran Diterima',
-            'body' => 'Pendaftaran akun transportir Anda telah kami terima dan akan diverifikasi admin.',
-            'icon' => 'heroicon-o-user-plus',
-            'color' => 'info',
-        ];
+        return 'Pendaftaran akun transportir Anda telah kami terima dan akan diverifikasi admin.';
+    }
+
+    protected function icon(): string
+    {
+        return 'heroicon-o-user-plus';
+    }
+
+    protected function iconColor(): string
+    {
+        return 'info';
     }
 
     public function toMail(object $notifiable): MailMessage

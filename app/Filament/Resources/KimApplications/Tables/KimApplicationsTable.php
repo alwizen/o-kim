@@ -4,6 +4,7 @@ namespace App\Filament\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
 use App\Models\KimApplication;
+use App\Notifications\InspectionScheduled;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -95,14 +96,13 @@ class KimApplicationsTable
                             'inspection_scheduled_by' => auth()->id(),
                         ]);
 
-                        AppNotifier::toTransporter(
+                        AppNotifier::notifyTransporter(
                             $record->transporter_id,
-                            'Jadwal Pemeriksaan Ditetapkan',
-                            'Pengajuan '.$record->application_number.' dijadwalkan pada '
-                                .Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i').'.',
-                            'heroicon-o-calendar-days',
-                            'info',
-                            '/transportir/kim-applications/'.$record->getRouteKey(),
+                            new InspectionScheduled(
+                                $record->application_number,
+                                $record->vehicle->registration_number,
+                                Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i'),
+                            ),
                         );
 
                         Notification::make()

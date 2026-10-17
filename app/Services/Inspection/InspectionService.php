@@ -11,6 +11,7 @@ use App\Models\InspectionItem;
 use App\Models\InspectionResult;
 use App\Models\KimApplication;
 use App\Models\User;
+use App\Notifications\FindingCreated;
 use App\Support\AppNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -92,14 +93,14 @@ class InspectionService
                     $application->update(['status' => ApplicationStatus::RevisionRequired]);
                 }
 
-                AppNotifier::toTransporter(
+                DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                     $application->transporter_id,
-                    'Temuan Pemeriksaan Baru',
-                    'Pengajuan '.$application->application_number.' memiliki temuan pada '.$department->label().': '.$findingDescription,
-                    'heroicon-o-exclamation-triangle',
-                    'danger',
-                    '/transportir/kim-applications/'.$application->getRouteKey(),
-                );
+                    new FindingCreated(
+                        $application->application_number,
+                        $department->label(),
+                        $findingDescription,
+                    ),
+                ));
             }
 
             return $inspectionResult;

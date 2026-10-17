@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
+use App\Notifications\InspectionScheduled;
 use App\Services\Approval\ApprovalService;
 use App\Services\Kim\KimIssuanceService;
 use App\Support\AppNotifier;
@@ -134,14 +135,13 @@ class ViewKimApplication extends ViewRecord
                         'inspection_scheduled_by' => auth()->id(),
                     ]);
 
-                    AppNotifier::toTransporter(
+                    AppNotifier::notifyTransporter(
                         $this->record->transporter_id,
-                        'Jadwal Pemeriksaan Ditetapkan',
-                        'Pengajuan '.$this->record->application_number.' dijadwalkan pada '
-                            .Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i').'.',
-                        'heroicon-o-calendar-days',
-                        'info',
-                        '/transportir/kim-applications/'.$this->record->getRouteKey(),
+                        new InspectionScheduled(
+                            $this->record->application_number,
+                            $this->record->vehicle->registration_number,
+                            Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i'),
+                        ),
                     );
 
                     Notification::make()
