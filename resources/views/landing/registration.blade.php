@@ -11,7 +11,7 @@
     <header class="border-b border-lavender-100 bg-white/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <a href="{{ route('landing') }}" class="flex items-center gap-3">
-                <img src="{{ asset('logo.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
+                <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-10 w-auto">
                 <div class="flex flex-col leading-none">
                     <span class="text-base font-bold text-lavender-800">O-KIM</span>
                     <span class="text-[11px] text-slate-500">Fuel Terminal Tegal</span>

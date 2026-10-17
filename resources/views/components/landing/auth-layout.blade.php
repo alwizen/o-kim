@@ -28,7 +28,7 @@
             </div>
 
             <a href="{{ route('landing') }}" class="relative flex items-center gap-3">
-                <img src="{{ asset('logo.png') }}" alt="Logo O-KIM" class="h-11 w-auto">
+                <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-11 w-auto">
             </a>
 
             <div class="relative">
