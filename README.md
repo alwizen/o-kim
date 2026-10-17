@@ -210,6 +210,19 @@ Setiap transisi divalidasi oleh state machine (`ApplicationStatus`). Transisi be
 | Ikon | Blade Heroicons |
 | Testing | PHPUnit |
 
+### Palet Halaman Publik
+Landing page, login, daftar, dan form pendaftaran memakai palet **lavender + mint** (tema terang
+pastel). Token warna didefinisikan di `resources/css/app.css`:
+
+| Token | Warna | Pemakaian |
+|---|---|---|
+| `lavender-50 … 950` | `#f7f6fe` → `#241c48` | warna utama: tombol, tautan, heading, teks |
+| `mint-50 … 700` | `#f2fbfd` → `#2a7e93` | aksen sekunder: ikon centang, highlight, glow |
+| `bg-pastel` | gradien `135deg` lavender → putih → mint | latar hero, CTA, kartu panduan, panel auth |
+| `bg-pastel-soft` | gradien `160deg` lavender sangat muda → putih | latar section CTA |
+
+> Panel admin dan transportir **tidak** memakai palet ini — keduanya memakai CSS Filament sendiri.
+
 ---
 
 ## 6. Persyaratan Sistem

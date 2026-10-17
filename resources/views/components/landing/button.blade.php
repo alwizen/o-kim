@@ -10,11 +10,11 @@
     ];
 
     $variants = [
-        'primary' => 'bg-navy-700 text-white shadow-lg shadow-navy-900/15 hover:bg-navy-800 hover:shadow-xl hover:shadow-navy-900/20 hover:-translate-y-0.5',
-        'secondary' => 'bg-white text-navy-800 border border-navy-200 hover:border-navy-400 hover:bg-navy-50 hover:-translate-y-0.5',
-        'ghost' => 'text-navy-700 hover:bg-navy-50',
-        'light' => 'bg-white text-navy-800 hover:bg-navy-50 shadow-lg shadow-navy-950/20 hover:-translate-y-0.5',
-        'outline-light' => 'border border-white/40 text-white hover:bg-white/10 hover:border-white/70',
+        'primary' => 'bg-lavender-600 text-white shadow-lg shadow-lavender-900/20 hover:bg-lavender-700 hover:shadow-xl hover:shadow-lavender-900/25 hover:-translate-y-0.5',
+        'secondary' => 'bg-white/80 text-lavender-800 border border-lavender-200 backdrop-blur hover:border-lavender-400 hover:bg-white hover:-translate-y-0.5',
+        'ghost' => 'text-lavender-700 hover:bg-lavender-50',
+        'light' => 'bg-white text-lavender-800 shadow-lg shadow-lavender-900/10 hover:bg-lavender-50 hover:-translate-y-0.5',
+        'outline-light' => 'border border-lavender-300 text-lavender-800 hover:bg-white/60 hover:border-lavender-400',
     ];
 @endphp
 
