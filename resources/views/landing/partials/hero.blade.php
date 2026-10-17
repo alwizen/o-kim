@@ -2,7 +2,11 @@
     <section class="relative flex min-h-screen items-center overflow-hidden bg-pastel pb-24 pt-28 text-lavender-900 sm:pt-32">
         <div class="pointer-events-none absolute inset-0" aria-hidden="true">
             <div class="absolute -top-32 -right-24 h-96 w-96 rounded-full bg-mint-400/40 blur-3xl"></div>
-            <div class="absolute bottom-0 -left-24 h-80 w-80 rounded-full bg-lavender-300/50 blur-3xl"></div>
+            {{-- <div class="absolute bottom-0 -left-24 h-80 w-80 rounded-full bg-lavender-300/50 blur-3xl"></div> --}}
+            <div
+    class="pointer-events-none absolute inset-0
+           bg-[radial-gradient(ellipse_at_bottom_left,rgba(207,199,245,0.45),transparent_55%)]"
+></div>
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(208,236,243,0.55),transparent_55%)]"></div>
             <svg class="absolute inset-0 h-full w-full opacity-[0.35]" aria-hidden="true">
                 <defs>

@@ -9,6 +9,7 @@ use App\Services\Finding\FindingService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -24,7 +25,8 @@ class ViewFinding extends ViewRecord
     {
         return $schema->components([
             Section::make('Detail Temuan')
-                ->columns(2)
+                ->columns(4)
+                ->columnSpanFull()
                 ->schema([
                     TextEntry::make('application.application_number')->label('No. Pengajuan'),
                     TextEntry::make('application.transporter.company_name')->label('Perusahaan'),
@@ -33,9 +35,18 @@ class ViewFinding extends ViewRecord
                     TextEntry::make('description')->label('Deskripsi Temuan')->columnSpanFull(),
                 ]),
             Section::make('Tindak Lanjut Transportir')
+            ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('actions')
-                        ->label('')
+                        ->columnSpanFull()
+                        ->contained(false)  
+                        ->hiddenLabel()
+                        ->table([
+                            TableColumn::make('Tindak Lanjut'),
+                            TableColumn::make('Oleh'),
+                            TableColumn::make('Waktu'),
+                            TableColumn::make('Lampiran'),
+                        ])
                         ->schema([
                             TextEntry::make('description')->label('Tindak Lanjut'),
                             TextEntry::make('submitter.name')->label('Oleh'),

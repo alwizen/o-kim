@@ -303,7 +303,91 @@ Daftarkan **Authorized redirect URI** di Google Cloud Console:
 Tahap pengembangan memakai driver `log` — email **tidak terkirim**, hanya dicatat di
 `storage/logs/laravel.log`. Ini memudahkan pengujian alur notifikasi tanpa risiko mengirim email nyata.
 
-**Mengaktifkan Google Workspace SMTP:**
+Ada tiga pilihan konfigurasi: **Mailtrap** (testing), **Amazon SES** (produksi), dan
+**Google Workspace** (alternatif produksi). Mengganti penyedia **tidak perlu mengubah kode** —
+cukup ubah variabel `MAIL_*` di `.env` lalu `php artisan config:clear`.
+
+#### Aturan `MAIL_SCHEME`
+
+Nilai ini diteruskan ke Symfony Mailer yang hanya mendukung **`smtp`** dan **`smtps`**:
+
+| Port | `MAIL_SCHEME` |
+|---|---|
+| `2525`, `587`, `25` | `null` (atau `smtp`) |
+| `465` | `smtps` |
+
+> **Jangan memakai `tls`.** Nilai itu tidak didukung dan menghasilkan
+> `UnsupportedSchemeException: The "tls" scheme is not supported`.
+
+#### Mailtrap — pengujian
+
+Menangkap email tanpa mengirim ke penerima asli. Panduan langkah demi langkah ada di
+[`tutor.md`](tutor.md).
+
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=<dari Mailtrap SMTP Settings>
+MAIL_PASSWORD=<dari Mailtrap SMTP Settings>
+MAIL_FROM_ADDRESS=noreply@okim.test
+MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
+```
+
+Gunakan menu **Email Testing** (sandbox), bukan *Email Sending*.
+
+#### Amazon SES — produksi (belum aktif)
+
+Pilihan utama untuk produksi karena biaya paling rendah dengan deliverability terbaik.
+
+| Pos | Nilai |
+|---|---|
+| Region | `ap-southeast-3` (Jakarta) |
+| Biaya kirim | ~$0,10 per 1.000 email (≈ Rp 1.600) |
+| Gratis | 3.000 pesan pertama/bulan (di luar EC2) · 62.000/bulan (dari EC2) |
+| Estimasi proyek ini | ±700 email/bulan ≈ Rp 1–2 ribu (≈ Rp 10 per pengajuan) |
+| Batas default | 14 email/detik, kuota harian sesuai hasil pengajuan |
+
+**Langkah aktivasi:**
+
+1. Verifikasi **domain** di SES → *Identity Management → Domains* (region Jakarta).
+2. Pasang record DNS yang diberikan:
+   - **DKIM** — 3 CNAME
+   - **SPF** — `v=spf1 include:amazonses.com ~all`
+   - **DMARC** — `v=DMARC1; p=none; rua=mailto:dmarc@domain-anda.com`
+3. Ajukan **production access** (keluar dari sandbox, ±24 jam). Selama sandbox, email hanya
+   bisa dikirim ke alamat yang sudah diverifikasi.
+4. Buat **SMTP credentials** di SES → *SMTP Settings*.
+5. Isi `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=email-smtp.ap-southeast-3.amazonaws.com
+MAIL_PORT=587
+MAIL_USERNAME=<smtp-username-dari-ses>
+MAIL_PASSWORD=<smtp-password-dari-ses>
+MAIL_FROM_ADDRESS=noreply@okim.id
+MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
+```
+
+6. Bersihkan cache dan uji:
+
+```bash
+php artisan config:clear
+php artisan okim:test-mail alamat-uji@domain-anda.com
+```
+
+**Monitoring:** pantau *Reputation metrics* di SES — bounce harus < 5% dan complaint < 0,1%.
+Bounce tinggi dapat menyebabkan pengiriman ditangguhkan. Aktifkan alarm CloudWatch.
+
+> Domain **wajib** diverifikasi. Alamat Gmail/umum tidak dapat dipakai sebagai `MAIL_FROM_ADDRESS` di SES.
+> Untuk koneksi API (bukan SMTP) jalankan `composer require aws/aws-sdk-php` lalu set `MAIL_MAILER=ses`.
+
+#### Google Workspace — alternatif produksi
+
+Cocok bila Anda **sudah berlangganan** Workspace untuk email kantor (tanpa biaya tambahan).
 
 1. Aktifkan **verifikasi 2 langkah** pada akun Google pengirim.
 2. Buat **App Password** di <https://myaccount.google.com/apppasswords>.
@@ -311,7 +395,7 @@ Tahap pengembangan memakai driver `log` — email **tidak terkirim**, hanya dica
 
 ```env
 MAIL_MAILER=smtp
-MAIL_SCHEME=tls
+MAIL_SCHEME=null
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=noreply@domain-anda.com
@@ -320,21 +404,12 @@ MAIL_FROM_ADDRESS=noreply@domain-anda.com
 MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
 ```
 
-4. Bersihkan cache konfigurasi dan uji:
+> **Batas Google Workspace:** ±2.000 penerima/hari per mailbox. Satu pengajuan KIM dapat
+> memicu belasan email karena setiap petugas berpermission menerima satu email.
 
-```bash
-php artisan config:clear
-php artisan okim:test-mail alamat-uji@contoh.com
-```
+#### Queue worker
 
-> **Batas Google Workspace:** ±2.000 penerima/hari. Satu pengajuan KIM dapat memicu
-> belasan email (setiap petugas berpermission menerima satu email). Bila volume bertambah,
-> pertimbangkan **Amazon SES** (~Rp 1.600 per 1.000 email).
-
-**DNS yang wajib disiapkan** agar email tidak masuk spam: **SPF**, **DKIM**, dan **DMARC**
-untuk domain pengirim.
-
-**Queue worker** — email dikirim melalui antrean, jadi worker harus berjalan:
+Email dikirim melalui antrean, jadi worker harus berjalan:
 
 ```bash
 php artisan queue:work --sleep=3 --tries=3 --backoff=60
@@ -343,8 +418,7 @@ php artisan queue:work --sleep=3 --tries=3 --backoff=60
 Contoh konfigurasi Supervisor tersedia di `deploy/supervisor/okim-worker.conf`.
 Pantau kegagalan pengiriman dengan `php artisan queue:failed`.
 
-> Mengganti penyedia email **tidak perlu mengubah kode** — cukup ubah variabel `MAIL_*` di `.env`.
-> Untuk penyedia berbasis API (SES/Postmark/Resend), jalankan `composer require` SDK-nya lebih dulu.
+> Ikon lonceng (notifikasi database) tetap muncul walau worker mati — hanya **email** yang tertahan.
 
 ### Storage
 Dokumen sensitif disimpan di **disk private** (`storage/app/private`).

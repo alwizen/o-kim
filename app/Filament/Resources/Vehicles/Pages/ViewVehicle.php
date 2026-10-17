@@ -7,6 +7,7 @@ use App\Enums\DocumentVerificationStatus;
 use App\Enums\KimCardStatus;
 use App\Filament\Resources\Vehicles\VehicleResource;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
@@ -39,7 +40,15 @@ class ViewVehicle extends ViewRecord
                 ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('documents')
-                        ->label('')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->table([
+                            TableColumn::make('Jenis'),
+                            TableColumn::make('Nomor'),
+                            TableColumn::make('Kedaluwarsa'),
+                            TableColumn::make('Verifikasi'),
+                            TableColumn::make('Status Versi'),
+                        ])
                         ->schema([
                             TextEntry::make('documentType.name')->label('Jenis'),
                             TextEntry::make('document_number')->label('Nomor')->placeholder('—'),
@@ -63,7 +72,16 @@ class ViewVehicle extends ViewRecord
                 ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('kimApplications')
-                        ->label('')
+                        ->contained(false)
+                        ->hiddenLabel()
+                        ->table([
+                            TableColumn::make('No. Pengajuan'),
+                            TableColumn::make('Jenis'),
+                            TableColumn::make('Status'),
+                            TableColumn::make('Dibuat'),
+                            TableColumn::make('No. KIM'),
+                            TableColumn::make('Status KIM'),
+                        ])
                         ->schema([
                             TextEntry::make('application_number')->label('No. Pengajuan'),
                             TextEntry::make('application_type')->label('Jenis')->formatStateUsing(fn ($state) => $state->label()),

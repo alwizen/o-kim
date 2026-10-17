@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -24,7 +25,8 @@ class ViewFinding extends ViewRecord
     {
         return $schema->components([
             Section::make('Detail Temuan')
-                ->columns(2)
+                ->columns(4)
+                ->columnSpanFull()
                 ->schema([
                     TextEntry::make('application.application_number')->label('No. Pengajuan'),
                     TextEntry::make('department')->label('Fungsi')->badge()->formatStateUsing(fn ($state) => $state->label()),
@@ -35,7 +37,14 @@ class ViewFinding extends ViewRecord
             Section::make('Riwayat Tindak Lanjut')
                 ->schema([
                     RepeatableEntry::make('actions')
-                        ->label('')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->table([
+                            TableColumn::make('Tindak Lanjut'),
+                            TableColumn::make('Oleh'),
+                            TableColumn::make('Waktu'),
+                            TableColumn::make('Lampiran'),
+                        ])
                         ->schema([
                             TextEntry::make('description')->label('Tindak Lanjut'),
                             TextEntry::make('submitter.name')->label('Oleh'),
@@ -49,7 +58,14 @@ class ViewFinding extends ViewRecord
             Section::make('Riwayat Verifikasi')
                 ->schema([
                     RepeatableEntry::make('verifications')
-                        ->label('')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->table([
+                            TableColumn::make('Keputusan'),
+                            TableColumn::make('Diverifikasi Oleh'),
+                            TableColumn::make('Waktu'),
+                            TableColumn::make('Catatan'),
+                        ])
                         ->schema([
                             TextEntry::make('decision')
                                 ->label('Keputusan')
