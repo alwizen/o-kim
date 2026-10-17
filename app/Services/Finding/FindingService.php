@@ -9,6 +9,7 @@ use App\Models\FindingAction;
 use App\Models\FindingActionAttachment;
 use App\Models\FindingVerification;
 use App\Models\User;
+use App\Notifications\FindingActionSubmitted;
 use App\Support\AppNotifier;
 use App\Support\SafeFilename;
 use Illuminate\Http\UploadedFile;
@@ -64,14 +65,12 @@ class FindingService
 
     private function notifyVerifierOfAction(Finding $finding): void
     {
-        AppNotifier::toStaffWithPermission(
+        AppNotifier::notifyStaffWithPermission(
             'inspect_'.$finding->department->value,
-            'Tindak Lanjut Temuan Dikirim',
-            'Transportir mengirim perbaikan untuk temuan '.$finding->department->label()
-                .' pada pengajuan '.$finding->application?->application_number.'.',
-            'heroicon-o-wrench-screwdriver',
-            'warning',
-            '/admin/findings/'.$finding->getRouteKey(),
+            new FindingActionSubmitted(
+                $finding->application?->application_number ?? '-',
+                $finding->department->label(),
+            ),
         );
     }
 

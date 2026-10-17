@@ -9,6 +9,7 @@ use App\Enums\FindingStatus;
 use App\Enums\KimCardStatus;
 use App\Models\KimApplication;
 use App\Models\KimCard;
+use App\Notifications\KimCardIssued;
 use App\Services\Approval\ApprovalService;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
@@ -51,15 +52,14 @@ class KimIssuanceService
                 'expires_at' => $expiresAt,
             ]);
 
-            AppNotifier::toTransporter(
+            DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                 $application->transporter_id,
-                'KIM Telah Diterbitkan',
-                'KIM '.$card->kim_number.' untuk NOPOL '.$application->vehicle->registration_number
-                    .' berlaku hingga '.$expiresAt->translatedFormat('d M Y').'.',
-                'heroicon-o-identification',
-                'success',
-                '/transportir/kim-applications/'.$application->getRouteKey(),
-            );
+                new KimCardIssued(
+                    $card->kim_number,
+                    $application->vehicle->registration_number,
+                    $expiresAt->translatedFormat('d M Y'),
+                ),
+            ));
 
             return $card;
         });
