@@ -3,9 +3,9 @@
             class="group fixed inset-x-0 top-0 z-40 border-b border-transparent bg-transparent transition-all duration-300 data-[scrolled]:border-navy-100 data-[scrolled]:bg-white/90 data-[scrolled]:shadow-sm data-[scrolled]:backdrop-blur">
         <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8" aria-label="Navigasi utama">
             <a href="{{ route('landing') }}" class="flex items-center gap-3">
-                {{-- <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
-                    <img src="{{ asset('logo.png') }}" alt="Logo O-KIM" class="h-full w-full object-contain" width="40" height="40">
-                </span> --}}
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
+                    <img src="{{ asset('img/fav.svg') }}" alt="Logo O-KIM" class="h-full w-full object-contain" width="40" height="40">
+                </span>
                 <span class="flex flex-col leading-none">
                     <span class="text-base font-bold tracking-tight text-white transition-colors group-data-[scrolled]:text-navy-800">O-KIM</span>
                     <span class="text-[11px] font-medium text-white/70 transition-colors group-data-[scrolled]:text-slate-500">Fuel Terminal Tegal</span>

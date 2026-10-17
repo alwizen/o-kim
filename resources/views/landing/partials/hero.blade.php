@@ -62,7 +62,7 @@
                     <div class="relative overflow-hidden rounded-2xl border border-white/15 bg-white/95 p-6 shadow-2xl shadow-navy-950/40 backdrop-blur">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <img src="{{ asset('logo.png') }}" alt="" class="h-8 w-auto">
+                                <img src="{{ asset('img/logo.svg') }}" alt="" class="h-8 w-auto">
                             </div>
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                                 <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Aktif
@@ -83,9 +83,10 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-center gap-4 rounded-xl bg-green-100 p-4">
-                            <x-ionicon-qr-code-sharp class="text-gray-800" />
-                            <p class="text-xs leading-relaxed text-slate-500">Pindai QR pada kartu untuk memverifikasi keaslian dan masa berlaku KIM.</p>
+                        <div class="mt-6 flex items-center gap-4 rounded-xl bg-slate-800 p-4">
+                            {{-- <x-ionicon-qr-code-sharp class="text-gray-800" /> --}}
+                            <img src="{{ asset('img/animate.svg') }}" alt="QR Code KIM" >
+                            {{-- <p class="text-xs leading-relaxed text-slate-500">Pindai QR pada kartu untuk memverifikasi keaslian dan masa berlaku KIM.</p> --}}
                         </div>
                     </div>
 

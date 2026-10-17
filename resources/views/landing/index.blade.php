@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="O-KIM — sistem digital pendaftaran transportir, pemeriksaan kendaraan tangki, dan penerbitan Kartu Izin Masuk Fuel Terminal Tegal.">
     <title>O-KIM — Kartu Izin Masuk Fuel Terminal Tegal</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('img/fav.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-white font-sans text-slate-800 antialiased selection:bg-navy-600 selection:text-white">

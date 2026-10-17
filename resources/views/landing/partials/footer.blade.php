@@ -4,7 +4,7 @@
             <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="sm:col-span-2 lg:col-span-2">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('logo.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
+                        <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-10 w-auto">
                         <div class="flex flex-col leading-none">
                             <span class="text-base font-bold text-navy-800">O-KIM</span>
                             <span class="text-xs text-slate-500">Online Kartu Izin Masuk</span>
