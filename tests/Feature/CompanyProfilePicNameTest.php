@@ -7,6 +7,7 @@ use App\Filament\Transportir\Pages\CompanyProfile;
 use App\Models\Transporter;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -50,14 +51,10 @@ class CompanyProfilePicNameTest extends TestCase
 
         $this->actingAs($user);
 
+        Filament::setCurrentPanel('transportir');
+
         Livewire::test(CompanyProfile::class)
-            ->fillForm([
-                'pic_name' => 'Budi Santoso',
-                'company_name' => $transporter->company_name,
-                'company_address' => $transporter->company_address,
-                'phone' => $transporter->phone,
-                'legal_identifier' => $transporter->legal_identifier,
-            ])
+            ->set('data.pic_name', 'Budi Santoso')
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -70,13 +67,10 @@ class CompanyProfilePicNameTest extends TestCase
 
         $this->actingAs($user);
 
+        Filament::setCurrentPanel('transportir');
+
         Livewire::test(CompanyProfile::class)
-            ->fillForm([
-                'pic_name' => '',
-                'company_name' => $transporter->company_name,
-                'company_address' => $transporter->company_address,
-                'phone' => $transporter->phone,
-            ])
+            ->set('data.pic_name', '')
             ->call('save')
             ->assertHasFormErrors(['pic_name']);
     }
@@ -87,14 +81,11 @@ class CompanyProfilePicNameTest extends TestCase
 
         $this->actingAs($user);
 
+        Filament::setCurrentPanel('transportir');
+
         Livewire::test(CompanyProfile::class)
-            ->fillForm([
-                'pic_name' => 'Nama Baru',
-                'company_name' => 'PT Baru Jaya',
-                'company_address' => $transporter->company_address,
-                'phone' => $transporter->phone,
-                'legal_identifier' => $transporter->legal_identifier,
-            ])
+            ->set('data.pic_name', 'Nama Baru')
+            ->set('data.company_name', 'PT Baru Jaya')
             ->call('save')
             ->assertHasNoFormErrors();
 

@@ -140,6 +140,51 @@ class SettingsTest extends TestCase
         );
     }
 
+    public function test_roman_period_format_uses_roman_month_and_year(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $expected = 'KIM/FT-TGL/'
+            .$settings->romanMonth((int) now()->month).'/'
+            .now()->format('Y').'/0001';
+
+        $this->assertSame(
+            $expected,
+            $settings->buildNumberPreview('KIM/FT-TGL', SettingsService::PERIOD_ROMAN, 4)
+        );
+    }
+
+    public function test_roman_month_conversion_for_all_months(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $expected = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
+            7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
+        ];
+
+        foreach ($expected as $month => $numeral) {
+            $this->assertSame($numeral, $settings->romanMonth($month));
+        }
+    }
+
+    public function test_period_format_none_returns_null(): void
+    {
+        $this->assertNull(app(SettingsService::class)->formatPeriod('none'));
+    }
+
+    public function test_admin_can_save_roman_period_format(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm(['kim_number_period_format' => SettingsService::PERIOD_ROMAN])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(SettingsService::PERIOD_ROMAN, app(SettingsService::class)->kimNumberPeriodFormat());
+    }
+
     public function test_admin_can_save_application_number_settings(): void
     {
         $this->actingAs($this->admin());

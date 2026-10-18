@@ -6,7 +6,9 @@ use App\Enums\AccountStatus;
 use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
 use App\Enums\InspectionResultValue;
+use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Filament\Resources\KimApplications\Pages\ListKimApplications;
+use App\Filament\Resources\KimApplications\Pages\ViewKimApplication;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Models\Transporter;
@@ -18,7 +20,9 @@ use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -68,26 +72,22 @@ class InspectionSchedulingTest extends TestCase
         $this->assertFalse($this->application->fresh()->isInspectionScheduled());
     }
 
-    public function test_inspection_result_allowed_without_scheduling(): void
+    public function test_inspection_result_rejected_before_scheduling(): void
     {
-        // Jadwal bersifat informasi; pemeriksaan tetap dapat dilakukan tanpa jadwal.
+        $this->expectException(ValidationException::class);
+
         app(InspectionService::class)->recordResult(
             $this->application->fresh(),
             $this->hsseItem(),
             InspectionResultValue::Compliant,
             $this->hsse,
         );
-
-        $this->assertDatabaseHas('inspection_results', [
-            'kim_application_id' => $this->application->id,
-            'result' => 'compliant',
-        ]);
     }
 
     public function test_inspection_result_allowed_after_scheduling(): void
     {
         $this->application->update([
-            'inspection_scheduled_at' => now()->addDay(),
+            'inspection_scheduled_at' => now()->subDay(),
             'inspection_scheduled_by' => $this->hsse->id,
         ]);
 
@@ -104,17 +104,16 @@ class InspectionSchedulingTest extends TestCase
         ]);
     }
 
-    public function test_inspect_page_accessible_without_scheduling(): void
+    public function test_inspect_page_forbidden_before_scheduling(): void
     {
-        // Halaman pemeriksaan dapat dibuka walau jadwal belum ditetapkan.
         $this->actingAs($this->hsse)
             ->get('/admin/kim-applications/'.$this->application->id.'/inspect')
-            ->assertSuccessful();
+            ->assertForbidden();
     }
 
     public function test_inspect_page_accessible_after_scheduling(): void
     {
-        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+        $this->application->update(['inspection_scheduled_at' => now()->subDay()]);
 
         $this->actingAs($this->hsse)
             ->get('/admin/kim-applications/'.$this->application->id.'/inspect')
@@ -129,10 +128,9 @@ class InspectionSchedulingTest extends TestCase
         $this->actingAs($admin);
 
         Livewire::test(ListKimApplications::class)
-            ->callTableAction('schedule', $this->application, data: [
-                'inspection_scheduled_at' => now()->addDays(3)->format('Y-m-d H:i:s'),
-            ])
-            ->assertHasNoTableActionErrors();
+            ->mountTableAction('schedule', $this->application)
+            ->set('mountedActions.0.data.inspection_scheduled_at', now()->addDays(3)->format('Y-m-d H:i:s'))
+            ->callMountedTableAction();
 
         $application = $this->application->fresh();
 
@@ -164,5 +162,197 @@ class InspectionSchedulingTest extends TestCase
 
         Livewire::test(ListKimApplications::class)
             ->assertTableActionHidden('schedule', $this->application->fresh());
+    }
+
+    public function test_schedule_action_label_is_set_tanggal_when_not_scheduled(): void
+    {
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHasLabel('schedule', 'Tetapkan Tanggal Pemeriksaan', $this->application->fresh());
+    }
+
+    public function test_schedule_action_label_becomes_reschedule_when_scheduled(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHasLabel('schedule', 'Reschedule', $this->application->fresh());
+    }
+
+    public function test_reschedule_updates_existing_schedule(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        $newDate = now()->addDays(7)->format('Y-m-d H:i:s');
+
+        Livewire::test(ListKimApplications::class)
+            ->mountTableAction('schedule', $this->application->fresh())
+            ->set('mountedActions.0.data.inspection_scheduled_at', $newDate)
+            ->callMountedTableAction();
+
+        $this->assertSame(
+            Carbon::parse($newDate)->format('Y-m-d H:i'),
+            $this->application->fresh()->inspection_scheduled_at->format('Y-m-d H:i')
+        );
+    }
+
+    public function test_inspect_action_visible_in_table_for_inspection_officer(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->subDay()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionVisible('inspect', $this->application->fresh());
+    }
+
+    public function test_inspect_action_hidden_in_table_for_non_inspector(): void
+    {
+        // FTM punya akses melihat pengajuan, tetapi tidak berwenang mengisi checklist.
+        $ftm = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $ftm->assignRole('ftm');
+
+        $this->actingAs($ftm);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHidden('inspect', $this->application->fresh());
+    }
+
+    public function test_inspect_action_hidden_in_table_when_schedule_not_set(): void
+    {
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHidden('inspect', $this->application->fresh());
+    }
+
+    public function test_inspect_action_hidden_on_view_page_when_schedule_not_set(): void
+    {
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])->assertActionHidden('inspect');
+    }
+
+    public function test_inspect_action_visible_on_view_page_when_schedule_set(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->subDay()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])->assertActionVisible('inspect');
+    }
+
+    public function test_view_page_schedule_action_label_is_set_tanggal_when_not_scheduled(): void
+    {
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])->assertActionHasLabel('schedule', 'Tetapkan Tanggal Pemeriksaan');
+    }
+
+    public function test_view_page_schedule_action_label_becomes_reschedule_when_scheduled(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])->assertActionHasLabel('schedule', 'Reschedule Pemeriksaan');
+    }
+
+    public function test_inspect_action_hidden_in_table_when_schedule_in_future(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHidden('inspect', $this->application->fresh());
+    }
+
+    public function test_inspect_action_hidden_on_view_page_when_schedule_in_future(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])->assertActionHidden('inspect');
+    }
+
+    public function test_inspect_page_forbidden_when_schedule_in_future(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $this->actingAs($this->hsse)
+            ->get('/admin/kim-applications/'.$this->application->id.'/inspect')
+            ->assertForbidden();
+    }
+
+    public function test_inspection_result_rejected_when_schedule_in_future(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->addDay()]);
+
+        $this->expectException(ValidationException::class);
+
+        app(InspectionService::class)->recordResult(
+            $this->application->fresh(),
+            $this->hsseItem(),
+            InspectionResultValue::Compliant,
+            $this->hsse,
+        );
+    }
+
+    public function test_inspect_action_visible_when_schedule_has_arrived(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->subMinute()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionVisible('inspect', $this->application->fresh());
+    }
+
+    public function test_inspect_action_url_points_to_inspect_page(): void
+    {
+        $this->application->update(['inspection_scheduled_at' => now()->subDay()]);
+
+        $this->actingAs($this->hsse);
+
+        Livewire::test(ListKimApplications::class)
+            ->assertTableActionHasUrl(
+                'inspect',
+                KimApplicationResource::getUrl('inspect', [
+                    'record' => $this->application,
+                ]),
+                $this->application->fresh()
+            );
     }
 }

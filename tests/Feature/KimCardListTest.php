@@ -70,7 +70,7 @@ class KimCardListTest extends TestCase
         app(KimApplicationService::class)->submit($this->application, $this->owner);
 
         $this->application->update([
-            'inspection_scheduled_at' => now()->addDay(),
+            'inspection_scheduled_at' => now()->subDay(),
             'inspection_scheduled_by' => $this->officers['ftm']->id,
         ]);
     }

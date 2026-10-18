@@ -75,7 +75,7 @@ class InspectionWorkflowTest extends TestCase
     private function scheduleInspection(): void
     {
         $this->application->fresh()->update([
-            'inspection_scheduled_at' => now()->addDay(),
+            'inspection_scheduled_at' => now()->subDay(),
             'inspection_scheduled_by' => $this->hsseOfficer->id,
         ]);
     }

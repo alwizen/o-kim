@@ -21,6 +21,14 @@ class FindingsTable
                     ->label('Fungsi')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state->label()),
+                TextColumn::make('inspectionResult.item.label')
+                    ->label('Jenis Temuan (Checklist)')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn ($state, $record) => $record->inspectionResult?->item
+                        ? $record->inspectionResult->item->item_code.' — '.$record->inspectionResult->item->label
+                        : null)
+                    ->wrap()
+                    ->toggleable(),
                 TextColumn::make('description')
                     ->label('Temuan')
                     ->limit(60)

@@ -93,6 +93,7 @@ class ManageSettings extends Page implements HasForms
                             ->label('Format Periode')
                             ->options([
                                 'Y/m' => 'Tahun/Bulan (2026/10)',
+                                SettingsService::PERIOD_ROMAN => 'Bulan Romawi/Tahun (X/2026)',
                                 'Y' => 'Tahun (2026)',
                                 'Ym' => 'TahunBulan (202610)',
                                 'none' => 'Tanpa periode',
@@ -136,8 +137,7 @@ class ManageSettings extends Page implements HasForms
                             ->label('Prefix')
                             ->required()
                             ->live(onBlur: true)
-                            ->maxLength(50)
-                            ->helperText('Contoh: APP'),
+                            ->maxLength(50),
 
                         Select::make('application_number_period_format')
                             ->label('Format Periode')

@@ -20,6 +20,7 @@ use App\Services\Inspection\InspectionService;
 use App\Services\Kim\KimIssuanceService;
 use App\Services\Kim\KimPdfService;
 use App\Services\Kim\KimValidityService;
+use App\Services\Setting\SettingsService;
 use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -69,7 +70,7 @@ class ApprovalAndIssuanceTest extends TestCase
 
         // Prasyarat pemeriksaan: jadwal pelaksanaan wajib ditetapkan.
         $this->application->update([
-            'inspection_scheduled_at' => now()->addDay(),
+            'inspection_scheduled_at' => now()->subDay(),
             'inspection_scheduled_by' => $this->officers['ftm']->id,
         ]);
     }
@@ -219,6 +220,27 @@ class ApprovalAndIssuanceTest extends TestCase
         $this->assertStringStartsWith('KIM/FT-TGL/', $card->kim_number);
         $this->assertEquals(48, strlen($card->qr_token));
         $this->assertSame(ApplicationStatus::Issued, $this->application->fresh()->status);
+    }
+
+    public function test_kim_number_uses_roman_month_period_when_configured(): void
+    {
+        app(SettingsService::class)->setMany([
+            'kim.number_prefix' => 'KIM/FT-TGL',
+            'kim.number_period_format' => SettingsService::PERIOD_ROMAN,
+            'kim.number_sequence_digits' => '4',
+        ], SettingsService::GROUP_KIM);
+
+        $this->completeInspections();
+        $this->approveAllFunctional();
+        app(ApprovalService::class)->decide($this->application->fresh(), Department::Ftm, ApprovalDecision::Approved, $this->officers['ftm']);
+
+        $card = app(KimIssuanceService::class)->issue($this->application->fresh());
+
+        $settings = app(SettingsService::class);
+        $expectedPrefix = 'KIM/FT-TGL/'.$settings->romanMonth((int) now()->month).'/'.now()->format('Y').'/';
+
+        $this->assertStringStartsWith($expectedPrefix, $card->kim_number);
+        $this->assertStringEndsWith('/0001', $card->kim_number);
     }
 
     public function test_kim_cannot_be_issued_twice(): void

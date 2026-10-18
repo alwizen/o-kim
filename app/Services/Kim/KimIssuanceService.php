@@ -125,8 +125,10 @@ class KimIssuanceService
 
         $periodFormat = $settings->kimNumberPeriodFormat();
 
-        if ($periodFormat && $periodFormat !== 'none') {
-            $segments[] = now()->format($periodFormat);
+        $period = $settings->formatPeriod($periodFormat);
+
+        if ($period !== null) {
+            $segments[] = $period;
         }
 
         $prefix = implode('/', $segments).'/';

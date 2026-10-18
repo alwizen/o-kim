@@ -134,6 +134,7 @@ class VehicleProgressStepperTest extends TestCase
     public function test_checklist_step_is_done_when_all_departments_complete(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
+        $application->update(['inspection_scheduled_at' => now()->subDay()]);
 
         $inspection = app(InspectionService::class);
         $officers = [];

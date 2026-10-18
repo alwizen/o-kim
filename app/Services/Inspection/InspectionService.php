@@ -53,6 +53,12 @@ class InspectionService
             ]);
         }
 
+        if (! $application->isInspectionDue()) {
+            throw ValidationException::withMessages([
+                'schedule' => 'Pemeriksaan belum dapat dilakukan: jadwal belum ditetapkan atau tanggalnya belum tiba.',
+            ]);
+        }
+
         if ($result === InspectionResultValue::Finding && blank($findingDescription)) {
             throw ValidationException::withMessages([
                 'finding' => 'Deskripsi temuan wajib diisi jika hasil pemeriksaan adalah temuan.',
