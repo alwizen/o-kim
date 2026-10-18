@@ -9,7 +9,6 @@ use App\Notifications\InspectionScheduled;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -99,7 +98,7 @@ class KimApplicationsTable
                         ApplicationStatus::Inspection,
                     ], true) && auth()->user()->can('view_applications'))
                     ->schema([
-                        DatePicker::make('inspection_scheduled_at')
+                        DateTimePicker::make('inspection_scheduled_at')
                             ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
                             ->required()
                             ->seconds(false)
