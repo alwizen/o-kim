@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FindingAttachmentController;
+use App\Http\Controllers\InspectionResultAttachmentController;
 use App\Http\Controllers\KimDownloadController;
 use App\Http\Controllers\KimValidationController;
 use App\Http\Controllers\TransporterRegistrationController;
@@ -55,6 +56,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/tindak-lanjut/{attachment}/unduh', [FindingAttachmentController::class, 'download'])
         ->name('finding-attachments.download');
+
+    Route::get('/bukti-pemeriksaan/{attachment}/pratinjau', [InspectionResultAttachmentController::class, 'preview'])
+        ->name('inspection-attachments.preview');
+
+    Route::get('/bukti-pemeriksaan/{attachment}/unduh', [InspectionResultAttachmentController::class, 'download'])
+        ->name('inspection-attachments.download');
 
     Route::get('/kim/{card}/unduh', KimDownloadController::class)
         ->name('kim.download');

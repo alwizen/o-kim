@@ -9,6 +9,7 @@ use App\Enums\FindingStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Notifications\InspectionScheduled;
 use App\Services\Approval\ApprovalService;
+use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Kim\KimIssuanceService;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
@@ -19,6 +20,7 @@ use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
@@ -35,6 +37,7 @@ class ViewKimApplication extends ViewRecord
         return parent::resolveRecord($key)->loadMissing([
             'findings.inspectionResult.item',
             'findings.creator',
+            'inspectionResults.attachments',
         ]);
     }
 
@@ -112,16 +115,50 @@ class ViewKimApplication extends ViewRecord
                         ->table([
                             TableColumn::make('Pemerikasaan'),
                             TableColumn::make('Hasil'),
+                            TableColumn::make('Bukti Pemeriksaan'),
                             TableColumn::make('Diperiksa Oleh'),
                             TableColumn::make('Diperiksa Pada'),
                         ])
                         ->schema([
                             TextEntry::make('item.label')->label('Butir'),
                             TextEntry::make('result')->badge()->formatStateUsing(fn ($state) => $state->label()),
+                            RepeatableEntry::make('attachments')
+                                ->hiddenLabel()
+                                ->contained(false)
+                                ->placeholder('—')
+                                ->schema([
+                                    TextEntry::make('original_filename')
+                                        ->hiddenLabel()
+                                        ->formatStateUsing(fn ($state, $record) => $state.' ('.number_format($record->file_size / 1024, 0).' KB)'),
+                                    Actions::make([
+                                        Action::make('preview')
+                                            ->label('Pratinjau')
+                                            ->icon('heroicon-o-eye')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('inspection-attachments.preview', $record))
+                                            ->openUrlInNewTab(),
+                                        Action::make('download')
+                                            ->label('Unduh')
+                                            ->icon('heroicon-o-arrow-down-tray')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('inspection-attachments.download', $record)),
+                                        Action::make('delete_attachment')
+                                            ->label('Hapus')
+                                            ->icon('heroicon-o-trash')
+                                            ->color('danger')
+                                            ->requiresConfirmation()
+                                            ->modalHeading('Hapus bukti pemeriksaan?')
+                                            ->visible(fn ($record): bool => $record->result?->department() !== null
+                                                && auth()->user()->can($record->result->department()->inspectPermission()))
+                                            ->action(fn ($record) => app(InspectionAttachmentService::class)
+                                                ->delete($record, auth()->user())),
+                                    ]),
+                                ])
+                                ->columns(2),
                             TextEntry::make('inspector.name')->label('Pemeriksa'),
                             TextEntry::make('inspected_at')->label('Waktu')->dateTime('d M Y H:i'),
                         ])
-                        ->columns(4),
+                        ->columns(5),
                 ])
                 ->visible(fn ($record) => $record->inspectionResults()->exists()),
 
