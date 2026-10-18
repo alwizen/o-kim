@@ -35,27 +35,45 @@ class ViewFinding extends ViewRecord
                     TextEntry::make('description')->label('Deskripsi Temuan')->columnSpanFull(),
                 ]),
             Section::make('Tindak Lanjut Transportir')
-            ->columnSpanFull()
+                ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('actions')
                         ->columnSpanFull()
-                        ->contained(false)  
+                        ->contained(false)
                         ->hiddenLabel()
                         ->table([
                             TableColumn::make('Tindak Lanjut'),
                             TableColumn::make('Oleh'),
                             TableColumn::make('Waktu'),
-                            TableColumn::make('Lampiran'),
+                            TableColumn::make('Berkas Bukti'),
                         ])
                         ->schema([
                             TextEntry::make('description')->label('Tindak Lanjut'),
                             TextEntry::make('submitter.name')->label('Oleh'),
                             TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
-                            TextEntry::make('attachments_count')
-                                ->label('Lampiran')
-                                ->state(fn ($record) => $record->attachments()->count().' berkas'),
+                            RepeatableEntry::make('attachments')
+                                ->hiddenLabel()
+                                ->contained(false)
+                                ->placeholder('Tidak ada berkas')
+                                ->schema([
+                                    TextEntry::make('original_filename')
+                                        ->label('Berkas')
+                                        ->formatStateUsing(fn ($state, $record) => $state.' ('.number_format($record->file_size / 1024, 0).' KB)'),
+                                    Action::make('preview')
+                                        ->label('Pratinjau')
+                                        ->icon('heroicon-o-eye')
+                                        ->color('gray')
+                                        ->url(fn ($record): string => route('finding-attachments.preview', $record))
+                                        ->openUrlInNewTab(),
+                                    Action::make('download')
+                                        ->label('Unduh')
+                                        ->icon('heroicon-o-arrow-down-tray')
+                                        ->color('gray')
+                                        ->url(fn ($record): string => route('finding-attachments.download', $record)),
+                                ])
+                                ->columns(3),
                         ])
-                        ->columns(2),
+                        ->columns(4),
                 ])
                 ->visible(fn ($record) => $record->actions()->exists()),
         ]);

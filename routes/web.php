@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\FindingAttachmentController;
 use App\Http\Controllers\KimDownloadController;
 use App\Http\Controllers\KimValidationController;
 use App\Http\Controllers\TransporterRegistrationController;
@@ -48,6 +49,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dokumen/{document}/pratinjau', VehicleDocumentPreviewController::class)
         ->name('documents.preview');
+
+    Route::get('/tindak-lanjut/{attachment}/pratinjau', [FindingAttachmentController::class, 'preview'])
+        ->name('finding-attachments.preview');
+
+    Route::get('/tindak-lanjut/{attachment}/unduh', [FindingAttachmentController::class, 'download'])
+        ->name('finding-attachments.download');
 
     Route::get('/kim/{card}/unduh', KimDownloadController::class)
         ->name('kim.download');

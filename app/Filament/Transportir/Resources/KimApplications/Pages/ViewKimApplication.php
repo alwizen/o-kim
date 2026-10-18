@@ -3,19 +3,30 @@
 namespace App\Filament\Transportir\Resources\KimApplications\Pages;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\FindingStatus;
 use App\Filament\Transportir\Resources\KimApplications\KimApplicationResource;
 use App\Services\Application\KimApplicationService;
 use Filament\Actions\Action;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class ViewKimApplication extends ViewRecord
 {
     protected static string $resource = KimApplicationResource::class;
+
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->loadMissing([
+            'findings.inspectionResult.item',
+        ]);
+    }
 
     public function infolist(Schema $schema): Schema
     {
@@ -38,10 +49,44 @@ class ViewKimApplication extends ViewRecord
                     TextEntry::make('rejection_reason')->label('Alasan Penolakan')->placeholder('—')->columnSpanFull(),
                 ]),
             Section::make('Temuan')
+                ->columnSpanFull()
                 ->schema([
-                    TextEntry::make('findings_count')
-                        ->label('Jumlah Temuan')
-                        ->state(fn ($record) => $record->findings()->count()),
+                    RepeatableEntry::make('findings')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->placeholder('Tidak ada temuan')
+                        ->table([
+                            TableColumn::make('Fungsi'),
+                            TableColumn::make('Jenis Temuan (Checklist)'),
+                            TableColumn::make('Deskripsi'),
+                            TableColumn::make('Status'),
+                            TableColumn::make('Waktu'),
+                        ])
+                        ->schema([
+                            TextEntry::make('department')
+                                ->label('Fungsi')
+                                ->badge()
+                                ->formatStateUsing(fn ($state) => $state->label()),
+                            TextEntry::make('inspectionResult.item.label')
+                                ->label('Jenis Temuan')
+                                ->placeholder('—')
+                                ->formatStateUsing(fn ($state, $record) => $record->inspectionResult?->item
+                                    ? $record->inspectionResult->item->item_code.' — '.$record->inspectionResult->item->label
+                                    : null),
+                            TextEntry::make('description')->label('Deskripsi'),
+                            TextEntry::make('status')
+                                ->label('Status')
+                                ->badge()
+                                ->formatStateUsing(fn ($state) => $state->label())
+                                ->color(fn ($state) => match ($state) {
+                                    FindingStatus::Open => 'danger',
+                                    FindingStatus::SubmittedForVerification => 'warning',
+                                    FindingStatus::Verified => 'success',
+                                    FindingStatus::Rejected => 'danger',
+                                }),
+                            TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
+                        ])
+                        ->columns(5),
                 ])
                 ->visible(fn ($record) => $record->findings()->exists()),
         ]);

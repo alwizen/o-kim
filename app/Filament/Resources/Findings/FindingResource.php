@@ -53,6 +53,11 @@ class FindingResource extends Resource
         return false;
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['inspectionResult.item']);
+    }
+
     public static function table(Table $table): Table
     {
         return FindingsTable::configure($table);

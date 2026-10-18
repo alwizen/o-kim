@@ -124,11 +124,35 @@ class FindingService
 
     public function attachmentDownload(FindingActionAttachment $attachment)
     {
-        abort_unless(Storage::disk(self::DISK)->exists($attachment->file_path), 404);
+        $this->ensureAttachmentExists($attachment);
 
         return Storage::disk(self::DISK)->download(
             $attachment->file_path,
             SafeFilename::make($attachment->original_filename)
+        );
+    }
+
+    /**
+     * Tampilkan berkas bukti tindak lanjut secara inline (pratinjau di tab baru).
+     */
+    public function attachmentPreview(FindingActionAttachment $attachment)
+    {
+        $this->ensureAttachmentExists($attachment);
+
+        return Storage::disk(self::DISK)->response(
+            $attachment->file_path,
+            SafeFilename::make($attachment->original_filename),
+            ['Content-Type' => $attachment->mime_type],
+            'inline'
+        );
+    }
+
+    private function ensureAttachmentExists(FindingActionAttachment $attachment): void
+    {
+        abort_unless(
+            Storage::disk(self::DISK)->exists($attachment->file_path),
+            404,
+            'Berkas tidak ditemukan.'
         );
     }
 
