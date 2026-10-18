@@ -23,6 +23,7 @@ class CreateKimApplication extends CreateRecord
             Section::make('Data Pengajuan')
                 ->description('Hanya kendaraan dengan seluruh dokumen wajib terverifikasi yang dapat dipilih.')
                 ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     Select::make('vehicle_id')
                         ->label('Kendaraan')

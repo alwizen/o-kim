@@ -24,6 +24,7 @@ use App\Services\Application\KimApplicationService;
 use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -176,6 +177,8 @@ class FindingDetailTest extends TestCase
     {
         $this->actingAs($this->owner);
 
+        Filament::setCurrentPanel('transportir');
+
         Livewire::test(TransportirViewFinding::class, ['record' => $this->finding->getRouteKey()])
             ->assertSuccessful()
             ->assertSee('bukti.pdf')
@@ -186,6 +189,8 @@ class FindingDetailTest extends TestCase
     public function test_admin_finding_page_shows_attachment_name_and_actions(): void
     {
         $this->actingAs($this->admin);
+
+        Filament::setCurrentPanel('admin');
 
         Livewire::test(AdminViewFinding::class, ['record' => $this->finding->getRouteKey()])
             ->assertSuccessful()

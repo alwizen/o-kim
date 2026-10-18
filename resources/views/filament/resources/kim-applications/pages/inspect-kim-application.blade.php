@@ -2,7 +2,7 @@
     <form wire:submit="save">
         {{ $this->form }}
 
-        <div class="mt-6 flex gap-3">
+        <div class="mt-6 flex gap-3"><br>
             <x-filament::button type="submit">
                 Simpan Hasil Pemeriksaan
             </x-filament::button>

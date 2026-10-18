@@ -170,18 +170,21 @@ class ViewKimApplication extends ViewRecord
                 ->label('Isi Checklist Pemeriksaan')
                 ->icon('heroicon-o-clipboard-document-check')
                 ->color('primary')
-                ->visible(fn (): bool => in_array(
-                    $this->record->status,
-                    [ApplicationStatus::Submitted, ApplicationStatus::Inspection, ApplicationStatus::RevisionRequired],
-                    true
-                ) && (
-                    auth()->user()->can('inspect_hsse')
-                    || auth()->user()->can('inspect_distribusi')
-                    || auth()->user()->can('inspect_qq')
-                ))
+                ->visible(fn (): bool => $this->record->isInspectionDue()
+                    && in_array(
+                        $this->record->status,
+                        [ApplicationStatus::Submitted, ApplicationStatus::Inspection, ApplicationStatus::RevisionRequired],
+                        true
+                    ) && (
+                        auth()->user()->can('inspect_hsse')
+                        || auth()->user()->can('inspect_distribusi')
+                        || auth()->user()->can('inspect_qq')
+                    ))
                 ->url(fn (): string => KimApplicationResource::getUrl('inspect', ['record' => $this->record])),
             Action::make('schedule')
-                ->label('Tetapkan Tanggal Pemeriksaan')
+                ->label(fn (): string => $this->record->inspection_scheduled_at
+                    ? 'Reschedule Pemeriksaan'
+                    : 'Tetapkan Tanggal Pemeriksaan')
                 ->icon('heroicon-o-calendar-days')
                 ->color('gray')
                 ->visible(fn (): bool => in_array(
@@ -200,6 +203,8 @@ class ViewKimApplication extends ViewRecord
                     'inspection_scheduled_at' => $this->record->inspection_scheduled_at,
                 ])
                 ->action(function (array $data): void {
+                    $isReschedule = $this->record->inspection_scheduled_at !== null;
+
                     $this->record->update([
                         'inspection_scheduled_at' => $data['inspection_scheduled_at'],
                         'inspection_scheduled_by' => auth()->id(),
@@ -215,7 +220,9 @@ class ViewKimApplication extends ViewRecord
                     );
 
                     Notification::make()
-                        ->title('Jadwal pemeriksaan ditetapkan')
+                        ->title($isReschedule
+                            ? 'Jadwal pemeriksaan diperbarui'
+                            : 'Jadwal pemeriksaan ditetapkan')
                         ->success()
                         ->send();
                 }),

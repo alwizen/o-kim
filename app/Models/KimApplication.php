@@ -64,11 +64,20 @@ class KimApplication extends Model
     }
 
     /**
-     * Pemeriksaan hanya dapat dimulai setelah jadwal ditetapkan petugas.
+     * Jadwal pemeriksaan sudah ditetapkan petugas.
      */
     public function isInspectionScheduled(): bool
     {
         return $this->inspection_scheduled_at !== null;
+    }
+
+    /**
+     * Pemeriksaan hanya dapat dimulai setelah jadwal ditetapkan DAN tanggalnya sudah tiba.
+     */
+    public function isInspectionDue(): bool
+    {
+        return $this->inspection_scheduled_at !== null
+            && $this->inspection_scheduled_at->lte(now());
     }
 
     public function inspectionResults(): HasMany

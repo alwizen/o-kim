@@ -55,6 +55,12 @@ class InspectionPointsTest extends TestCase
 
         $this->application = app(KimApplicationService::class)->createDraft($this->vehicle, ApplicationType::New);
         app(KimApplicationService::class)->submit($this->application, $this->transportir);
+
+        // Checklist hanya dapat diisi setelah jadwal pemeriksaan ditetapkan.
+        $this->application->update([
+            'inspection_scheduled_at' => now()->subDay(),
+            'inspection_scheduled_by' => $this->hsse->id,
+        ]);
     }
 
     private function hsseItem(): InspectionItem

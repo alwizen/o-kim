@@ -3,6 +3,7 @@
 namespace App\Services\Setting;
 
 use App\Models\Setting;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 
 class SettingsService
@@ -10,6 +11,11 @@ class SettingsService
     private const CACHE_KEY = 'okim.settings';
 
     public const GROUP_KIM = 'kim';
+
+    /**
+     * Format periode khusus: bulan dalam angka Romawi diikuti tahun (XI/2026).
+     */
+    public const PERIOD_ROMAN = 'roman';
 
     /** Nilai default setiap pengaturan. */
     private const DEFAULTS = [
@@ -138,12 +144,59 @@ class SettingsService
     ): string {
         $segments = [trim($prefix, '/')];
 
-        if ($periodFormat !== '' && $periodFormat !== 'none') {
-            $segments[] = now()->format($periodFormat);
+        $period = $this->formatPeriod($periodFormat);
+
+        if ($period !== null) {
+            $segments[] = $period;
         }
 
         $segments[] = str_pad($sequence, max($sequenceDigits, 1), '0', STR_PAD_LEFT);
 
         return implode('/', array_filter($segments, fn ($segment) => $segment !== ''));
+    }
+
+    /**
+     * Terjemahkan format periode menjadi teks periode.
+     * Mengembalikan null bila periode tidak dipakai.
+     *
+     * Nilai khusus 'roman' menghasilkan bulan dalam angka Romawi diikuti tahun,
+     * contoh: XI/2026.
+     */
+    public function formatPeriod(string $periodFormat, ?CarbonInterface $date = null): ?string
+    {
+        if ($periodFormat === '' || $periodFormat === 'none') {
+            return null;
+        }
+
+        $date ??= now();
+
+        if ($periodFormat === self::PERIOD_ROMAN) {
+            return $this->romanMonth((int) $date->month).'/'.$date->format('Y');
+        }
+
+        return $date->format($periodFormat);
+    }
+
+    /**
+     * Angka Romawi untuk bulan 1–12.
+     */
+    public function romanMonth(int $month): string
+    {
+        $numerals = [
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+        ];
+
+        return $numerals[$month] ?? (string) $month;
     }
 }

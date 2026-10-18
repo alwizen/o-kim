@@ -37,6 +37,16 @@ class InspectKimApplication extends Page implements HasForms
     public function mount(KimApplication $record): void
     {
         $this->record = $record;
+
+        // Gating: checklist hanya dapat diisi setelah jadwal pemeriksaan tiba.
+        abort_unless(
+            $record->isInspectionDue(),
+            403,
+            $record->inspection_scheduled_at === null
+                ? 'Jadwal pemeriksaan belum ditetapkan.'
+                : 'Pemeriksaan baru dapat dilakukan pada '.$record->inspection_scheduled_at->translatedFormat('d M Y H:i').'.'
+        );
+
         $this->form->fill();
     }
 

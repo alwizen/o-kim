@@ -79,13 +79,13 @@ class VehicleDetailsTest extends TestCase
             ->fillForm([
                 'registration_number' => 'G 4321 DTL',
                 'brand' => 'Hino',
-                'model' => 'FM260',
+                'model' => 'semi_trailer',
                 'manufacture_year' => 2022,
                 'tank_capacity' => 24000,
                 'chassis_number' => 'MH9876543210',
                 'engine_number' => 'ENG123456',
-                'transport_type' => 'Chemical',
-                'tank_material' => 'Stainless Steel 304',
+                'transport_type' => 'chemical',
+                'tank_material' => 'stainless_steel',
             ])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -94,8 +94,8 @@ class VehicleDetailsTest extends TestCase
             'registration_number' => 'G 4321 DTL',
             'chassis_number' => 'MH9876543210',
             'engine_number' => 'ENG123456',
-            'transport_type' => 'Chemical',
-            'tank_material' => 'Stainless Steel 304',
+            'transport_type' => 'chemical',
+            'tank_material' => 'stainless_steel',
         ]);
     }
 

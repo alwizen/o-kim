@@ -13,6 +13,7 @@ use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\ValidationException;
@@ -59,19 +60,21 @@ class ViewFinding extends ViewRecord
                                     TextEntry::make('original_filename')
                                         ->label('Berkas')
                                         ->formatStateUsing(fn ($state, $record) => $state.' ('.number_format($record->file_size / 1024, 0).' KB)'),
-                                    Action::make('preview')
-                                        ->label('Pratinjau')
-                                        ->icon('heroicon-o-eye')
-                                        ->color('gray')
-                                        ->url(fn ($record): string => route('finding-attachments.preview', $record))
-                                        ->openUrlInNewTab(),
-                                    Action::make('download')
-                                        ->label('Unduh')
-                                        ->icon('heroicon-o-arrow-down-tray')
-                                        ->color('gray')
-                                        ->url(fn ($record): string => route('finding-attachments.download', $record)),
+                                    Actions::make([
+                                        Action::make('preview')
+                                            ->label('Pratinjau')
+                                            ->icon('heroicon-o-eye')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('finding-attachments.preview', $record))
+                                            ->openUrlInNewTab(),
+                                        Action::make('download')
+                                            ->label('Unduh')
+                                            ->icon('heroicon-o-arrow-down-tray')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('finding-attachments.download', $record)),
+                                    ]),
                                 ])
-                                ->columns(3),
+                                ->columns(2),
                         ])
                         ->columns(4),
                 ])

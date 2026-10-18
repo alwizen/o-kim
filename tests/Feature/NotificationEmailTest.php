@@ -96,6 +96,11 @@ class NotificationEmailTest extends TestCase
 
         app(KimApplicationService::class)->submit($application, $this->owner);
 
+        $application->update([
+            'inspection_scheduled_at' => now()->subDay(),
+            'inspection_scheduled_by' => $this->officers['hsse']->id,
+        ]);
+
         return $application->fresh();
     }
 

@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
+use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\KimApplication;
 use App\Notifications\InspectionScheduled;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -71,8 +73,25 @@ class KimApplicationsTable
             ])
             ->defaultSort('submitted_at', 'desc')
             ->recordActions([
+                Action::make('inspect')
+                    ->label('Isi Checklist')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('info')
+                    ->visible(fn (KimApplication $record): bool => $record->isInspectionDue()
+                        && in_array($record->status, [
+                            ApplicationStatus::Submitted,
+                            ApplicationStatus::Inspection,
+                            ApplicationStatus::RevisionRequired,
+                        ], true) && (
+                            auth()->user()->can('inspect_hsse')
+                            || auth()->user()->can('inspect_distribusi')
+                            || auth()->user()->can('inspect_qq')
+                        ))
+                    ->url(fn (KimApplication $record): string => KimApplicationResource::getUrl('inspect', ['record' => $record])),
                 Action::make('schedule')
-                    ->label('Tetapkan Tanggal')
+                    ->label(fn (KimApplication $record): string => $record->inspection_scheduled_at
+                        ? 'Reschedule'
+                        : 'Tetapkan Tanggal Pemeriksaan')
                     ->icon('heroicon-o-calendar-days')
                     ->color('primary')
                     ->visible(fn (KimApplication $record): bool => in_array($record->status, [
@@ -80,17 +99,19 @@ class KimApplicationsTable
                         ApplicationStatus::Inspection,
                     ], true) && auth()->user()->can('view_applications'))
                     ->schema([
-                        DateTimePicker::make('inspection_scheduled_at')
+                        DatePicker::make('inspection_scheduled_at')
                             ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
                             ->required()
                             ->seconds(false)
-                            ->native(false)
+                            // ->native(false)
                             ->default(fn (KimApplication $record) => $record->inspection_scheduled_at),
                     ])
                     ->fillForm(fn (KimApplication $record): array => [
                         'inspection_scheduled_at' => $record->inspection_scheduled_at,
                     ])
                     ->action(function (KimApplication $record, array $data): void {
+                        $isReschedule = $record->inspection_scheduled_at !== null;
+
                         $record->update([
                             'inspection_scheduled_at' => $data['inspection_scheduled_at'],
                             'inspection_scheduled_by' => auth()->id(),
@@ -106,7 +127,9 @@ class KimApplicationsTable
                         );
 
                         Notification::make()
-                            ->title('Jadwal pemeriksaan ditetapkan')
+                            ->title($isReschedule
+                                ? 'Jadwal pemeriksaan diperbarui'
+                                : 'Jadwal pemeriksaan ditetapkan')
                             ->body('Petugas dapat mulai mengisi checklist.')
                             ->success()
                             ->send();
