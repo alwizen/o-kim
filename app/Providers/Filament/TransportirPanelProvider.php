@@ -44,7 +44,7 @@ class TransportirPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->plugin(
-                PressFilamentTheme::make()->vellum()
+                PressFilamentTheme::make()->telex()->rail(false)
             )
             ->discoverWidgets(in: app_path('Filament/Transportir/Widgets'), for: 'App\Filament\Transportir\Widgets')
             ->widgets([
