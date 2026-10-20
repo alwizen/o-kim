@@ -18,13 +18,13 @@
                         @foreach ($steps as $index => $step)
                             <li class="reveal relative flex gap-5" style="--reveal-delay:{{ $index * 90 }}ms">
                                 <div class="flex flex-col items-center">
-                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-lavender-200 bg-white text-sm font-bold text-lavender-700">{{ $index + 1 }}</span>
+                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ocean-200 bg-white text-sm font-bold text-ocean-700">{{ $index + 1 }}</span>
                                     @if (! $loop->last)
-                                        <span class="mt-1 h-full w-px flex-1 bg-gradient-to-b from-lavender-200 to-transparent"></span>
+                                        <span class="mt-1 h-full w-px flex-1 bg-gradient-to-b from-ocean-200 to-transparent"></span>
                                     @endif
                                 </div>
                                 <div class="pb-2">
-                                    <h3 class="text-base font-bold text-lavender-900">{{ $step['title'] }}</h3>
+                                    <h3 class="text-base font-bold text-ocean-900">{{ $step['title'] }}</h3>
                                     <p class="mt-1 text-sm leading-relaxed text-slate-600">{{ $step['desc'] }}</p>
                                 </div>
                             </li>
@@ -33,10 +33,10 @@
                 </div>
 
                 <div class="reveal relative" style="--reveal-delay:120ms">
-                    <div class="rounded-3xl border border-lavender-200 bg-pastel p-8 text-lavender-900 shadow-xl shadow-lavender-900/10 sm:p-10">
-                        <x-heroicon-o-sparkles class="h-8 w-8 text-lavender-600" />
+                    <div class="rounded-3xl border border-ocean-200 bg-pastel p-8 text-ocean-900 shadow-xl shadow-ocean-900/10 sm:p-10">
+                        <x-heroicon-o-sparkles class="h-8 w-8 text-ocean-600" />
                         <h3 class="mt-5 text-2xl font-bold">Pantau status, kapan saja</h3>
-                        <p class="mt-3 text-sm leading-relaxed text-lavender-700">
+                        <p class="mt-3 text-sm leading-relaxed text-ocean-700">
                             Setiap perubahan status tercatat dan dapat ditelusuri. Anda akan tahu persis
                             di tahap mana pengajuan berada — pemeriksaan, tindak lanjut, atau approval.
                         </p>
@@ -50,15 +50,15 @@
                             ] as $track)
                                 <div class="flex items-center gap-3">
                                     @if ($track['state'] === 'done')
-                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-lavender-600 text-white"><x-heroicon-o-check class="h-4 w-4" /></span>
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-ocean-600 text-white"><x-heroicon-o-check class="h-4 w-4" /></span>
                                     @elseif ($track['state'] === 'current')
-                                        <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-lavender-400 bg-transparent">
-                                            <span class="h-2 w-2 animate-pulse rounded-full bg-lavender-500"></span>
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-ocean-400 bg-transparent">
+                                            <span class="h-2 w-2 animate-pulse rounded-full bg-ocean-500"></span>
                                         </span>
                                     @else
-                                        <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-lavender-300"></span>
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-ocean-300"></span>
                                     @endif
-                                    <span class="text-sm {{ $track['state'] === 'pending' ? 'text-lavender-400' : 'text-lavender-900' }}">{{ $track['label'] }}</span>
+                                    <span class="text-sm {{ $track['state'] === 'pending' ? 'text-ocean-600' : 'text-ocean-900' }}">{{ $track['label'] }}</span>
                                 </div>
                             @endforeach
                         </div>

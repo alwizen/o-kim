@@ -8,7 +8,7 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('img/fav.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#fbfaff] font-sans text-slate-800 antialiased selection:bg-lavender-600 selection:text-white">
+    <body class="bg-[#f6fbfa] font-sans text-slate-800 antialiased selection:bg-ocean-600 selection:text-white">
 
     @include('landing.partials.scroll-progress')
 
