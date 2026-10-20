@@ -61,6 +61,10 @@
             Belum punya akun?
             <a href="{{ route('register') }}" class="font-semibold text-ocean-700 underline-offset-4 hover:underline">Daftar di sini</a>
         </p>
+        <p class="mt-2 text-center text-xs text-slate-500">
+            Petugas internal (HSE/Distribusi/QQ/FTM)?
+            <a href="{{ route('register.internal') }}" class="font-semibold text-ocean-700 underline-offset-4 hover:underline">Daftar internal</a>
+        </p>
         <p class="mt-4 text-center text-xs text-slate-400">
             <a href="{{ route('landing') }}" class="transition hover:text-ocean-600">&larr; Kembali ke beranda</a>
         </p>
