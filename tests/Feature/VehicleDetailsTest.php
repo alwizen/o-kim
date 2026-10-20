@@ -120,4 +120,86 @@ class VehicleDetailsTest extends TestCase
             ->assertSee('BBM')
             ->assertSee('Aluminium');
     }
+
+    public function test_transportir_can_create_vehicle_with_karoseri_fields(): void
+    {
+        $this->actingAs($this->transportir());
+
+        Filament::setCurrentPanel(
+            Filament::getPanel('transportir')
+        );
+
+        Livewire::test(CreateVehicle::class)
+            ->fillForm([
+                'registration_number' => 'G 5555 KRS',
+                'tank_capacity' => 16000,
+                'transport_type' => 'chemical',
+                'karoseri_builder' => 'PT Karoseri Maju',
+                'karoseri_built_period' => '03/2021',
+                'tank_wall_thickness_mm' => '5.5',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $vehicle = Vehicle::where('registration_number', 'G 5555 KRS')->firstOrFail();
+
+        $this->assertSame('PT Karoseri Maju', $vehicle->karoseri_builder);
+        $this->assertSame('03/2021', $vehicle->karoseri_built_period);
+        $this->assertSame('5.5', (string) $vehicle->tank_wall_thickness_mm);
+    }
+
+    public function test_karoseri_fields_are_nullable(): void
+    {
+        $vehicle = Vehicle::factory()->create([
+            'transporter_id' => Transporter::factory()->create()->id,
+            'karoseri_builder' => null,
+            'karoseri_built_period' => null,
+            'tank_wall_thickness_mm' => null,
+        ]);
+
+        $vehicle->refresh();
+
+        $this->assertNull($vehicle->karoseri_builder);
+        $this->assertNull($vehicle->karoseri_built_period);
+        $this->assertNull($vehicle->tank_wall_thickness_mm);
+    }
+
+    public function test_karoseri_built_period_must_match_mm_yyyy_format(): void
+    {
+        $this->actingAs($this->transportir());
+
+        Filament::setCurrentPanel(
+            Filament::getPanel('transportir')
+        );
+
+        Livewire::test(CreateVehicle::class)
+            ->fillForm([
+                'registration_number' => 'G 6666 KRS',
+                'tank_capacity' => 16000,
+                'transport_type' => 'chemical',
+                'karoseri_built_period' => 'Maret 2021',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['karoseri_built_period']);
+    }
+
+    public function test_admin_vehicle_detail_shows_karoseri_fields(): void
+    {
+        $vehicle = Vehicle::factory()->create([
+            'transporter_id' => Transporter::factory()->create()->id,
+            'karoseri_builder' => 'PT Karoseri Karya',
+            'karoseri_built_period' => '12/2019',
+            'tank_wall_thickness_mm' => 6,
+        ]);
+
+        $admin = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin)
+            ->get('/admin/vehicles/'.$vehicle->getRouteKey())
+            ->assertSuccessful()
+            ->assertSee('PT Karoseri Karya')
+            ->assertSee('12/2019')
+            ->assertSee('6 mm');
+    }
 }

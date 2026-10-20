@@ -15,6 +15,12 @@ class RejectVehicleDocument
      */
     public function execute(VehicleDocument $document, User $verifier, string $reason): void
     {
+        if (! $verifier->can('verify', $document)) {
+            throw ValidationException::withMessages([
+                'verifier' => 'Anda tidak berwenang menolak dokumen ini.',
+            ]);
+        }
+
         if (blank($reason)) {
             throw ValidationException::withMessages([
                 'reason' => 'Alasan penolakan wajib diisi.',

@@ -171,6 +171,109 @@ class InspectionChecklistResourceTest extends TestCase
         ]);
     }
 
+    public function test_item_code_is_generated_automatically_when_omitted(): void
+    {
+        $checklist = InspectionChecklist::create([
+            'department' => Department::Hsse,
+            'code' => 'HSSE-AUTO',
+            'title' => 'Checklist Auto',
+        ]);
+
+        // Butir awal dibuat manual agar penomoran dilanjutkan.
+        $checklist->items()->create(['item_code' => 'HSSE-01', 'label' => 'Butir Awal']);
+        $checklist->items()->create(['item_code' => 'HSSE-02', 'label' => 'Butir Awal 2']);
+
+        $this->actingAs($this->admin());
+
+        Livewire::test(ItemsRelationManager::class, [
+            'ownerRecord' => $checklist,
+            'pageClass' => EditInspectionChecklist::class,
+        ])
+            ->callTableAction(CreateAction::class, data: [
+                'label' => 'Butir Tanpa Kode',
+                'sort_order' => 3,
+                'is_required' => true,
+                'is_active' => true,
+                'points' => [
+                    ['label' => 'Sub-butir wajib terisi', 'is_active' => true],
+                ],
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $item = InspectionItem::where('inspection_checklist_id', $checklist->id)
+            ->where('label', 'Butir Tanpa Kode')
+            ->first();
+
+        $this->assertNotNull($item);
+        $this->assertSame('HSSE-03', $item->item_code);
+    }
+
+    public function test_item_code_skips_gaps_and_duplicates(): void
+    {
+        $checklist = InspectionChecklist::create([
+            'department' => Department::Hsse,
+            'code' => 'HSSE-GAP',
+            'title' => 'Checklist Gap',
+        ]);
+
+        // Ada celah penomoran dan kode luar urutan (HSSE-07).
+        $checklist->items()->create(['item_code' => 'HSSE-01', 'label' => 'A']);
+        $checklist->items()->create(['item_code' => 'HSSE-07', 'label' => 'B']);
+
+        $this->actingAs($this->admin());
+
+        Livewire::test(ItemsRelationManager::class, [
+            'ownerRecord' => $checklist,
+            'pageClass' => EditInspectionChecklist::class,
+        ])
+            ->callTableAction(CreateAction::class, data: [
+                'label' => 'Butir Baru',
+                'is_required' => true,
+                'is_active' => true,
+                'points' => [
+                    ['label' => 'Sub-butir wajib terisi', 'is_active' => true],
+                ],
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $item = InspectionItem::where('inspection_checklist_id', $checklist->id)
+            ->where('label', 'Butir Baru')
+            ->first();
+
+        $this->assertSame('HSSE-08', $item->item_code);
+    }
+
+    public function test_item_code_prefix_follows_department_not_checklist_suffix(): void
+    {
+        $checklist = InspectionChecklist::create([
+            'department' => Department::Distribusi,
+            'code' => 'DISTRIBUSI-STD',
+            'title' => 'Checklist Distribusi',
+        ]);
+
+        $this->actingAs($this->admin());
+
+        Livewire::test(ItemsRelationManager::class, [
+            'ownerRecord' => $checklist,
+            'pageClass' => EditInspectionChecklist::class,
+        ])
+            ->callTableAction(CreateAction::class, data: [
+                'label' => 'Butir Pertama',
+                'is_required' => true,
+                'is_active' => true,
+                'points' => [
+                    ['label' => 'Sub-butir wajib terisi', 'is_active' => true],
+                ],
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $item = InspectionItem::where('inspection_checklist_id', $checklist->id)
+            ->where('label', 'Butir Pertama')
+            ->first();
+
+        $this->assertSame('DISTRIBUSI-01', $item->item_code);
+    }
+
     public function test_deleting_item_cascades_points(): void
     {
         $checklist = InspectionChecklist::create([

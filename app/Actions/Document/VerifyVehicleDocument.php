@@ -16,6 +16,12 @@ class VerifyVehicleDocument
      */
     public function execute(VehicleDocument $document, User $verifier): void
     {
+        if (! $verifier->can('verify', $document)) {
+            throw ValidationException::withMessages([
+                'verifier' => 'Anda tidak berwenang memverifikasi dokumen ini.',
+            ]);
+        }
+
         if ($document->replaced_by_id !== null) {
             throw ValidationException::withMessages([
                 'document' => 'Dokumen ini sudah digantikan versi terbaru dan tidak dapat diverifikasi.',

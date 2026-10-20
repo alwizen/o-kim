@@ -25,9 +25,25 @@ class VehicleForm
                         ->helperText('Contoh: G 1234 TGL')
                         ->columnSpanFull(),
                     TextInput::make('brand')
-                        ->label('Nama Pabrikan/Karoseri')
+                        ->label('Nama Headtruck')
                         ->maxLength(100)
                         ->placeholder('Hino / Mitsubishi / Isuzu'),
+                    TextInput::make('manufacture_year')
+                        ->label('Tahun Pembuatan')
+                        ->numeric()
+                        ->placeholder('Contoh: 2020')
+                        ->minValue(1990)
+                        ->maxValue((int) date('Y')),
+                    TextInput::make('karoseri_builder')
+                        ->label('Nama Pembuat Karoseri')
+                        ->maxLength(100)
+                        ->placeholder('Contoh: PT Karoseri Maju'),
+                    TextInput::make('karoseri_built_period')
+                        ->label('Bulan & Tahun Pembuatan Karoseri')
+                        ->placeholder('Contoh: 03/2021')
+                        ->maxLength(20)
+                        ->regex('/^\d{2}\/\d{4}$/')
+                        ->helperText('Format: MM/YYYY'),
                     Select::make('model')
                         ->label('Model')
                         ->options([
@@ -46,12 +62,6 @@ class VehicleForm
             Section::make('Spesifikasi Teknis')
                 ->columns(2)
                 ->schema([
-                    TextInput::make('manufacture_year')
-                        ->label('Tahun Pembuatan')
-                        ->numeric()
-                        ->placeholder('Contoh: 2020')
-                        ->minValue(1990)
-                        ->maxValue((int) date('Y')),
                     Select::make('tank_capacity')
                         ->label('Kapasitas Tangki (KL)')
                         ->options([
@@ -82,6 +92,13 @@ class VehicleForm
                             'stainless_steel' => 'Stainless Steel',
                             'mild_steel' => 'Mild Steel',
                         ]),
+                    TextInput::make('tank_wall_thickness_mm')
+                        ->label('Ketebalan Tangki (mm)')
+                        ->numeric()
+                        ->minValue(0.1)
+                        ->maxValue(99.99)
+                        ->placeholder('Contoh: 5.5')
+                        ->suffix('mm'),
                 ]),
         ]);
     }
