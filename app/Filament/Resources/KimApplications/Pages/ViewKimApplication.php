@@ -427,7 +427,9 @@ class ViewKimApplication extends ViewRecord
                 && ! $this->record->approvals()
                     ->where('department', $department->value)
                     ->where('decision', 'approved')
-                    ->exists())
+                    ->exists()
+                && ! $this->hasOpenFindings()
+                && ($department !== Department::Ftm || $this->functionalApprovalsComplete()))
             ->schema([
                 Textarea::make('notes')
                     ->label($isApprove ? 'Catatan (opsional)' : 'Alasan Penolakan (wajib)')
@@ -461,5 +463,30 @@ class ViewKimApplication extends ViewRecord
                     ->success()
                     ->send();
             });
+    }
+
+    /**
+     * Approval disembunyikan selama masih ada temuan yang belum terverifikasi.
+     */
+    private function hasOpenFindings(): bool
+    {
+        return $this->record->findings()
+            ->where('status', '!=', FindingStatus::Verified)
+            ->exists();
+    }
+
+    /**
+     * Tombol approval final FTM hanya muncul setelah HSSE, Distribusi,
+     * dan QQ seluruhnya menyetujui.
+     */
+    private function functionalApprovalsComplete(): bool
+    {
+        $approved = $this->record->approvals()
+            ->whereIn('department', collect(Department::inspectingDepartments())->map->value)
+            ->where('decision', 'approved')
+            ->pluck('department')
+            ->unique();
+
+        return $approved->count() === count(Department::inspectingDepartments());
     }
 }

@@ -21,11 +21,13 @@ use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
+use App\Services\Inspection\InspectionAttachmentService;
 use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -102,6 +104,13 @@ class FindingDetailTest extends TestCase
                 'inspected_at' => now(),
             ])
         )->save();
+
+        // Lampiran dokumentasi temuan dari petugas (hasil pemeriksaan).
+        app(InspectionAttachmentService::class)->upload(
+            $this->finding->inspectionResult,
+            $this->hsse,
+            [UploadedFile::fake()->image('dokumentasi.jpg', 640, 480)],
+        );
 
         $action = FindingAction::create([
             'finding_id' => $this->finding->id,
@@ -181,6 +190,8 @@ class FindingDetailTest extends TestCase
 
         Livewire::test(TransportirViewFinding::class, ['record' => $this->finding->getRouteKey()])
             ->assertSuccessful()
+            ->assertSee('Dokumentasi Temuan')
+            ->assertSee('dokumentasi.jpg')
             ->assertSee('bukti.pdf')
             ->assertSee('Pratinjau')
             ->assertSee('Unduh');

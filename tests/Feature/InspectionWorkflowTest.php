@@ -5,15 +5,18 @@ namespace Tests\Feature;
 use App\Enums\AccountStatus;
 use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
+use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
+use App\Filament\Resources\KimApplications\Pages\ViewKimApplication;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
+use App\Services\Approval\ApprovalService;
 use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionService;
 use Database\Seeders\DocumentTypeSeeder;
@@ -23,6 +26,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class InspectionWorkflowTest extends TestCase
@@ -96,6 +100,12 @@ class InspectionWorkflowTest extends TestCase
             ->where('item_code', 'HSSE-01')->firstOrFail();
     }
 
+    private function distribusiItem(): InspectionItem
+    {
+        return InspectionItem::whereHas('checklist', fn ($q) => $q->where('department', 'distribusi'))
+            ->where('item_code', 'DIST-01')->firstOrFail();
+    }
+
     public function test_draft_cannot_be_submitted_without_required_documents(): void
     {
         $this->expectException(ValidationException::class);
@@ -132,7 +142,7 @@ class InspectionWorkflowTest extends TestCase
         );
     }
 
-    public function test_finding_result_creates_finding_and_sets_revision_status(): void
+    public function test_finding_result_creates_finding_and_keeps_inspection_status(): void
     {
         $this->submitAndSchedule();
 
@@ -144,12 +154,150 @@ class InspectionWorkflowTest extends TestCase
             findingDescription: 'APAR kedaluwarsa'
         );
 
-        $this->assertSame(ApplicationStatus::RevisionRequired, $this->application->fresh()->status);
+        // Temuan tidak menghentikan pemeriksaan fungsi lain.
+        $this->assertSame(ApplicationStatus::Inspection, $this->application->fresh()->status);
         $this->assertDatabaseHas('findings', [
             'kim_application_id' => $this->application->id,
             'department' => 'hsse',
             'status' => FindingStatus::Open->value,
         ]);
+    }
+
+    public function test_other_department_can_still_checklist_after_finding(): void
+    {
+        $this->submitAndSchedule();
+
+        // HSSE menemukan temuan.
+        app(InspectionService::class)->recordResult(
+            $this->application->fresh(),
+            $this->hsseItem(),
+            InspectionResultValue::Finding,
+            $this->hsseOfficer,
+            findingDescription: 'APAR kedaluwarsa'
+        );
+
+        // Distribusi tetap dapat mengisi checklist-nya.
+        app(InspectionService::class)->recordResult(
+            $this->application->fresh(),
+            $this->distribusiItem(),
+            InspectionResultValue::Compliant,
+            $this->distribusiOfficer,
+        );
+
+        $this->assertDatabaseHas('inspection_results', [
+            'kim_application_id' => $this->application->id,
+            'inspection_item_id' => $this->distribusiItem()->id,
+            'result' => InspectionResultValue::Compliant->value,
+        ]);
+    }
+
+    public function test_approval_actions_hidden_while_findings_are_open(): void
+    {
+        $this->submitAndSchedule();
+
+        // HSSE menemukan temuan (masih terbuka).
+        app(InspectionService::class)->recordResult(
+            $this->application->fresh(),
+            $this->hsseItem(),
+            InspectionResultValue::Finding,
+            $this->hsseOfficer,
+            findingDescription: 'APAR kedaluwarsa'
+        );
+
+        $this->actingAs($this->hsseOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionHidden('approve_hsse')
+            ->assertActionHidden('reject_hsse')
+            ->assertActionHidden('approve_distribusi')
+            ->assertActionHidden('reject_distribusi');
+    }
+
+    public function test_approval_actions_visible_when_all_findings_verified(): void
+    {
+        $this->submitAndSchedule();
+
+        // HSSE menemukan temuan lalu selesaikan: ubah jadi sesuai (re-check).
+        app(InspectionService::class)->recordResult(
+            $this->application->fresh(),
+            $this->hsseItem(),
+            InspectionResultValue::Finding,
+            $this->hsseOfficer,
+            findingDescription: 'APAR kedaluwarsa'
+        );
+
+        $finding = $this->application->findings()->firstOrFail();
+        $finding->update(['status' => FindingStatus::Verified]);
+
+        $this->actingAs($this->hsseOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionVisible('approve_hsse')
+            ->assertActionVisible('reject_hsse');
+    }
+
+    public function test_ftm_approval_actions_hidden_until_all_functional_approvals(): void
+    {
+        $this->submitAndSchedule();
+
+        $qqOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $qqOfficer->assignRole('qq');
+
+        $ftmOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $ftmOfficer->assignRole('ftm');
+
+        $officers = [
+            Department::Hsse->value => $this->hsseOfficer,
+            Department::Distribusi->value => $this->distribusiOfficer,
+            Department::Qq->value => $qqOfficer,
+        ];
+
+        $approvals = app(ApprovalService::class);
+
+        // Selesaikan checklist semua fungsi dengan petugas yang berwenang.
+        foreach (Department::inspectingDepartments() as $department) {
+            $items = InspectionItem::whereHas('checklist', fn ($q) => $q->where('department', $department->value))->get();
+            foreach ($items as $item) {
+                app(InspectionService::class)->recordResult(
+                    $this->application->fresh(),
+                    $item,
+                    InspectionResultValue::Compliant,
+                    $officers[$department->value],
+                );
+            }
+        }
+
+        // Sebelum ada approval fungsional: tombol FTM disembunyikan.
+        $this->actingAs($ftmOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionHidden('approve_ftm')
+            ->assertActionHidden('reject_ftm');
+
+        // Setelah HSSE & Distribusi menyetujui (QQ belum): FTM tetap disembunyikan.
+        $approvals->decide($this->application->fresh(), Department::Hsse, ApprovalDecision::Approved, $this->hsseOfficer);
+        $approvals->decide($this->application->fresh(), Department::Distribusi, ApprovalDecision::Approved, $this->distribusiOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionHidden('approve_ftm')
+            ->assertActionHidden('reject_ftm');
+
+        // Setelah QQ menyetujui: tombol FTM muncul.
+        $approvals->decide($this->application->fresh(), Department::Qq, ApprovalDecision::Approved, $qqOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionVisible('approve_ftm')
+            ->assertActionVisible('reject_ftm');
     }
 
     public function test_finding_requires_description(): void

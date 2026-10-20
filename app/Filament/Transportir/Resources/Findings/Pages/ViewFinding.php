@@ -35,6 +35,34 @@ class ViewFinding extends ViewRecord
                     TextEntry::make('created_at')->label('Dibuat')->dateTime('d M Y H:i'),
                     TextEntry::make('description')->label('Deskripsi Temuan')->columnSpanFull(),
                 ]),
+            Section::make('Dokumentasi Temuan')
+                ->description('Foto atau dokumen dari petugas pemeriksa terkait butir ini.')
+                ->columnSpanFull()
+                ->schema([
+                    RepeatableEntry::make('inspectionResult.attachments')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->placeholder('Tidak ada dokumentasi')
+                        ->schema([
+                            TextEntry::make('original_filename')
+                                ->label('Berkas')
+                                ->formatStateUsing(fn ($state, $record) => $state.' ('.number_format($record->file_size / 1024, 0).' KB)'),
+                            Actions::make([
+                                Action::make('preview_inspection_attachment')
+                                    ->label('Pratinjau')
+                                    ->icon('heroicon-o-eye')
+                                    ->color('gray')
+                                    ->url(fn ($record): string => route('inspection-attachments.preview', $record))
+                                    ->openUrlInNewTab(),
+                                Action::make('download_inspection_attachment')
+                                    ->label('Unduh')
+                                    ->icon('heroicon-o-arrow-down-tray')
+                                    ->color('gray')
+                                    ->url(fn ($record): string => route('inspection-attachments.download', $record)),
+                            ]),
+                        ])
+                        ->columns(2),
+                ]),
             Section::make('Riwayat Tindak Lanjut')
                 // ->columnSpanFull()
                 ->schema([

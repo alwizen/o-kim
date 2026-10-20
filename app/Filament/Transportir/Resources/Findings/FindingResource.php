@@ -48,7 +48,7 @@ class FindingResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['inspectionResult.item'])
+            ->with(['inspectionResult.item', 'inspectionResult.attachments'])
             ->whereHas('application', fn (Builder $q) => $q->whereIn(
                 'transporter_id',
                 auth()->user()->transporters()->pluck('transporters.id')

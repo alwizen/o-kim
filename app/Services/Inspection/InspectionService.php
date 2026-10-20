@@ -46,8 +46,14 @@ class InspectionService
             ]);
         }
 
-        if ($application->status !== ApplicationStatus::Inspection
-            && $application->status !== ApplicationStatus::Submitted) {
+        // Pemeriksaan berjalan paralel per fungsi: fungsi lain masih boleh
+        // mengisi checklist walaupun ada temuan (pengajuan bisa saja telah
+        // berstatus RevisionRequired akibat temuan fungsi lain).
+        if (! in_array($application->status, [
+            ApplicationStatus::Submitted,
+            ApplicationStatus::Inspection,
+            ApplicationStatus::RevisionRequired,
+        ], true)) {
             throw ValidationException::withMessages([
                 'status' => 'Pengajuan tidak sedang dalam tahap pemeriksaan.',
             ]);
@@ -95,9 +101,9 @@ class InspectionService
                     'created_by' => $inspector->id,
                 ]);
 
-                if ($application->status !== ApplicationStatus::RevisionRequired) {
-                    $application->update(['status' => ApplicationStatus::RevisionRequired]);
-                }
+                // Status tidak diubah ke RevisionRequired di sini: pemeriksaan
+                // fungsi lain mungkin masih berjalan. Kesiapan approval sudah
+                // memblokir temuan terbuka lewat isReadyForApproval().
 
                 DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                     $application->transporter_id,
