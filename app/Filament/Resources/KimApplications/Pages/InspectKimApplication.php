@@ -93,7 +93,7 @@ class InspectKimApplication extends Page implements HasForms
                     ->options([
                         InspectionResultValue::Compliant->value => 'Sesuai',
                         InspectionResultValue::Finding->value => 'Temuan',
-                        InspectionResultValue::NotApplicable->value => 'Tidak Berlaku',
+                        InspectionResultValue::NotApplicable->value => 'N/A',
                     ])
                     ->default($existing?->result?->value)
                     ->required()

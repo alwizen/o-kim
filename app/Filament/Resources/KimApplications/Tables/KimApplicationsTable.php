@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\DocumentVerificationStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\KimApplication;
 use App\Notifications\InspectionScheduled;
+use App\Services\Application\KimApplicationService;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -15,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class KimApplicationsTable
 {
@@ -32,6 +35,19 @@ class KimApplicationsTable
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
                     ->searchable(),
+                TextColumn::make('vehicle.documents_count')
+                    ->label('Dokumen Pending')
+                    ->state(function (KimApplication $record): int {
+                        return $record->vehicle->documents()
+                            ->whereNull('replaced_by_id')
+                            ->whereHas('documentType', fn ($query) => $query->where('is_required', true)->where('is_active', true))
+                            ->where('verification_status', DocumentVerificationStatus::Pending)
+                            ->count();
+                    })
+                    ->badge()
+                    ->placeholder('0')
+                    ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} pending" : 'Lengkap'),
                 TextColumn::make('application_type')
                     ->label('Jenis')
                     ->badge()
@@ -109,6 +125,20 @@ class KimApplicationsTable
                         'inspection_scheduled_at' => $record->inspection_scheduled_at,
                     ])
                     ->action(function (KimApplication $record, array $data): void {
+                        // Dokumen wajib harus terverifikasi sebelum pemeriksaan dijadwalkan.
+                        try {
+                            app(KimApplicationService::class)
+                                ->ensureRequiredDocumentsVerified($record->vehicle);
+                        } catch (ValidationException $e) {
+                            Notification::make()
+                                ->title('Dokumen belum terverifikasi')
+                                ->body(collect($e->errors())->flatten()->first())
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $isReschedule = $record->inspection_scheduled_at !== null;
 
                         $record->update([

@@ -13,7 +13,7 @@ enum InspectionResultValue: string
         return match ($this) {
             self::Compliant => 'Sesuai',
             self::Finding => 'Temuan',
-            self::NotApplicable => 'Tidak Berlaku',
+            self::NotApplicable => 'N/A',
         };
     }
 }

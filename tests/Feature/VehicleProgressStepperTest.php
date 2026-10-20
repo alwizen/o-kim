@@ -93,10 +93,13 @@ class VehicleProgressStepperTest extends TestCase
     {
         $application = $this->makeApplication();
 
-        VehicleDocument::factory()
-            ->for($this->vehicle)
-            ->for(DocumentType::where('code', 'STNK')->firstOrFail())
-            ->create(['verification_status' => DocumentVerificationStatus::Pending]);
+        // Semua dokumen wajib sudah diunggah, sebagian masih pending.
+        foreach (['STNK', 'KEUR', 'TERA'] as $code) {
+            VehicleDocument::factory()
+                ->for($this->vehicle)
+                ->for(DocumentType::where('code', $code)->firstOrFail())
+                ->create(['verification_status' => DocumentVerificationStatus::Pending]);
+        }
 
         $step = $this->step($this->steps($application), 'documents');
 

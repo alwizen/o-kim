@@ -175,12 +175,26 @@ class VehicleDocumentVerificationTest extends TestCase
 
     // ---------- Integrasi aturan ----------
 
-    public function test_submit_blocked_when_documents_not_verified(): void
+    public function test_submit_allowed_when_documents_uploaded_but_unverified(): void
     {
-        // Unggah tanpa verifikasi.
+        // Verifikasi digeser ke penjadwalan pemeriksaan; submit cukup semua dokumen terunggah.
         foreach (['STNK', 'KEUR', 'TERA'] as $code) {
             $this->uploadPending($code);
         }
+
+        $application = app(KimApplicationService::class)
+            ->createDraft($this->vehicle, ApplicationType::New);
+
+        app(KimApplicationService::class)->submit($application, $this->transportir);
+
+        $this->assertSame(ApplicationStatus::Submitted, $application->fresh()->status);
+    }
+
+    public function test_submit_blocked_when_required_document_missing(): void
+    {
+        $this->uploadPending('STNK');
+        $this->uploadPending('KEUR');
+        // TERA tidak diunggah.
 
         $application = app(KimApplicationService::class)
             ->createDraft($this->vehicle, ApplicationType::New);
@@ -245,9 +259,9 @@ class VehicleDocumentVerificationTest extends TestCase
         $this->assertContains($this->vehicle->registration_number, $options);
     }
 
-    public function test_vehicle_with_unverified_document_is_not_selectable(): void
+    public function test_vehicle_with_unverified_document_is_still_selectable(): void
     {
-        // STNK & KEUR terverifikasi, TERA masih pending.
+        // STNK & KEUR terverifikasi, TERA masih pending — tetap dapat diajukan.
         $this->uploadVehicleDocument($this->vehicle, 'STNK', verifier: $this->admin);
         $this->uploadVehicleDocument($this->vehicle, 'KEUR', verifier: $this->admin);
         $this->uploadPending('TERA');
@@ -257,7 +271,7 @@ class VehicleDocumentVerificationTest extends TestCase
             ->pluck('registration_number')
             ->all();
 
-        $this->assertNotContains($this->vehicle->registration_number, $options);
+        $this->assertContains($this->vehicle->registration_number, $options);
     }
 
     public function test_vehicle_missing_required_document_is_not_selectable(): void
@@ -310,11 +324,11 @@ class VehicleDocumentVerificationTest extends TestCase
         $this->assertNotContains($this->vehicle->registration_number, $options);
     }
 
-    public function test_create_page_dropdown_excludes_unverified_vehicle(): void
+    public function test_create_page_dropdown_excludes_vehicle_with_missing_document(): void
     {
         $this->uploadPending('STNK');
         $this->uploadPending('KEUR');
-        $this->uploadPending('TERA');
+        // TERA tidak diunggah.
 
         $this->actingAs($this->transportir);
 
@@ -339,22 +353,19 @@ class VehicleDocumentVerificationTest extends TestCase
         $this->assertSame([$this->vehicle->id => $this->vehicle->registration_number], $options);
     }
 
-    public function test_backend_rejects_creation_when_document_unverified(): void
+    public function test_create_page_dropdown_lists_vehicle_with_pending_documents(): void
     {
-        foreach (['STNK', 'KEUR', 'TERA'] as $code) {
-            $this->uploadPending($code);
-        }
+        $this->uploadPending('STNK');
+        $this->uploadPending('KEUR');
+        $this->uploadPending('TERA');
 
         $this->actingAs($this->transportir);
 
-        $this->openCreateApplicationPage()
-            ->fillForm([
-                'vehicle_id' => $this->vehicle->id,
-                'application_type' => ApplicationType::New->value,
-            ])
-            ->call('create')
-            ->assertHasFormErrors(['vehicle_id']);
+        $options = app(KimApplicationService::class)
+            ->readyVehiclesQuery([$this->transporter->id])
+            ->pluck('registration_number', 'id')
+            ->all();
 
-        $this->assertDatabaseCount('kim_applications', 0);
+        $this->assertSame([$this->vehicle->id => $this->vehicle->registration_number], $options);
     }
 }

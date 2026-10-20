@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\InspectionChecklists\RelationManagers;
 
+use App\Models\InspectionChecklist;
+use App\Models\InspectionItem;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rules\Unique;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -30,13 +33,26 @@ class ItemsRelationManager extends RelationManager
     {
         return $schema->components([
             Section::make('Butir Pemeriksaan')
-                ->columns(2)
+                // ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     TextInput::make('item_code')
                         ->label('Kode Butir')
-                        ->required()
                         ->maxLength(30)
-                        ->helperText('Contoh: HSSE-01'),
+                        ->required(fn (string $operation) => $operation === 'edit')
+                        ->unique(
+                            table: InspectionItem::class,
+                            column: 'item_code',
+                            modifyRuleUsing: fn (Unique $rule, ?string $operation, ?InspectionItem $record, RelationManager $livewire) => $rule
+                                ->where('inspection_checklist_id', $livewire->ownerRecord->id)
+                                ->when($operation === 'edit', fn (Unique $rule) => $rule->ignore($record?->id)),
+                        )
+                        ->hintIcon('heroicon-o-information-circle', tooltip: 'Otomatis dibuat saat menambah butir baru (contoh: HSSE-01).')
+                        ->disabled(fn (string $operation) => $operation === 'create')
+                        ->dehydrated()
+                        ->helperText(fn (string $operation) => $operation === 'create'
+                            ? 'Otomatis diisi oleh sistem.'
+                            : 'Tidak disarankan diubah karena sudah dipakai pada hasil pemeriksaan.'),
 
                     TextInput::make('sort_order')
                         ->label('Urutan')
@@ -58,7 +74,8 @@ class ItemsRelationManager extends RelationManager
                 ]),
 
             Section::make('Status')
-                ->columns(2)
+                // ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     Toggle::make('is_required')
                         ->label('Wajib diselesaikan')
@@ -70,6 +87,7 @@ class ItemsRelationManager extends RelationManager
 
             Section::make('Sub-butir Pemeriksaan')
                 ->description('Poin rinci yang dicek petugas pada butir ini (mis. lokasi pemasangan, kondisi komponen).')
+                ->columnSpanFull()
                 ->schema([
                     Repeater::make('points')
                         ->relationship('points')
@@ -129,7 +147,13 @@ class ItemsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Butir')
-                    ->modalWidth('3xl'),
+                    ->modalWidth('3xl')
+                    ->using(function (array $data): InspectionItem {
+                        $data['item_code'] = $data['item_code']
+                            ?? $this->generateItemCode($this->getOwnerRecord());
+
+                        return $this->getRelationship()->create($data);
+                    }),
             ])
             ->recordActions([
                 EditAction::make()->modalWidth('3xl'),
@@ -140,5 +164,37 @@ class ItemsRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Buat kode butir berikutnya untuk checklist ini, format {PREFIX}-{NN}.
+     * Contoh: HSSE-01, HSSE-02, dst. Nomor dilanjutkan dari kode terbesar.
+     */
+    private function generateItemCode(InspectionChecklist $checklist): string
+    {
+        // Prefix dari kode checklist (mis. HSSE-STD) dipangkas ke segmen departemen: HSSE.
+        $prefix = strtoupper(explode('-', $checklist->code)[0]);
+
+        $lastNumber = InspectionItem::where('inspection_checklist_id', $checklist->id)
+            ->where('item_code', 'like', $prefix.'-%')
+            ->get()
+            ->map(fn (InspectionItem $item) => (int) substr($item->item_code, strlen($prefix) + 1))
+            ->max() ?? 0;
+
+        $maxAttempts = 100;
+        $number = $lastNumber;
+
+        do {
+            $number++;
+            $code = $prefix.'-'.str_pad((string) $number, 2, '0', STR_PAD_LEFT);
+            $attempts = ($attempts ?? 0) + 1;
+        } while (
+            InspectionItem::where('inspection_checklist_id', $checklist->id)
+                ->where('item_code', $code)
+                ->exists()
+            && $attempts < $maxAttempts
+        );
+
+        return $code;
     }
 }

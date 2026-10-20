@@ -28,6 +28,8 @@ class ViewVehicle extends ViewRecord
                     TextEntry::make('transporter.company_name')->label('Perusahaan'),
                     TextEntry::make('status')->badge()->formatStateUsing(fn ($state) => $state->label()),
                     TextEntry::make('brand')->label('Merek')->placeholder('—'),
+                    TextEntry::make('karoseri_builder')->label('Pembuat Karoseri')->placeholder('—'),
+                    TextEntry::make('karoseri_built_period')->label('Pembuatan Karoseri')->placeholder('—'),
                     TextEntry::make('model')->label('Model')->placeholder('—'),
                     TextEntry::make('manufacture_year')->label('Tahun')->placeholder('—'),
                     TextEntry::make('tank_capacity')->label('Kapasitas Tangki (L)')->placeholder('—'),
@@ -35,6 +37,8 @@ class ViewVehicle extends ViewRecord
                     TextEntry::make('engine_number')->label('Nomor Mesin')->placeholder('—'),
                     TextEntry::make('transport_type')->label('Jenis Angkutan')->placeholder('—'),
                     TextEntry::make('tank_material')->label('Bahan Tangki')->placeholder('—'),
+                    TextEntry::make('tank_wall_thickness_mm')->label('Ketebalan Tangki')->placeholder('—')
+                        ->formatStateUsing(fn ($state) => $state !== null ? $state.' mm' : null),
                 ]),
             Section::make('Dokumen Kendaraan')
                 ->columnSpanFull()

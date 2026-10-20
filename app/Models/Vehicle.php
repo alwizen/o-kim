@@ -24,6 +24,9 @@ class Vehicle extends Model
         'engine_number',
         'transport_type',
         'tank_material',
+        'karoseri_builder',
+        'karoseri_built_period',
+        'tank_wall_thickness_mm',
         'status',
     ];
 

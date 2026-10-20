@@ -6,7 +6,6 @@ use App\Enums\ApplicationStatus;
 use App\Enums\Department;
 use App\Enums\FindingStatus;
 use App\Models\KimApplication;
-use App\Models\Vehicle;
 use App\Services\Inspection\InspectionService;
 
 class VehicleProgressService
@@ -71,16 +70,17 @@ class VehicleProgressService
     {
         $vehicle = $application->vehicle;
         $missing = $this->applicationService->missingRequiredDocumentCodes($vehicle);
+        $unverified = $this->applicationService->unverifiedDocumentCodes($vehicle);
 
         $state = 'pending';
         $description = 'Belum ada dokumen wajib diunggah';
 
-        if ($missing->isEmpty()) {
+        if ($unverified->isEmpty()) {
             $state = 'done';
             $description = 'Seluruh dokumen wajib terverifikasi';
-        } elseif ($this->hasUploadedRequiredDocuments($vehicle)) {
+        } elseif ($missing->isEmpty()) {
             $state = 'active';
-            $description = 'Menunggu verifikasi: '.$missing->implode(', ');
+            $description = 'Menunggu verifikasi: '.$unverified->implode(', ');
         }
 
         return [
@@ -90,13 +90,6 @@ class VehicleProgressService
             'description' => $description,
             'url' => '/transportir/vehicles/'.$vehicle->id.'/edit',
         ];
-    }
-
-    private function hasUploadedRequiredDocuments(Vehicle $vehicle): bool
-    {
-        return $vehicle->documents()
-            ->whereNull('replaced_by_id')
-            ->exists();
     }
 
     /**

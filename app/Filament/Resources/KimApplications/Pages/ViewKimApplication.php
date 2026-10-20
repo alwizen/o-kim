@@ -2,12 +2,17 @@
 
 namespace App\Filament\Resources\KimApplications\Pages;
 
+use App\Actions\Document\RejectVehicleDocument;
+use App\Actions\Document\VerifyVehicleDocument;
 use App\Enums\ApplicationStatus;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
+use App\Enums\DocumentVerificationStatus;
 use App\Enums\FindingStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
+use App\Models\VehicleDocument;
 use App\Notifications\InspectionScheduled;
+use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Kim\KimIssuanceService;
@@ -38,6 +43,7 @@ class ViewKimApplication extends ViewRecord
             'findings.inspectionResult.item',
             'findings.creator',
             'inspectionResults.attachments',
+            'vehicle.documents.documentType',
         ]);
     }
 
@@ -63,6 +69,91 @@ class ViewKimApplication extends ViewRecord
                     TextEntry::make('vehicle.registration_number')->label('NOPOL')->weight(FontWeight::Bold),
                     TextEntry::make('rejection_reason')->label('Alasan Penolakan')->placeholder('—')->columnSpanFull(),
                 ]),
+            Section::make('Dokumen Kendaraan')
+                ->columnSpanFull()
+                ->description('Dokumen wajib harus terverifikasi sebelum jadwal pemeriksaan dapat ditetapkan.')
+                ->schema([
+                    RepeatableEntry::make('vehicle.documents')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->placeholder('Tidak ada dokumen')
+                        ->table([
+                            TableColumn::make('Jenis'),
+                            TableColumn::make('Nomor'),
+                            TableColumn::make('Kedaluwarsa'),
+                            TableColumn::make('Status'),
+                            TableColumn::make('Berkas'),
+                            TableColumn::make('Aksi Verifikasi'),
+                        ])
+                        ->schema([
+                            TextEntry::make('documentType.name')->label('Jenis')->badge(),
+                            TextEntry::make('document_number')->label('Nomor')->placeholder('—'),
+                            TextEntry::make('expires_at')->label('Kedaluwarsa')->date('d M Y')->placeholder('—'),
+                            TextEntry::make('verification_status')
+                                ->label('Status')
+                                ->badge()
+                                ->formatStateUsing(fn ($state) => $state->label())
+                                ->color(fn ($state) => match ($state) {
+                                    DocumentVerificationStatus::Verified => 'success',
+                                    DocumentVerificationStatus::Pending => 'warning',
+                                    DocumentVerificationStatus::Rejected => 'danger',
+                                }),
+                            Actions::make([
+                                Action::make('preview_document')
+                                    ->label('Pratinjau')
+                                    ->icon('heroicon-o-eye')
+                                    ->color('gray')
+                                    ->url(fn (VehicleDocument $record): string => route('documents.preview', $record))
+                                    ->openUrlInNewTab(),
+                                Action::make('download_document')
+                                    ->label('Unduh')
+                                    ->icon('heroicon-o-arrow-down-tray')
+                                    ->color('gray')
+                                    ->url(fn (VehicleDocument $record): string => route('documents.download', $record)),
+                            ]),
+                            Actions::make([
+                                Action::make('verify_document')
+                                    ->label('Verifikasi')
+                                    ->icon('heroicon-o-check-circle')
+                                    ->color('success')
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Verifikasi dokumen ini?')
+                                    ->visible(fn (VehicleDocument $record): bool => $record->replaced_by_id === null
+                                        && $record->verification_status === DocumentVerificationStatus::Pending
+                                        && auth()->user()->can('verify', $record))
+                                    ->action(function (VehicleDocument $record): void {
+                                        app(VerifyVehicleDocument::class)->execute($record, auth()->user());
+
+                                        Notification::make()
+                                            ->title('Dokumen diverifikasi')
+                                            ->success()
+                                            ->send();
+                                    }),
+                                Action::make('reject_document')
+                                    ->label('Tolak')
+                                    ->icon('heroicon-o-x-circle')
+                                    ->color('danger')
+                                    ->visible(fn (VehicleDocument $record): bool => $record->replaced_by_id === null
+                                        && $record->verification_status === DocumentVerificationStatus::Pending
+                                        && auth()->user()->can('verify', $record))
+                                    ->schema([
+                                        Textarea::make('reason')
+                                            ->label('Alasan Penolakan')
+                                            ->required()
+                                            ->maxLength(1000),
+                                    ])
+                                    ->action(function (VehicleDocument $record, array $data): void {
+                                        app(RejectVehicleDocument::class)->execute($record, auth()->user(), $data['reason']);
+
+                                        Notification::make()
+                                            ->title('Dokumen ditolak')
+                                            ->success()
+                                            ->send();
+                                    }),
+                            ]),
+                        ]),
+                ])
+                ->visible(fn ($record) => $record->vehicle->documents()->exists()),
             Section::make('Temuan')
                 ->columnSpanFull()
                 ->schema([
@@ -240,6 +331,20 @@ class ViewKimApplication extends ViewRecord
                     'inspection_scheduled_at' => $this->record->inspection_scheduled_at,
                 ])
                 ->action(function (array $data): void {
+                    // Dokumen wajib harus terverifikasi sebelum pemeriksaan dijadwalkan.
+                    try {
+                        app(KimApplicationService::class)
+                            ->ensureRequiredDocumentsVerified($this->record->vehicle);
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Dokumen belum terverifikasi')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     $isReschedule = $this->record->inspection_scheduled_at !== null;
 
                     $this->record->update([

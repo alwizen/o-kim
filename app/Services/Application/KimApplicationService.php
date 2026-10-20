@@ -88,23 +88,40 @@ class KimApplicationService
         $application->update(array_merge(['status' => $target], $extra));
     }
 
-    public function ensureRequiredDocumentsComplete(Vehicle $vehicle): void
-    {
-        $missing = $this->missingRequiredDocumentCodes($vehicle);
-
-        if ($missing->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'documents' => 'Dokumen wajib belum lengkap atau belum diverifikasi: '.$missing->implode(', '),
-            ]);
-        }
-    }
-
     /**
-     * Kode jenis dokumen wajib yang belum ada / belum terverifikasi pada kendaraan.
+     * Kode jenis dokumen wajib yang belum diunggah pada kendaraan.
+     * Dokumen pending maupun verified sama-sama dihitung sudah ada;
+     * verifikasi ditegakkan belakangan, saat penjadwalan pemeriksaan.
      *
      * @return Collection<int, string>
      */
     public function missingRequiredDocumentCodes(Vehicle $vehicle): Collection
+    {
+        $requiredTypes = DocumentType::where('is_required', true)
+            ->where('is_active', true)
+            ->pluck('id', 'code');
+
+        $uploadedTypeIds = $vehicle->documents()
+            ->whereNull('replaced_by_id')
+            ->whereIn('verification_status', [
+                DocumentVerificationStatus::Pending,
+                DocumentVerificationStatus::Verified,
+            ])
+            ->whereIn('document_type_id', $requiredTypes->values())
+            ->pluck('document_type_id')
+            ->unique();
+
+        return $requiredTypes->keys()->filter(
+            fn (string $code) => ! $uploadedTypeIds->contains($requiredTypes[$code])
+        )->values();
+    }
+
+    /**
+     * Kode jenis dokumen wajib yang sudah diunggah tetapi belum terverifikasi.
+     *
+     * @return Collection<int, string>
+     */
+    public function unverifiedDocumentCodes(Vehicle $vehicle): Collection
     {
         $requiredTypes = DocumentType::where('is_required', true)
             ->where('is_active', true)
@@ -123,8 +140,38 @@ class KimApplicationService
     }
 
     /**
-     * Kendaraan siap diajukan? Seluruh dokumen wajib sudah terverifikasi
-     * dan tidak ada pengajuan berjalan.
+     * Pastikan seluruh dokumen wajib kendaraan sudah diunggah (status verifikasi bebas).
+     * Dipakai saat pengiriman pengajuan.
+     */
+    public function ensureRequiredDocumentsComplete(Vehicle $vehicle): void
+    {
+        $missing = $this->missingRequiredDocumentCodes($vehicle);
+
+        if ($missing->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'documents' => 'Dokumen wajib belum lengkap: '.$missing->implode(', '),
+            ]);
+        }
+    }
+
+    /**
+     * Pastikan seluruh dokumen wajib kendaraan sudah terverifikasi
+     * (dipakai sebagai gate penjadwalan pemeriksaan).
+     */
+    public function ensureRequiredDocumentsVerified(Vehicle $vehicle): void
+    {
+        $pending = $this->unverifiedDocumentCodes($vehicle);
+
+        if ($pending->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'documents' => 'Dokumen wajib belum terverifikasi: '.$pending->implode(', '),
+            ]);
+        }
+    }
+
+    /**
+     * Kendaraan siap diajukan? Seluruh dokumen wajib sudah diunggah
+     * (verifikasi menyusul) dan tidak ada pengajuan berjalan.
      */
     public function isReadyForApplication(Vehicle $vehicle): bool
     {
@@ -141,6 +188,7 @@ class KimApplicationService
 
     /**
      * Query kendaraan yang siap diajukan untuk daftar pilihan transportir.
+     * Dokumen wajib cukup sudah diunggah (verifikasi tidak disyaratkan).
      *
      * @param  array<int, int|string>  $transporterIds
      * @return Builder<Vehicle>
@@ -163,8 +211,11 @@ class KimApplicationService
                 foreach ($requiredTypeIds as $typeId) {
                     $query->whereHas('documents', fn ($documentQuery) => $documentQuery
                         ->whereNull('replaced_by_id')
-                        ->where('document_type_id', $typeId)
-                        ->where('verification_status', DocumentVerificationStatus::Verified));
+                        ->whereIn('verification_status', [
+                            DocumentVerificationStatus::Pending,
+                            DocumentVerificationStatus::Verified,
+                        ])
+                        ->where('document_type_id', $typeId));
                 }
             });
     }
