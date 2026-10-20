@@ -89,7 +89,7 @@
 
                         <div class="mt-6 flex items-center justify-center gap-4 rounded-xl bg-ocean-50 p-4">
                             {{-- <x-ionicon-qr-code-sharp class="text-gray-800" /> --}}
-                            <img src="{{ asset('img/animate.svg') }}" alt="QR Code KIM" >
+                            <img src="{{ asset('img/qr.svg') }}" alt="QR Code KIM" >
                             {{-- <p class="text-xs leading-relaxed text-slate-500">Pindai QR pada kartu untuk memverifikasi keaslian dan masa berlaku KIM.</p> --}}
                         </div>
                     </div>

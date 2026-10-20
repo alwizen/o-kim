@@ -52,11 +52,16 @@ class LoginController extends Controller
     private function redirectAfterLogin(User $user): RedirectResponse
     {
         if ($user->account_status === AccountStatus::Pending) {
-            return redirect()->route('registration.profile.edit');
+            return redirect()->to($user->homeUrl())->with(
+                'success',
+                $user->hasRole('transportir')
+                    ? null
+                    : 'Akun Anda menunggu verifikasi super admin.'
+            );
         }
 
         if ($user->account_status === AccountStatus::Approved) {
-            return redirect()->intended('/transportir');
+            return redirect()->intended($user->homeUrl());
         }
 
         Auth::logout();

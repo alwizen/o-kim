@@ -4,11 +4,13 @@ namespace App\Filament\Resources\Users\Pages;
 
 use App\Actions\User\ActivateUser;
 use App\Actions\User\DeactivateUser;
+use App\Actions\User\RejectInternalRegistration;
 use App\Enums\AccountStatus;
 use App\Filament\Resources\Users\UserResource;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
@@ -64,6 +66,37 @@ class ListUsers extends ListRecords
 
                     Notification::make()
                         ->title('Akun diaktifkan')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('reject_registration')
+                ->label('Tolak Pendaftaran')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->visible(fn ($record): bool => $record->account_status === AccountStatus::Pending
+                    && ! $record->hasRole('transportir'))
+                ->schema([
+                    Textarea::make('reason')
+                        ->label('Alasan Penolakan')
+                        ->required()
+                        ->maxLength(1000),
+                ])
+                ->action(function ($record, array $data): void {
+                    try {
+                        app(RejectInternalRegistration::class)
+                            ->execute($record, auth()->user(), $data['reason']);
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Gagal menolak pendaftaran')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->title('Pendaftaran ditolak')
                         ->success()
                         ->send();
                 }),

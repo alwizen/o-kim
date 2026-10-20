@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\InternalRegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PendingInternalController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FindingAttachmentController;
 use App\Http\Controllers\InspectionResultAttachmentController;
@@ -28,11 +30,18 @@ Route::middleware('throttle:10,1')->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/daftar', [RegisterController::class, 'show'])->name('register');
     Route::post('/daftar', [RegisterController::class, 'store'])->middleware('throttle:6,1');
+    Route::get('/daftar/internal', [InternalRegisterController::class, 'show'])->name('register.internal');
+    Route::post('/daftar/internal', [InternalRegisterController::class, 'store'])->middleware('throttle:6,1');
     Route::get('/masuk', [LoginController::class, 'show'])->name('login.form');
     Route::post('/masuk', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.attempt');
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Halaman tunggu akun internal yang belum disetujui
+Route::get('/menunggu-verifikasi', [PendingInternalController::class, 'show'])
+    ->middleware('auth')
+    ->name('registration.pending.internal');
 
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('/validasi-kim/{token}', [KimValidationController::class, 'show'])
