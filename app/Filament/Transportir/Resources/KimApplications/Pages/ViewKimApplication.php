@@ -12,6 +12,7 @@ use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,7 @@ class ViewKimApplication extends ViewRecord
     {
         return parent::resolveRecord($key)->loadMissing([
             'findings.inspectionResult.item',
+            'inspectionResults.attachments',
         ]);
     }
 
@@ -89,6 +91,49 @@ class ViewKimApplication extends ViewRecord
                         ->columns(5),
                 ])
                 ->visible(fn ($record) => $record->findings()->exists()),
+            Section::make('Hasil Pemeriksaan')
+                ->columnSpanFull()
+                ->schema([
+                    RepeatableEntry::make('inspectionResults')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->table([
+                            TableColumn::make('Pemeriksaan'),
+                            TableColumn::make('Hasil'),
+                            TableColumn::make('Bukti Pemeriksaan'),
+                            TableColumn::make('Diperiksa Pada'),
+                        ])
+                        ->schema([
+                            TextEntry::make('item.label')->label('Butir'),
+                            TextEntry::make('result')->badge()->formatStateUsing(fn ($state) => $state->label()),
+                            RepeatableEntry::make('attachments')
+                                ->hiddenLabel()
+                                ->contained(false)
+                                ->placeholder('—')
+                                ->schema([
+                                    TextEntry::make('original_filename')
+                                        ->hiddenLabel()
+                                        ->formatStateUsing(fn ($state, $record) => $state.' ('.number_format($record->file_size / 1024, 0).' KB)'),
+                                    Actions::make([
+                                        Action::make('preview')
+                                            ->label('Pratinjau')
+                                            ->icon('heroicon-o-eye')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('inspection-attachments.preview', $record))
+                                            ->openUrlInNewTab(),
+                                        Action::make('download')
+                                            ->label('Unduh')
+                                            ->icon('heroicon-o-arrow-down-tray')
+                                            ->color('gray')
+                                            ->url(fn ($record): string => route('inspection-attachments.download', $record)),
+                                    ]),
+                                ])
+                                ->columns(2),
+                            TextEntry::make('inspected_at')->label('Waktu')->dateTime('d M Y H:i'),
+                        ])
+                        ->columns(4),
+                ])
+                ->visible(fn ($record) => $record->inspectionResults()->exists()),
         ]);
     }
 

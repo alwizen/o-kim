@@ -8,26 +8,18 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-lavender-50: #f7f6fe;
-    --color-lavender-100: #efedfc;
-    --color-lavender-200: #e1ddfa;
-    --color-lavender-300: #cfc7f5;
-    --color-lavender-400: #b3a7ec;
-    --color-lavender-500: #9784e3;
-    --color-lavender-600: #7f69d6;
-    --color-lavender-700: #6a55c2;
-    --color-lavender-800: #5644a0;
-    --color-lavender-900: #3d3175;
-    --color-lavender-950: #241c48;
-
-    --color-mint-50: #f2fbfd;
-    --color-mint-100: #e6f6fa;
-    --color-mint-200: #d0ecf3;
-    --color-mint-300: #b0dfea;
-    --color-mint-400: #7fcedf;
-    --color-mint-500: #4fb8ce;
-    --color-mint-600: #359cb4;
-    --color-mint-700: #2a7e93;
+    /* Palet hijau-biru untuk halaman publik (landing & auth). */
+    --color-ocean-50: #f3fbf9;
+    --color-ocean-100: #e7f6f2;
+    --color-ocean-200: #c6dfde;
+    --color-ocean-300: #a5c9ca;
+    --color-ocean-400: #6f929b;
+    --color-ocean-500: #54767f;
+    --color-ocean-600: #395b64;
+    --color-ocean-700: #32474b;
+    --color-ocean-800: #2c3333;
+    --color-ocean-900: #222727;
+    --color-ocean-950: #161b1b;
 
     --animate-marquee: marquee 32s linear infinite;
 }
@@ -57,18 +49,18 @@
     }
 
     :focus-visible {
-        outline: 2px solid var(--color-lavender-500);
+        outline: 2px solid var(--color-ocean-500);
         outline-offset: 2px;
         border-radius: 4px;
     }
 }
 
 @utility bg-pastel {
-    background-image: linear-gradient(135deg, #e1ddfa 0%, #f5f5fb 50%, #d0ecf3 100%);
+    background-image: linear-gradient(135deg, #e7f6f2 0%, #f8fdfb 50%, #c6dfde 100%);
 }
 
 @utility bg-pastel-soft {
-    background-image: linear-gradient(160deg, #f7f6fe 0%, #ffffff 50%, #f2fbfd 100%);
+    background-image: linear-gradient(160deg, #f3fbf9 0%, #ffffff 50%, #e7f6f2 100%);
 }
 
 @utility reveal {

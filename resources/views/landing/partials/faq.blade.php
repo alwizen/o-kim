@@ -1,5 +1,5 @@
     {{-- FAQ --}}
-    <section id="faq" class="scroll-mt-24 bg-lavender-50/60 py-20 sm:py-28">
+    <section id="faq" class="scroll-mt-24 bg-ocean-50/60 py-20 sm:py-28">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <x-landing.section-heading eyebrow="FAQ" title="Pertanyaan yang sering diajukan" />
 
@@ -15,10 +15,10 @@
                 @endphp
 
                 @foreach ($faqs as $index => $faq)
-                    <details class="reveal group rounded-xl border border-lavender-100 bg-white p-5 open:shadow-md" style="--reveal-delay:{{ $index * 60 }}ms">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-lavender-900">
+                    <details class="reveal group rounded-xl border border-ocean-100 bg-white p-5 open:shadow-md" style="--reveal-delay:{{ $index * 60 }}ms">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-ocean-900">
                             {{ $faq['q'] }}
-                            <x-heroicon-o-chevron-down class="h-5 w-5 shrink-0 text-lavender-400 transition-transform duration-300 group-open:rotate-180" />
+                            <x-heroicon-o-chevron-down class="h-5 w-5 shrink-0 text-ocean-400 transition-transform duration-300 group-open:rotate-180" />
                         </summary>
                         <p class="mt-3 text-sm leading-relaxed text-slate-600">{{ $faq['a'] }}</p>
                     </details>

@@ -20,13 +20,13 @@
                 @endphp
 
                 @foreach ($services as $index => $service)
-                    <article class="reveal group relative overflow-hidden rounded-2xl border border-lavender-100 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-lavender-200 hover:shadow-xl hover:shadow-lavender-900/5"
+                    <article class="reveal group relative overflow-hidden rounded-2xl border border-ocean-100 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-ocean-200 hover:shadow-xl hover:shadow-ocean-900/5"
                              style="--reveal-delay:{{ ($index % 3) * 80 }}ms">
-                        <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-lavender-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                        <div class="relative flex h-12 w-12 items-center justify-center rounded-xl bg-lavender-50 text-lavender-600 transition-colors duration-300 group-hover:bg-lavender-600 group-hover:text-white">
+                        <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-ocean-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                        <div class="relative flex h-12 w-12 items-center justify-center rounded-xl bg-ocean-50 text-ocean-600 transition-colors duration-300 group-hover:bg-ocean-600 group-hover:text-white">
                             <x-dynamic-component :component="'heroicon-'.$service['icon']" class="h-6 w-6" />
                         </div>
-                        <h3 class="relative mt-5 text-lg font-bold text-lavender-900">{{ $service['title'] }}</h3>
+                        <h3 class="relative mt-5 text-lg font-bold text-ocean-900">{{ $service['title'] }}</h3>
                         <p class="relative mt-2 text-sm leading-relaxed text-slate-600">{{ $service['desc'] }}</p>
                     </article>
                 @endforeach

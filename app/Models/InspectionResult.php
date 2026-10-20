@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Department;
 use App\Enums\InspectionResultValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,6 +47,19 @@ class InspectionResult extends Model
     public function pointResults(): HasMany
     {
         return $this->hasMany(InspectionResultPoint::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(InspectionResultAttachment::class)->orderBy('id');
+    }
+
+    /**
+     * Departemen pemilik butir checklist, dipakai untuk otorisasi lampiran.
+     */
+    public function department(): ?Department
+    {
+        return $this->item?->checklist?->department;
     }
 
     /**

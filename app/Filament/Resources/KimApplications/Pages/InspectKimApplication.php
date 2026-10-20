@@ -7,9 +7,12 @@ use App\Enums\InspectionResultValue;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\InspectionChecklist;
 use App\Models\InspectionItem;
+use App\Models\InspectionResult;
 use App\Models\KimApplication;
+use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Inspection\InspectionService;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -119,6 +122,24 @@ class InspectKimApplication extends Page implements HasForms
                     ->label('Catatan (opsional)')
                     ->rows(1)
                     ->default($existing?->notes);
+
+                $fields[] = FileUpload::make("results.{$item->id}.attachments")
+                    ->label('Bukti Pemeriksaan (foto/dokumen, boleh lebih dari satu)')
+                    ->helperText('PDF/JPG/PNG, maks 5 MB per berkas, maks 10 berkas sekali unggah. Opsional.')
+                    ->multiple()
+                    ->maxFiles(10)
+                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                    ->maxSize(5120)
+                    ->disk('local')
+                    ->storeFiles(false)
+                    ->columnSpanFull();
+
+                if ($existing && $existing->attachments()->exists()) {
+                    $fields[] = TextEntry::make("results.{$item->id}.existing_attachments")
+                        ->hiddenLabel()
+                        ->state(new HtmlString($this->renderExistingAttachments($existing)))
+                        ->columnSpanFull();
+                }
             }
 
             $sections[] = Section::make('Checklist '.$department->label())
@@ -142,7 +163,30 @@ class InspectKimApplication extends Page implements HasForms
         return $schema->components($sections);
     }
 
-    public function save(InspectionService $service): void
+    /**
+     * Daftar lampiran yang sudah tersimpan, ditampilkan di atas input unggah.
+     */
+    private function renderExistingAttachments(InspectionResult $result): string
+    {
+        $items = $result->attachments()->get()->map(function ($attachment) {
+            $name = e($attachment->original_filename);
+            $size = number_format($attachment->file_size / 1024, 0);
+
+            $links = collect([
+                'Pratinjau' => route('inspection-attachments.preview', $attachment),
+                'Unduh' => route('inspection-attachments.download', $attachment),
+            ])->map(fn (string $url, string $label) => '<a href="'.e($url).'" target="_blank" '
+                .'class="text-primary-600 underline hover:text-primary-500">'.$label.'</a>')
+                ->implode(' · ');
+
+            return '<li class="py-0.5">'.$name.' <span class="text-gray-500">('.$size.' KB)</span> — '.$links.'</li>';
+        })->implode('');
+
+        return '<div class="text-sm"><p class="font-medium text-gray-700 dark:text-gray-200">Lampiran tersimpan:</p>'
+            .'<ul class="mt-1 list-disc pl-5 text-gray-600 dark:text-gray-300">'.$items.'</ul></div>';
+    }
+
+    public function save(InspectionService $service, InspectionAttachmentService $attachmentService): void
     {
         $state = $this->form->getState();
         $results = $state['results'] ?? [];
@@ -161,7 +205,7 @@ class InspectKimApplication extends Page implements HasForms
             }
 
             try {
-                $service->recordResult(
+                $inspectionResult = $service->recordResult(
                     $this->record->fresh(),
                     $item,
                     InspectionResultValue::from($data['result']),
@@ -170,6 +214,13 @@ class InspectKimApplication extends Page implements HasForms
                     findingDescription: $data['finding_description'] ?? null,
                     pointIds: $data['points'] ?? [],
                 );
+
+                $attachmentService->upload(
+                    $inspectionResult,
+                    auth()->user(),
+                    $data['attachments'] ?? [],
+                );
+
                 $saved++;
             } catch (ValidationException $e) {
                 $errors[] = collect($e->errors())->flatten()->first();

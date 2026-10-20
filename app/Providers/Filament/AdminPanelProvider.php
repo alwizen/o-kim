@@ -45,7 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->maxContentWidth(Width::Full)
             ->login()
             ->colors([
-                'primary' => Color::Red,
+                'primary' => Color::Zinc,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -71,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugin(
-                PressFilamentTheme::make()->vellum()->rail(false)
+                PressFilamentTheme::make()->telex()->rail(false)
             )
             ->authMiddleware([
                 Authenticate::class,
