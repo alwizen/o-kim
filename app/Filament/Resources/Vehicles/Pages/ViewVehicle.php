@@ -22,6 +22,7 @@ class ViewVehicle extends ViewRecord
         return $schema->components([
             Section::make('Data Kendaraan')
                 ->columns(4)
+                ->collapsible()
                 ->columnSpanFull()
                 ->schema([
                     TextEntry::make('registration_number')->label('NOPOL'),
@@ -40,7 +41,9 @@ class ViewVehicle extends ViewRecord
                     TextEntry::make('tank_wall_thickness_mm')->label('Ketebalan Tangki')->placeholder('—')
                         ->formatStateUsing(fn ($state) => $state !== null ? $state.' mm' : null),
                 ]),
+
             Section::make('Dokumen Kendaraan')
+                ->collapsible()
                 ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('documents')
@@ -72,6 +75,7 @@ class ViewVehicle extends ViewRecord
                         ])
                         ->columns(6),
                 ]),
+
             Section::make('Riwayat Pengajuan KIM')
                 ->columnSpanFull()
                 ->schema([
