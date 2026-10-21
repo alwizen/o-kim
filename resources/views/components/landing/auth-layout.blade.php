@@ -64,7 +64,7 @@
             <div class="mx-auto w-full max-w-md">
 
                 <a href="{{ route('landing') }}" class="mb-8 flex items-center gap-3 lg:hidden">
-                    <img src="{{ asset('logo.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
+                    <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-10 w-auto">
                     <div class="flex flex-col leading-none">
                         <span class="text-base font-bold text-ocean-800">O-KIM</span>
                         <span class="text-[11px] text-slate-500">Fuel Terminal Tegal</span>
