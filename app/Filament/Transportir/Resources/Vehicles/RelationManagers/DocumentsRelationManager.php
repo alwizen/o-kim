@@ -54,6 +54,7 @@ class DocumentsRelationManager extends RelationManager
                     FileUpload::make('file')
                         ->label('Berkas (PDF/JPG/PNG, maks 5 MB)')
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->rules(['mimes:pdf,jpg,jpeg,png'])
                         ->maxSize(5120)
                         ->disk('local')
                         ->required()

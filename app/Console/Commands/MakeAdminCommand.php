@@ -28,6 +28,9 @@ class MakeAdminCommand extends Command
         'distribusi',
         'qq',
         'ftm',
+        'pengawas_hsse',
+        'pengawas_qq',
+        'pengawas_distribusi',
     ];
 
     public function handle(): int

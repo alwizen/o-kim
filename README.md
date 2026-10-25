@@ -412,13 +412,30 @@ MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
 Email dikirim melalui antrean, jadi worker harus berjalan:
 
 ```bash
-php artisan queue:work --sleep=3 --tries=3 --backoff=60
+php artisan queue:work --sleep=3 --tries=3 --backoff=60 --max-time=300
 ```
 
 Contoh konfigurasi Supervisor tersedia di `deploy/supervisor/okim-worker.conf`.
 Pantau kegagalan pengiriman dengan `php artisan queue:failed`.
 
 > Ikon lonceng (notifikasi database) tetap muncul walau worker mati — hanya **email** yang tertahan.
+
+**Koneksi SMTP basi (error `451 4.4.2 Timeout waiting for data from client`)**
+
+Relay SES memutus koneksi SMTP yang idle ±60 detik, sementara proteksi ping bawaan Symfony baru
+berjalan setelah 100 detik. Tanpa penanganan, worker yang lama menganggur akan gagal pada email
+berikutnya. Pengaturan yang dipakai:
+
+| Lokasi | Nilai | Fungsi |
+|---|---|---|
+| `.env` | `MAIL_TIMEOUT=10` | Koneksi mati terdeteksi dalam ≤10 detik (bukan 60 detik) |
+| `deploy/supervisor/okim-worker.conf` | `--max-time=300` | Worker diputar tiap 5 menit → selalu memakai koneksi SMTP baru |
+| `app/Jobs/SendNotificationMail.php` | `$tries = 5`, `$backoff = [15, 60, 120, 300]`, `$maxExceptions = 3` | Kegagalan transport sesaat otomatis dicoba ulang |
+| `app/Jobs/SendNotificationMail.php` | `failed()` | Kegagalan permanen dicatat di log beserta penerima |
+
+Uji jeda: kirim email, diamkan >90 detik, lalu picu notifikasi lain — harus selesai tanpa `451`.
+
+> `php artisan config:clear` wajib dijalankan setelah mengubah `MAIL_TIMEOUT`.
 
 ### Storage
 Dokumen sensitif disimpan di **disk private** (`storage/app/private`).
@@ -612,17 +629,20 @@ Format periode tersedia: tanggal (`Ymd`), tahun/bulan (`Y/m`), tahun (`Y`), atau
 Kedua panel (`/admin` dan `/transportir`) menampilkan **ikon lonceng** di sudut kanan atas.
 Setiap peristiwa penting memicu notifikasi yang tersimpan di database:
 
-| Peristiwa | Penerima | Contoh |
+| Peristiwa | Penerima lonceng | Contoh |
 |---|---|---|
 | Pendaftaran transportir baru | Petugas verifikator | Akun + nama perusahaan |
 | Kendaraan baru ditambahkan | Petugas dokumen | Perusahaan + NOPOL |
+| Dokumen kendaraan diunggah | Petugas verifikasi dokumen | Perusahaan + NOPOL + jenis dokumen |
 | Pengajuan KIM baru dikirim | Petugas pemeriksa | Nomor pengajuan + NOPOL |
-| Jadwal pemeriksaan ditetapkan | Transportir pemilik | Nomor pengajuan + jadwal |
+| Jadwal / reschedule pemeriksaan | Transportir pemilik + petugas | Nomor pengajuan + jadwal |
 | Temuan pemeriksaan baru | Transportir pemilik | Fungsi + deskripsi temuan |
+| Checklist fungsi selesai | Pengawas fungsi terkait | Pengajuan menunggu approval |
 | Tindak lanjut dikirim | Petugas fungsi terkait | Pengajuan + fungsi |
 | Approval fungsi selesai | FTM (menunggu final) | Pengajuan siap diputuskan |
 | Pengajuan disetujui / diterbitkan / ditolak | Transportir pemilik | Nomor pengajuan / nomor KIM |
-| Dokumen diverifikasi / ditolak | Transportir pemilik | Jenis dokumen + NOPOL |
+| Dokumen diverifikasi / ditolak | Seluruh PIC transportir | Jenis dokumen + NOPOL |
+| Pengingat kedaluwarsa (harian) | Transportir + petugas | Daftar dokumen/KIM + sisa hari |
 
 Klik notifikasi untuk menandainya dibaca; setiap notifikasi memiliki tombol **Lihat** yang menuju
 langsung ke data terkait.
@@ -631,8 +651,89 @@ Semua peristiwa di atas **juga dikirim sebagai email** melalui queue (lihat bagi
 Notifikasi email tidak memblokir request dan kegagalan pengiriman tidak membatalkan proses bisnis —
 kegagalan tercatat pada tabel `failed_jobs`.
 
+> **Penerima email dapat diatur super admin** — lihat *11.4 Manajemen Notifikasi Email*.
+> Penerima lonceng panel **tidak** terpengaruh pengaturan tersebut.
+
 **Pencarian global** tersedia di kolom pencarian atas kedua panel (ketik NOPOL, nomor pengajuan,
 nomor KIM, nama perusahaan, nama/pic, atau email). Hasil difilter sesuai akses role masing-masing.
+
+---
+
+### 11.3 Lupa Kata Sandi
+
+Berlaku untuk **akun yang mendaftar dengan email + kata sandi** — transportir maupun petugas
+internal. Akun yang mendaftar lewat **Google tidak dapat** memakai fitur ini karena tidak memiliki
+kata sandi; pengguna tersebut diarahkan untuk masuk lewat tombol **Masuk dengan Google**.
+
+| Halaman | URL | Keterangan |
+|---|---|---|
+| Lupa kata sandi | `/lupa-kata-sandi` | Tautan tersedia di `/masuk` dan `/admin/login` |
+| Form reset | `/reset-kata-sandi/{token}` | Dibuka dari tautan pada email |
+| Kirim tautan | `POST /lupa-kata-sandi` | Rate limit 6 permintaan/menit |
+| Simpan kata sandi | `POST /reset-kata-sandi` | Rate limit 6 permintaan/menit |
+
+**Alur:**
+1. Buka `/lupa-kata-sandi`, masukkan email, klik **Kirim Tautan Reset**.
+2. Email **Reset Kata Sandi O-KIM** dikirim (queue *tidak* dipakai agar tautan segera sampai dan
+   kegagalan pengiriman bisa dilaporkan pada request yang sama).
+3. Tautan berlaku **60 menit** (`config/auth.php` → `passwords.users.expire`) dan hanya bisa dipakai
+   sekali. Tautan lama otomatis gugur bila diminta ulang.
+4. Isi kata sandi baru + konfirmasi, lalu masuk kembali. Petugas internal diarahkan ke `/admin/login`,
+   transportir ke `/masuk`.
+
+**Catatan keamanan:**
+- Respons untuk email yang tidak terdaftar **sama** dengan email terdaftar, agar keberadaan akun tidak
+  dapat ditebak.
+- Akun Google-only mendapat pesan khusus ("terdaftar melalui Google") tanpa mengirim email apa pun.
+- Kata sandi baru mengikuti aturan yang sama dengan pendaftaran: minimal 8 karakter, huruf besar,
+  huruf kecil, dan angka.
+- Reset kata sandi memperbarui `remember_token`, sehingga cookie "Ingat saya" yang lama tidak berlaku lagi.
+
+---
+
+### 11.4 Manajemen Notifikasi Email
+
+Menu **User Manajemen → Notifikasi Email** (`/admin/notification-settings`) hanya dapat diakses
+**super admin** (permission `manage_notification_settings`). Super admin menentukan, per jenis
+notifikasi:
+
+- **Kirim email** — aktif/nonaktif.
+- **Role penerima email** — hanya user dengan role yang dicentang yang menerima email.
+
+Contoh: agar TAD HSSE/QQ/Distribusi hanya menerima email seputar checklist, buka
+*Pengajuan KIM Baru* lalu hapus centang `hsse`, `distribusi`, dan `qq`.
+
+**Yang perlu dipahami:**
+
+| Aspek | Perilaku |
+|---|---|
+| Lonceng panel | **Tetap aktif** ke penerima lama (permission/kepemilikan), walau email dimatikan |
+| Email | Difilter sesuai event + role yang dicentang |
+| Notifikasi keamanan | Akun disetujui/ditolak & reset kata sandi **selalu aktif** (tidak bisa dimatikan) |
+| Kembalikan bawaan | Tombol **Kembalikan ke Bawaan** pada halaman edit mengembalikan role default sistem |
+| Data baru | Event baru otomatis tampil setelah `php artisan db:seed --class=NotificationSettingSeeder` |
+
+**Daftar event:**
+
+| Grup | Event |
+|---|---|
+| Transportir | Pendaftaran diterima · akun disetujui/ditolak · dokumen diverifikasi/ditolak · jadwal pemeriksaan · progress approval · pengajuan disetujui/ditolak · temuan checklist · KIM terbit · pengingat kedaluwarsa |
+| Internal | Pendaftaran transportir · pendaftaran user internal · kendaraan baru · dokumen diunggah · pengajuan KIM baru · jadwal/reschedule checklist · tindak lanjut transportir · butuh approval fungsi · butuh approval final · ringkasan kedaluwarsa |
+| Akun & Keamanan | Akun internal disetujui/ditolak · reset kata sandi *(selalu aktif)* |
+
+**Pengingat kedaluwarsa (harian)**
+
+Command `okim:notify-expiry` dijalankan otomatis pukul **07:00** (`routes/console.php`) dan mengirim:
+
+1. **Satu email digest per perusahaan transportir** berisi semua dokumen dan KIM yang sudah
+   kedaluwarsa atau akan habis (tombol *Perbarui Dokumen*).
+2. **Satu email ringkasan untuk petugas internal** (dikelompokkan per perusahaan).
+
+Email dikirim **setiap hari** selama masih ada item yang perlu diperbarui, dan tidak akan terkirim
+dua kali pada hari yang sama. Ambang hari diatur di **Pengaturan Sistem → Notifikasi**
+(default **60 hari**).
+
+> Produksi wajib menjalankan cron `* * * * * php artisan schedule:run` agar pengingat harian aktif.
 
 ---
 
@@ -641,7 +742,7 @@ nomor KIM, nama perusahaan, nama/pic, atau email). Hasil difilter sesuai akses r
 ```
 app/
 ├── Actions/                 # Operasi bisnis tunggal (approve/reject registrasi)
-├── Enums/                   # Status & kategori tetap (11 enum)
+├── Enums/                   # Status & kategori tetap (12 enum, termasuk katalog notifikasi)
 ├── Filament/
 │   ├── Resources/           # Resource panel Admin
 │   ├── Widgets/             # Widget dashboard Admin
@@ -658,6 +759,7 @@ app/
     ├── Document/            # Upload & versi dokumen
     ├── Finding/             # Tindak lanjut & verifikasi temuan
     ├── Inspection/          # Checklist, sub-butir & kesiapan approval
+    ├── Notification/        # Penerima email per event (aturan super admin)
     ├── Setting/             # Pengaturan sistem (key-value)
     ├── Kim/                 # Penerbitan, masa berlaku, PDF, QR
     └── Registration/        # Pembuatan akun pending
@@ -703,6 +805,7 @@ Cakupan pengujian business rule kritis:
 | `RegistrationTest` | Registrasi, approval akun, notifikasi |
 | `CompanyProfilePicNameTest` | Nama PIC di profil perusahaan & pendaftaran publik |
 | `EmailPasswordAuthTest` | Login/daftar email-password, jalur terpisah |
+| `PasswordResetTest` | Lupa/reset kata sandi, penolakan akun Google-only |
 | `VehicleDocumentTest` | Isolasi data, keamanan upload, riwayat dokumen |
 | `VehicleDocumentVerificationTest` | Verifikasi/tolak dokumen & dampaknya ke pengajuan |
 | `VehicleDetailsTest` | Field kendaraan baru (rangka, mesin, jenis angkutan, bahan tangki) |
@@ -713,6 +816,10 @@ Cakupan pengujian business rule kritis:
 | `SettingsTest` | Pengaturan sistem (masa berlaku & penomoran KIM/pengajuan) |
 | `ApplicationNumberingTest` | Penomoran pengajuan mengikuti pengaturan |
 | `DatabaseNotificationTest` | Helper notifikasi & pemicu event (10 test) |
+| `MailTransportConfigTest` | Timeout SMTP, retry/backoff job email, hook `failed()` (5 test) |
+| `NotificationSettingsTest` | Manajemen notifikasi email: gate event/role, lonceng tetap, akses super admin (15 test) |
+| `NotificationTriggersTest` | Notifikasi baru: dokumen diunggah, kendaraan baru, tolak dokumen ke semua PIC |
+| `ExpiryReminderTest` | Digest harian dokumen & KIM, ambang hari, anti-duplikat, jadwal 07:00 |
 | `GlobalSearchTest` | Konfigurasi pencarian global per resource (8 test) |
 | `MakeAdminCommandTest` | Command `okim:make-admin` (akun admin & validasinya) |
 | `UserManagementTest` | Pengguna Internal: create/edit role, proteksi nonaktifkan |
@@ -735,11 +842,13 @@ Cakupan pengujian business rule kritis:
 3. Build aset: `npm ci && npm run build`.
 4. Optimasi: `php artisan config:cache && php artisan route:cache && php artisan view:cache`.
 5. Arahkan document root web server (Nginx) ke folder `public/`.
-6. Atur queue worker untuk notifikasi: `php artisan queue:work`.
-7. Konfigurasikan SMTP sebelum email produksi diaktifkan.
-8. Aktifkan backup berkala untuk database dan `storage/app/private`.
-9. **Ganti semua password default** dan hapus akun demo.
-10. Batasi akses panel admin sesuai jaringan internal bila memungkinkan.
+6. Atur queue worker untuk notifikasi memakai Supervisor (`deploy/supervisor/okim-worker.conf`,
+   sudah memakai `--max-time=300` agar koneksi SMTP selalu baru).
+7. Tambahkan cron `* * * * * php artisan schedule:run` untuk pengingat kedaluwarsa harian.
+8. Konfigurasikan SMTP sebelum email produksi diaktifkan (termasuk `MAIL_TIMEOUT=10`).
+9. Aktifkan backup berkala untuk database dan `storage/app/private`.
+10. **Ganti semua password default** dan hapus akun demo.
+11. Batasi akses panel admin sesuai jaringan internal bila memungkinkan.
 
 ---
 

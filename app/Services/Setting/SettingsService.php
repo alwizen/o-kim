@@ -12,6 +12,8 @@ class SettingsService
 
     public const GROUP_KIM = 'kim';
 
+    public const GROUP_NOTIFICATION = 'notification';
+
     /**
      * Format periode khusus: bulan dalam angka Romawi diikuti tahun (XI/2026).
      */
@@ -26,6 +28,7 @@ class SettingsService
         'application.number_prefix' => 'APP',
         'application.number_period_format' => 'Ymd',
         'application.number_sequence_digits' => '4',
+        'notification.expiry_warning_days' => '60',
     ];
 
     /**
@@ -130,6 +133,20 @@ class SettingsService
     public function applicationNumberSequenceDigits(): int
     {
         return $this->getInt('application.number_sequence_digits', 4);
+    }
+
+    // ---------------------------------------------------------------
+    // Pengaturan Notifikasi
+    // ---------------------------------------------------------------
+
+    /**
+     * Ambang hari peringatan dokumen/KIM akan kedaluwarsa.
+     */
+    public function expiryWarningDays(): int
+    {
+        $days = $this->getInt('notification.expiry_warning_days', 60);
+
+        return max(1, $days);
     }
 
     /**

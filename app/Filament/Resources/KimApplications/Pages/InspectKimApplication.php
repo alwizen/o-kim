@@ -68,6 +68,13 @@ class InspectKimApplication extends Page implements HasForms
         $user = auth()->user();
         $sections = [];
 
+        // Muat seluruh hasil inspeksi (beserta relasinya) sekali saja,
+        // bukan per butir checklist.
+        $existingResults = $this->record->inspectionResults()
+            ->with(['attachments', 'pointResults', 'finding'])
+            ->get()
+            ->keyBy('inspection_item_id');
+
         foreach (Department::inspectingDepartments() as $department) {
             if (! $user->can($department->inspectPermission())) {
                 continue;
@@ -84,9 +91,7 @@ class InspectKimApplication extends Page implements HasForms
 
             $fields = [];
             foreach ($checklist->items as $item) {
-                $existing = $this->record->inspectionResults()
-                    ->where('inspection_item_id', $item->id)
-                    ->first();
+                $existing = $existingResults->get($item->id);
 
                 $fields[] = Radio::make("results.{$item->id}.result")
                     ->label($item->item_code.' — '.$item->label)
@@ -129,12 +134,13 @@ class InspectKimApplication extends Page implements HasForms
                     ->multiple()
                     ->maxFiles(10)
                     ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                    ->rules(['mimes:pdf,jpg,jpeg,png'])
                     ->maxSize(5120)
                     ->disk('local')
                     ->storeFiles(false)
                     ->columnSpanFull();
 
-                if ($existing && $existing->attachments()->exists()) {
+                if ($existing && $existing->attachments->isNotEmpty()) {
                     $fields[] = TextEntry::make("results.{$item->id}.existing_attachments")
                         ->hiddenLabel()
                         ->state(new HtmlString($this->renderExistingAttachments($existing)))
@@ -168,7 +174,7 @@ class InspectKimApplication extends Page implements HasForms
      */
     private function renderExistingAttachments(InspectionResult $result): string
     {
-        $items = $result->attachments()->get()->map(function ($attachment) {
+        $items = $result->attachments->map(function ($attachment) {
             $name = e($attachment->original_filename);
             $size = number_format($attachment->file_size / 1024, 0);
 
@@ -191,6 +197,15 @@ class InspectKimApplication extends Page implements HasForms
         $state = $this->form->getState();
         $results = $state['results'] ?? [];
 
+        $application = $this->record->fresh();
+
+        // Muat seluruh butir yang dikirim dalam satu query (bukan per butir).
+        $items = InspectionItem::query()
+            ->with('checklist')
+            ->whereIn('id', array_keys($results))
+            ->get()
+            ->keyBy('id');
+
         $saved = 0;
         $errors = [];
 
@@ -199,14 +214,14 @@ class InspectKimApplication extends Page implements HasForms
                 continue;
             }
 
-            $item = InspectionItem::find($itemId);
+            $item = $items->get((int) $itemId);
             if (! $item) {
                 continue;
             }
 
             try {
                 $inspectionResult = $service->recordResult(
-                    $this->record->fresh(),
+                    $application,
                     $item,
                     InspectionResultValue::from($data['result']),
                     auth()->user(),

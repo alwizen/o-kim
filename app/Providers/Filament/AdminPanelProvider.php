@@ -35,13 +35,14 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandlogo(asset('img/logo.png'))
-            ->brandLogoHeight('4rem')
+            ->brandLogoHeight('3rem')
             ->favicon(asset('img/fav.svg'))
             ->sidebarCollapsibleOnDesktop()
-            ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar)
-            ->globalSearch(position: GlobalSearchPosition::Sidebar)
-            ->userMenu(position: UserMenuPosition::Sidebar)
-            ->topbar(false)
+            ->databaseNotifications()
+            // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar)
+            // ->globalSearch(position: GlobalSearchPosition::Sidebar)
+            // ->userMenu(position: UserMenuPosition::Sidebar)
+            // ->topbar(false)
             ->maxContentWidth(Width::Full)
             ->login()
             ->colors([
@@ -71,7 +72,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugin(
-                PressFilamentTheme::make()->telex()->rail(false)
+                PressFilamentTheme::make()->vellum()->rail(false)
             )
             ->authMiddleware([
                 Authenticate::class,
