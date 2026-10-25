@@ -51,6 +51,10 @@ class ApprovalService
         }
 
         return DB::transaction(function () use ($application, $department, $decision, $approver, $notes) {
+            // Kunci baris pengajuan agar keputusan approval bersifat serial
+            // (mencegah dua approval ganda pada request bersamaan).
+            $application = KimApplication::lockForUpdate()->findOrFail($application->id);
+
             // Cegah duplikasi approval aktif untuk tahapan yang sama
             $existing = $application->approvals()
                 ->where('department', $department->value)

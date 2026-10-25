@@ -62,6 +62,40 @@ class LandingNavigationTest extends TestCase
             ->assertRedirect('/admin');
     }
 
+    public function test_navbar_internal_login_points_to_admin_login(): void
+    {
+        $this->get('/')
+            ->assertSuccessful()
+            ->assertSee('/admin/login', escape: false)
+            ->assertSee('Masuk sebagai Petugas Internal');
+    }
+
+    public function test_internal_user_is_not_sent_to_transportir_after_login(): void
+    {
+        $admin = User::factory()->create([
+            'account_status' => AccountStatus::Approved,
+            'email' => 'admin@okim.test',
+        ]);
+        $admin->assignRole('super_admin');
+
+        $this->withSession(['url.intended' => '/transportir'])
+            ->post('/masuk', [
+                'email' => 'admin@okim.test',
+                'password' => 'password',
+            ])
+            ->assertRedirect('/admin');
+    }
+
+    public function test_transportir_is_not_sent_to_admin_after_login(): void
+    {
+        $this->withSession(['url.intended' => '/admin/kim-applications'])
+            ->post('/masuk', [
+                'email' => $this->approvedTransportir()->email,
+                'password' => 'password',
+            ])
+            ->assertRedirect('/transportir');
+    }
+
     public function test_landing_shows_panel_button_when_approved_user_logged_in(): void
     {
         $this->actingAs($this->approvedTransportir())

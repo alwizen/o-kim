@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\InternalRole;
 use App\Models\User;
 
 class UserPolicy
@@ -23,7 +24,17 @@ class UserPolicy
 
     public function update(User $user, User $model): bool
     {
-        return $user->can('manage_users') && $this->isInternal($model);
+        if (! $user->can('manage_users')) {
+            return false;
+        }
+
+        // Akun super_admin hanya boleh diubah oleh super_admin.
+        if ($model->hasRole(InternalRole::SuperAdmin->value)
+            && ! $user->hasRole(InternalRole::SuperAdmin->value)) {
+            return false;
+        }
+
+        return $this->isInternal($model);
     }
 
     /**

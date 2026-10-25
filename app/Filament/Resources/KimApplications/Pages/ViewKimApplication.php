@@ -12,6 +12,7 @@ use App\Enums\FindingStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\VehicleDocument;
 use App\Notifications\InspectionScheduled;
+use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
 use App\Services\Inspection\InspectionAttachmentService;
@@ -31,6 +32,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ViewKimApplication extends ViewRecord
@@ -44,6 +46,11 @@ class ViewKimApplication extends ViewRecord
             'findings.creator',
             'inspectionResults.attachments',
             'vehicle.documents.documentType',
+            'vehicle.documents.vehicle.transporter',
+            'approvals.approver',
+            'kimCard',
+            'scheduler',
+            'transporter',
         ]);
     }
 
@@ -153,7 +160,7 @@ class ViewKimApplication extends ViewRecord
                             ]),
                         ]),
                 ])
-                ->visible(fn ($record) => $record->vehicle->documents()->exists()),
+                ->visible(fn ($record) => $record->vehicle->documents->isNotEmpty()),
             Section::make('Temuan')
                 ->columnSpanFull()
                 ->schema([
@@ -196,7 +203,7 @@ class ViewKimApplication extends ViewRecord
                         ])
                         ->columns(6),
                 ])
-                ->visible(fn ($record) => $record->findings()->exists()),
+                ->visible(fn ($record) => $record->findings->isNotEmpty()),
             Section::make('Hasil Pemeriksaan')
                 ->columnSpanFull()
                 ->schema([
@@ -251,7 +258,7 @@ class ViewKimApplication extends ViewRecord
                         ])
                         ->columns(5),
                 ])
-                ->visible(fn ($record) => $record->inspectionResults()->exists()),
+                ->visible(fn ($record) => $record->inspectionResults->isNotEmpty()),
 
             Section::make('Riwayat Approval')
                 ->columns(2)
@@ -278,7 +285,7 @@ class ViewKimApplication extends ViewRecord
                             TextEntry::make('notes')->label('Catatan')->placeholder('—')->columnSpanFull(),
                         ]),
                 ])
-                ->visible(fn ($record) => $record->approvals()->exists()),
+                ->visible(fn ($record) => $record->approvals->isNotEmpty()),
             Section::make('KIM Terbit')
                 ->columns(3)
                 ->columnSpanFull()
@@ -287,7 +294,7 @@ class ViewKimApplication extends ViewRecord
                     TextEntry::make('kimCard.issued_at')->label('Terbit')->dateTime('d M Y'),
                     TextEntry::make('kimCard.expires_at')->label('Berlaku Hingga')->date('d M Y'),
                 ])
-                ->visible(fn ($record) => $record->kimCard()->exists()),
+                ->visible(fn ($record) => $record->kimCard !== null),
         ]);
     }
 
@@ -319,7 +326,7 @@ class ViewKimApplication extends ViewRecord
                     $this->record->status,
                     [ApplicationStatus::Submitted, ApplicationStatus::Inspection],
                     true
-                ) && auth()->user()->can('view_applications'))
+                ) && auth()->user()->can('schedule_inspection'))
                 ->schema([
                     DateTimePicker::make('inspection_scheduled_at')
                         ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
@@ -352,12 +359,25 @@ class ViewKimApplication extends ViewRecord
                         'inspection_scheduled_by' => auth()->id(),
                     ]);
 
+                    $scheduledAt = Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i');
+
                     AppNotifier::notifyTransporter(
                         $this->record->transporter_id,
                         new InspectionScheduled(
                             $this->record->application_number,
                             $this->record->vehicle->registration_number,
-                            Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i'),
+                            $scheduledAt,
+                        ),
+                    );
+
+                    AppNotifier::notifyStaffWithPermission(
+                        'schedule_inspection',
+                        new InspectionScheduledForStaff(
+                            $this->record->application_number,
+                            $this->record->vehicle->registration_number,
+                            $scheduledAt,
+                            $isReschedule,
+                            (string) $this->record->getRouteKey(),
                         ),
                     );
 
@@ -370,13 +390,34 @@ class ViewKimApplication extends ViewRecord
                 }),
         ];
 
+        $hasOpenFindings = $this->record->findings
+            ->contains(fn ($finding) => $finding->status !== FindingStatus::Verified);
+
+        $approvedDepartments = $this->record->approvals
+            ->where('decision', ApprovalDecision::Approved)
+            ->pluck('department')
+            ->map(fn ($department) => $department->value)
+            ->unique()
+            ->values();
+
+        $functionalApprovalsComplete = collect(Department::inspectingDepartments())
+            ->every(fn (Department $department) => $approvedDepartments->contains($department->value));
+
         foreach (Department::inspectingDepartments() as $department) {
-            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Approved);
-            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Rejected);
+            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
+            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
         }
 
-        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Approved);
-        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Rejected);
+        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
+        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
+
+        $actions[] = Action::make('inspection_report')
+            ->label('Cetak Laporan Pemeriksaan')
+            ->icon('heroicon-o-printer')
+            ->color('gray')
+            ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
+            ->url(fn (): string => route('inspection-report.download', $this->record))
+            ->openUrlInNewTab();
 
         $actions[] = Action::make('issue_kim')
             ->label('Terbitkan KIM')
@@ -384,7 +425,7 @@ class ViewKimApplication extends ViewRecord
             ->color('success')
             ->requiresConfirmation()
             ->visible(fn (): bool => $this->record->status === ApplicationStatus::Approved
-                && auth()->user()->can('approve_final'))
+                && auth()->user()->can('issue_kim'))
             ->action(function (): void {
                 try {
                     app(KimIssuanceService::class)->issue($this->record);
@@ -407,8 +448,16 @@ class ViewKimApplication extends ViewRecord
         return $actions;
     }
 
-    private function makeApprovalAction(Department $department, ApprovalDecision $decision): Action
-    {
+    /**
+     * @param  Collection<int, string>  $approvedDepartments
+     */
+    private function makeApprovalAction(
+        Department $department,
+        ApprovalDecision $decision,
+        bool $hasOpenFindings,
+        bool $functionalApprovalsComplete,
+        Collection $approvedDepartments,
+    ): Action {
         $permission = $department === Department::Ftm ? 'approve_final' : 'approve_'.$department->value;
         $isApprove = $decision === ApprovalDecision::Approved;
         $label = $department === Department::Ftm ? 'Approval Final (FTM)' : 'Approval '.$department->label();
@@ -424,12 +473,9 @@ class ViewKimApplication extends ViewRecord
                     [ApplicationStatus::Inspection, ApplicationStatus::RevisionRequired, ApplicationStatus::PendingApproval],
                     true
                 )
-                && ! $this->record->approvals()
-                    ->where('department', $department->value)
-                    ->where('decision', 'approved')
-                    ->exists()
-                && ! $this->hasOpenFindings()
-                && ($department !== Department::Ftm || $this->functionalApprovalsComplete()))
+                && ! $approvedDepartments->contains($department->value)
+                && ! $hasOpenFindings
+                && ($department !== Department::Ftm || $functionalApprovalsComplete))
             ->schema([
                 Textarea::make('notes')
                     ->label($isApprove ? 'Catatan (opsional)' : 'Alasan Penolakan (wajib)')
@@ -463,30 +509,5 @@ class ViewKimApplication extends ViewRecord
                     ->success()
                     ->send();
             });
-    }
-
-    /**
-     * Approval disembunyikan selama masih ada temuan yang belum terverifikasi.
-     */
-    private function hasOpenFindings(): bool
-    {
-        return $this->record->findings()
-            ->where('status', '!=', FindingStatus::Verified)
-            ->exists();
-    }
-
-    /**
-     * Tombol approval final FTM hanya muncul setelah HSSE, Distribusi,
-     * dan QQ seluruhnya menyetujui.
-     */
-    private function functionalApprovalsComplete(): bool
-    {
-        $approved = $this->record->approvals()
-            ->whereIn('department', collect(Department::inspectingDepartments())->map->value)
-            ->where('decision', 'approved')
-            ->pluck('department')
-            ->unique();
-
-        return $approved->count() === count(Department::inspectingDepartments());
     }
 }

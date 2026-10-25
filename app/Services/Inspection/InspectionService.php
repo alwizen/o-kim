@@ -9,10 +9,13 @@ use App\Enums\InspectionResultValue;
 use App\Models\Finding;
 use App\Models\InspectionItem;
 use App\Models\InspectionResult;
+use App\Models\InspectionResultPoint;
 use App\Models\KimApplication;
 use App\Models\User;
+use App\Notifications\ApplicationPendingDepartmentApproval;
 use App\Notifications\FindingCreated;
 use App\Support\AppNotifier;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -91,6 +94,19 @@ class InspectionService
 
             $this->syncPoints($inspectionResult, $item, $pointIds);
 
+            $existingFinding = $inspectionResult->finding;
+
+            if ($result !== InspectionResultValue::Finding && $existingFinding !== null) {
+                // Hapus temuan yang belum ditindaklanjuti. Jika sudah ada tindak
+                // lanjut atau sudah diverifikasi, pertahankan sebagai jejak audit
+                // dan biarkan verifikator yang menutupnya.
+                if ($existingFinding->status === FindingStatus::Open
+                    && ! $existingFinding->actions()->exists()) {
+                    $existingFinding->delete();
+                    $inspectionResult->unsetRelation('finding');
+                }
+            }
+
             if ($result === InspectionResultValue::Finding && ! $inspectionResult->finding) {
                 Finding::create([
                     'kim_application_id' => $application->id,
@@ -115,8 +131,41 @@ class InspectionService
                 ));
             }
 
+            DB::afterCommit(fn () => $this->notifyDepartmentApprovalReady($application, $department));
+
             return $inspectionResult;
         });
+    }
+
+    /**
+     * Beri tahu pengawas fungsi bahwa checklist fungsi tersebut sudah lengkap
+     * dan pengajuan menunggu approval mereka. Dikirim sekali per pengajuan+fungsi.
+     */
+    private function notifyDepartmentApprovalReady(KimApplication $application, Department $department): void
+    {
+        if (! $this->isDepartmentInspectionComplete($application, $department)) {
+            return;
+        }
+
+        if ($application->status === ApplicationStatus::RevisionRequired) {
+            return;
+        }
+
+        $cacheKey = 'okim:approval-needed:'.$application->id.':'.$department->value;
+
+        if (! Cache::add($cacheKey, true, now()->addDays(30))) {
+            return;
+        }
+
+        AppNotifier::notifyStaffWithPermission(
+            'approve_'.$department->value,
+            new ApplicationPendingDepartmentApproval(
+                $application->application_number,
+                $application->vehicle->registration_number,
+                $department->label(),
+                (string) $application->getRouteKey(),
+            ),
+        );
     }
 
     /**
@@ -138,12 +187,21 @@ class InspectionService
             ->intersect($validPointIds)
             ->all();
 
-        foreach ($validPointIds as $pointId) {
-            $inspectionResult->pointResults()->updateOrCreate(
-                ['inspection_item_point_id' => $pointId],
-                ['is_checked' => in_array($pointId, $selected, true)]
-            );
-        }
+        $now = now();
+
+        $rows = collect($validPointIds)->map(fn (int $pointId) => [
+            'inspection_result_id' => $inspectionResult->id,
+            'inspection_item_point_id' => $pointId,
+            'is_checked' => in_array($pointId, $selected, true),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        InspectionResultPoint::upsert(
+            $rows,
+            ['inspection_result_id', 'inspection_item_point_id'],
+            ['is_checked', 'updated_at']
+        );
     }
 
     /**

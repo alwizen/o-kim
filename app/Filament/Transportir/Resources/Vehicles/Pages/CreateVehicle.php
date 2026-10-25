@@ -3,6 +3,7 @@
 namespace App\Filament\Transportir\Resources\Vehicles\Pages;
 
 use App\Filament\Transportir\Resources\Vehicles\VehicleResource;
+use App\Notifications\VehicleCreated;
 use App\Support\AppNotifier;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -22,13 +23,13 @@ class CreateVehicle extends CreateRecord
         $vehicle = $this->getRecord();
         $company = $vehicle->transporter?->company_name ?? '-';
 
-        AppNotifier::toStaffWithPermission(
+        AppNotifier::notifyStaffWithPermission(
             'verify_documents',
-            'Kendaraan Baru Ditambahkan',
-            $company.' menambahkan kendaraan '.$vehicle->registration_number.'.',
-            'heroicon-o-truck',
-            'info',
-            '/admin/vehicles/'.$vehicle->getRouteKey(),
+            new VehicleCreated(
+                $company,
+                (string) $vehicle->registration_number,
+                (string) $vehicle->getRouteKey(),
+            ),
         );
     }
 }

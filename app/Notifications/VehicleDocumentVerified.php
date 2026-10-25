@@ -40,7 +40,7 @@ class VehicleDocumentVerified extends AppNotification
     {
         return (new MailMessage)
             ->subject('Dokumen Kendaraan Diverifikasi — O-KIM')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Dokumen kendaraan Anda telah diverifikasi oleh petugas.')
             ->line('Jenis dokumen: '.$this->documentTypeName)
             ->line('NOPOL: '.$this->registrationNumber)

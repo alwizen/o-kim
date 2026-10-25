@@ -41,7 +41,7 @@ class InspectionScheduled extends AppNotification
     {
         return (new MailMessage)
             ->subject('Jadwal Pemeriksaan KIM — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Jadwal pemeriksaan kendaraan Anda telah ditetapkan.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('NOPOL: '.$this->registrationNumber)

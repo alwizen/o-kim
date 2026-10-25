@@ -6,6 +6,7 @@ use App\Enums\DocumentVerificationStatus;
 use App\Models\User;
 use App\Models\VehicleDocument;
 use App\Notifications\VehicleDocumentRejected;
+use App\Support\AppNotifier;
 use Illuminate\Validation\ValidationException;
 
 class RejectVehicleDocument
@@ -45,12 +46,20 @@ class RejectVehicleDocument
 
     private function notifyOwner(VehicleDocument $document, string $reason): void
     {
-        $owner = $document->vehicle?->transporter?->users()->first();
+        $transporterId = $document->vehicle?->transporter_id;
 
-        $owner?->notify(new VehicleDocumentRejected(
-            $document->documentType?->name ?? 'Dokumen',
-            $document->vehicle?->registration_number ?? '-',
-            $reason,
-        ));
+        if ($transporterId === null) {
+            return;
+        }
+
+        // Semua PIC perusahaan menerima notifikasi (konsisten dengan notifikasi lain).
+        AppNotifier::notifyTransporter(
+            (int) $transporterId,
+            new VehicleDocumentRejected(
+                $document->documentType?->name ?? 'Dokumen',
+                $document->vehicle?->registration_number ?? '-',
+                $reason,
+            ),
+        );
     }
 }

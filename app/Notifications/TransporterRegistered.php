@@ -30,7 +30,7 @@ class TransporterRegistered extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran O-KIM Diterima')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pendaftaran akun transportir Anda di O-KIM Fuel Terminal Tegal telah kami terima.')
             ->line('Tim kami akan memeriksa data perusahaan Anda sebelum akun diaktifkan.')
             ->line('Anda akan menerima pemberitahuan setelah proses verifikasi selesai.');

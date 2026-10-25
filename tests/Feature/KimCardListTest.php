@@ -54,7 +54,7 @@ class KimCardListTest extends TestCase
 
         foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role);
+            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
             $this->officers[$role] = $officer;
         }
 

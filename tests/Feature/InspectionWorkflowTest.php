@@ -43,6 +43,10 @@ class InspectionWorkflowTest extends TestCase
 
     private User $distribusiOfficer;
 
+    private User $hssePengawas;
+
+    private User $distribusiPengawas;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,8 +61,14 @@ class InspectionWorkflowTest extends TestCase
         $this->hsseOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
         $this->hsseOfficer->assignRole('hsse');
 
+        $this->hssePengawas = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $this->hssePengawas->assignRole('pengawas_hsse');
+
         $this->distribusiOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
         $this->distribusiOfficer->assignRole('distribusi');
+
+        $this->distribusiPengawas = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $this->distribusiPengawas->assignRole('pengawas_distribusi');
 
         $this->application = app(KimApplicationService::class)
             ->createDraft($this->vehicle, ApplicationType::New);
@@ -231,7 +241,7 @@ class InspectionWorkflowTest extends TestCase
         $finding = $this->application->findings()->firstOrFail();
         $finding->update(['status' => FindingStatus::Verified]);
 
-        $this->actingAs($this->hsseOfficer);
+        $this->actingAs($this->hssePengawas);
 
         Livewire::test(ViewKimApplication::class, [
             'record' => $this->application->getRouteKey(),
@@ -245,7 +255,7 @@ class InspectionWorkflowTest extends TestCase
         $this->submitAndSchedule();
 
         $qqOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-        $qqOfficer->assignRole('qq');
+        $qqOfficer->assignRole(['qq', 'pengawas_qq']);
 
         $ftmOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
         $ftmOfficer->assignRole('ftm');
@@ -281,8 +291,8 @@ class InspectionWorkflowTest extends TestCase
             ->assertActionHidden('reject_ftm');
 
         // Setelah HSSE & Distribusi menyetujui (QQ belum): FTM tetap disembunyikan.
-        $approvals->decide($this->application->fresh(), Department::Hsse, ApprovalDecision::Approved, $this->hsseOfficer);
-        $approvals->decide($this->application->fresh(), Department::Distribusi, ApprovalDecision::Approved, $this->distribusiOfficer);
+        $approvals->decide($this->application->fresh(), Department::Hsse, ApprovalDecision::Approved, $this->hssePengawas);
+        $approvals->decide($this->application->fresh(), Department::Distribusi, ApprovalDecision::Approved, $this->distribusiPengawas);
 
         Livewire::test(ViewKimApplication::class, [
             'record' => $this->application->getRouteKey(),
@@ -415,7 +425,7 @@ class InspectionWorkflowTest extends TestCase
 
         foreach (Department::inspectingDepartments() as $department) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($department->value);
+            $officer->assignRole([$department->value, 'pengawas_'.$department->value]);
 
             $items = InspectionItem::whereHas('checklist', fn ($q) => $q->where('department', $department->value))->get();
 

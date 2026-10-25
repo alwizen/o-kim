@@ -41,7 +41,7 @@ class KimCardIssued extends AppNotification
     {
         return (new MailMessage)
             ->subject('KIM Telah Diterbitkan — '.$this->kimNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Kartu Izin Masuk kendaraan Anda telah diterbitkan.')
             ->line('Nomor KIM: '.$this->kimNumber)
             ->line('NOPOL: '.$this->registrationNumber)

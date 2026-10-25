@@ -4,6 +4,7 @@ namespace App\Services\Document;
 
 use App\Enums\DocumentVerificationStatus;
 use App\Models\VehicleDocument;
+use App\Services\Setting\SettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
@@ -16,13 +17,21 @@ class DocumentExpiryService
     public const WARNING_THRESHOLD_DAYS = 60;
 
     /**
+     * Ambang hari aktif — mengikuti Pengaturan Sistem bila tersedia.
+     */
+    public static function warningDays(): int
+    {
+        return app(SettingsService::class)->expiryWarningDays();
+    }
+
+    /**
      * Query dokumen aktif (versi terbaru, bukan ditolak) milik kendaraan aktif.
      *
      * @param  array<int>  $transporterIds  Batasi ke perusahaan tertentu (isolasi data transportir)
      */
     public function expiringDocumentsQuery(array $transporterIds = []): Builder
     {
-        $threshold = now()->addDays(self::WARNING_THRESHOLD_DAYS);
+        $threshold = now()->addDays(self::warningDays());
 
         // Ambang aktif mulai dari H-7 agar dokumen yang baru lewat tetap tampil sebagai peringatan.
         $graceStart = now()->subDays(7);

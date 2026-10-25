@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\AccountStatus;
+use App\Enums\InternalRole;
+use App\Notifications\ResetPasswordNotification;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -93,5 +95,50 @@ class User extends Authenticatable implements FilamentUser
     public function hasOperationalAccess(): bool
     {
         return $this->account_status === AccountStatus::Approved;
+    }
+
+    /**
+     * Hanya akun yang mendaftar lewat email + kata sandi yang dapat mengatur ulang
+     * kata sandi. Akun yang mendaftar lewat Google tidak memiliki kata sandi.
+     */
+    public function canResetPassword(): bool
+    {
+        return $this->google_id === null && filled($this->password);
+    }
+
+    /**
+     * Kirim tautan reset kata sandi memakai notifikasi O-KIM (bahasa Indonesia).
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * User internal (TAD: HSSE/QQ/Distribusi) — hanya boleh mengisi checklist.
+     */
+    public function isTad(): bool
+    {
+        return $this->hasRole(InternalRole::TAD_ROLES);
+    }
+
+    /**
+     * Verifikasi temuan: TAD memverifikasi temuannya sendiri (fungsi terkait),
+     * pengawas hanya boleh memverifikasi temuan yang dibuat user TAD.
+     */
+    public function canVerifyFinding(Finding $finding): bool
+    {
+        $dept = $finding->department->value;
+
+        if ($this->isTad()) {
+            return $this->can('inspect_'.$dept)
+                && $finding->created_by === $this->id;
+        }
+
+        if (! $this->can('approve_tad_findings')) {
+            return false;
+        }
+
+        return $finding->creator?->isTad() ?? false;
     }
 }

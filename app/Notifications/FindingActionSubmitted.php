@@ -40,7 +40,7 @@ class FindingActionSubmitted extends AppNotification
     {
         return (new MailMessage)
             ->subject('Tindak Lanjut Temuan — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Transportir telah mengirim tindak lanjut atas temuan pemeriksaan.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('Fungsi: '.$this->departmentLabel)

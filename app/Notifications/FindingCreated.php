@@ -41,7 +41,7 @@ class FindingCreated extends AppNotification
     {
         return (new MailMessage)
             ->subject('Temuan Pemeriksaan — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pemeriksaan menemukan hal yang perlu ditindaklanjuti.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('Fungsi: '.$this->departmentLabel)

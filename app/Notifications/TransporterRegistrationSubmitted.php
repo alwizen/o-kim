@@ -40,7 +40,7 @@ class TransporterRegistrationSubmitted extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran Transportir Baru — O-KIM')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Ada pendaftaran transportir baru yang menunggu verifikasi.')
             ->line('Perusahaan: '.$this->companyName)
             ->line('PIC: '.$this->picName)

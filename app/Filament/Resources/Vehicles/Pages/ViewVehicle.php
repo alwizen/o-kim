@@ -12,10 +12,20 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 
 class ViewVehicle extends ViewRecord
 {
     protected static string $resource = VehicleResource::class;
+
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->loadMissing([
+            'transporter',
+            'documents.documentType',
+            'kimApplications.kimCard',
+        ]);
+    }
 
     public function infolist(Schema $schema): Schema
     {
@@ -105,7 +115,7 @@ class ViewVehicle extends ViewRecord
                         ])
                         ->columns(3),
                 ])
-                ->visible(fn ($record) => $record->kimApplications()->exists()),
+                ->visible(fn ($record) => $record->kimApplications->isNotEmpty()),
         ]);
     }
 }

@@ -66,7 +66,7 @@
                     <div class="relative overflow-hidden rounded-2xl border border-ocean-200 bg-white/95 p-6 shadow-2xl shadow-ocean-900/15 backdrop-blur">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <img src="{{ asset('img/logo.svg') }}" alt="" class="h-8 w-auto">
+                                {{-- <img src="{{ asset('img/logo.svg') }}" alt="" class="h-8 w-auto"> --}}
                             </div>
                             <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                                 <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Aktif
@@ -74,12 +74,12 @@
                         </div>
 
                         <p class="mt-5 text-xs font-semibold uppercase tracking-widest text-slate-400">Nomor KIM</p>
-                        <p class="mt-1 font-mono text-lg font-bold text-ocean-900">KIM/FT-TGL/2026/10/0001</p>
+                        <p class="mt-1 font-mono text-lg font-bold text-ocean-900">KIM/FT-TGL/2026/XI/0001</p>
 
                         <div class="mt-5 grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p class="text-xs text-slate-400">NOPOL</p>
-                                <p class="font-semibold text-ocean-800">G 1234 TGL</p>
+                                <p class="font-semibold text-ocean-800">G 8798 TGL</p>
                             </div>
                             <div>
                                 <p class="text-xs text-slate-400">Berlaku Hingga</p>

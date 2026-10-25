@@ -61,7 +61,7 @@ class LoginController extends Controller
         }
 
         if ($user->account_status === AccountStatus::Approved) {
-            return redirect()->intended($user->homeUrl());
+            return redirect()->to($this->intendedUrlFor($user) ?? $user->homeUrl());
         }
 
         Auth::logout();
@@ -71,5 +71,40 @@ class LoginController extends Controller
             AccountStatus::Suspended => 'Akun Anda sedang ditangguhkan. Silakan hubungi admin.',
             default => 'Akun Anda tidak aktif.',
         });
+    }
+
+    /**
+     * Petugas internal (bukan transportir) memakai panel admin.
+     */
+    private function isInternalUser(User $user): bool
+    {
+        return $user->account_status === AccountStatus::Approved
+            && ! $user->hasRole('transportir')
+            && $user->can('access_admin_panel');
+    }
+
+    /**
+     * URL yang sebelumnya ingin dikunjungi, hanya jika sesuai area pengguna.
+     * Mencegah petugas internal terlempar ke /transportir (dan sebaliknya).
+     */
+    private function intendedUrlFor(User $user): ?string
+    {
+        $intended = session()->pull('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return null;
+        }
+
+        $path = parse_url($intended, PHP_URL_PATH) ?: '/';
+
+        if (str_starts_with($path, '/admin') && ! $this->isInternalUser($user)) {
+            return null;
+        }
+
+        if (str_starts_with($path, '/transportir') && ! $user->hasRole('transportir')) {
+            return null;
+        }
+
+        return $intended;
     }
 }

@@ -40,7 +40,7 @@ class ApplicationApproved extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pengajuan KIM Disetujui — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pengajuan KIM Anda telah disetujui oleh Fuel Terminal Manager.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('NOPOL: '.$this->registrationNumber)

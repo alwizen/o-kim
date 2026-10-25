@@ -52,6 +52,7 @@ class ManageSettings extends Page implements HasForms
             'application_number_prefix' => $settings->applicationNumberPrefix(),
             'application_number_period_format' => $settings->applicationNumberPeriodFormat(),
             'application_number_sequence_digits' => (string) $settings->applicationNumberSequenceDigits(),
+            'notification_expiry_warning_days' => (string) $settings->expiryWarningDays(),
         ]);
     }
 
@@ -176,6 +177,18 @@ class ManageSettings extends Page implements HasForms
                                 (int) $get('application_number_sequence_digits'),
                             )),
                     ]),
+                Section::make('Notifikasi')
+                    ->description('Ambang peringatan dokumen dan KIM yang akan kedaluwarsa.')
+                    ->icon('heroicon-o-bell-alert')
+                    ->schema([
+                        TextInput::make('notification_expiry_warning_days')
+                            ->label('Peringatan Kedaluwarsa (hari)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(365)
+                            ->required()
+                            ->helperText('Dokumen/KIM yang kedaluwarsa dalam rentang hari ini akan memicu pengingat email harian.'),
+                    ]),
             ]);
     }
 
@@ -192,6 +205,12 @@ class ManageSettings extends Page implements HasForms
             'application.number_period_format' => (string) $data['application_number_period_format'],
             'application.number_sequence_digits' => (string) $data['application_number_sequence_digits'],
         ], SettingsService::GROUP_KIM);
+
+        $settings->set(
+            'notification.expiry_warning_days',
+            (string) $data['notification_expiry_warning_days'],
+            SettingsService::GROUP_NOTIFICATION,
+        );
 
         Notification::make()
             ->title('Pengaturan berhasil disimpan')

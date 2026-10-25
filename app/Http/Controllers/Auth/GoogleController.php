@@ -25,18 +25,27 @@ class GoogleController extends Controller
             return redirect('/')->with('error', 'Autentikasi Google gagal. Silakan coba lagi.');
         }
 
+        $email = $googleUser->getEmail();
+
+        if (! is_string($email) || $email === '') {
+            return redirect('/')->with(
+                'error',
+                'Akun Google tidak mengembalikan alamat email. Pastikan izin email diberikan saat login, lalu coba lagi.'
+            );
+        }
+
         $user = User::where('google_id', $googleUser->getId())->first();
 
         if (! $user) {
             // Jangan gabungkan akun otomatis berdasarkan email (PRD 5.4).
             // Jika email sudah terdaftar lewat jalur lain, minta hubungi admin.
-            if ($registration->emailExists($googleUser->getEmail())) {
+            if ($registration->emailExists($email)) {
                 return redirect('/')->with('error', 'Email ini sudah terdaftar melalui jalur lain. Silakan masuk menggunakan kata sandi atau hubungi admin.');
             }
 
             $user = $registration->createPendingTransporter([
                 'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'Pengguna',
-                'email' => $googleUser->getEmail(),
+                'email' => $email,
                 'google_id' => $googleUser->getId(),
                 'email_verified_at' => now(),
             ]);

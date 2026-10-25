@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\KimApplications;
 
+use App\Enums\DocumentVerificationStatus;
 use App\Filament\Resources\KimApplications\Tables\KimApplicationsTable;
 use App\Models\KimApplication;
 use BackedEnum;
@@ -55,6 +56,23 @@ class KimApplicationResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withExists('inspectionResults')
+            ->with([
+                'transporter',
+                'vehicle' => fn ($query) => $query->withCount([
+                    'documents as pending_documents_count' => fn (Builder $documents) => $documents
+                        ->whereNull('replaced_by_id')
+                        ->where('verification_status', DocumentVerificationStatus::Pending->value)
+                        ->whereHas('documentType', fn (Builder $type) => $type
+                            ->where('is_required', true)
+                            ->where('is_active', true)),
+                ]),
+            ]);
     }
 
     public static function table(Table $table): Table

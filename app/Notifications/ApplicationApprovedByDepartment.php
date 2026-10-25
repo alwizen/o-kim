@@ -40,7 +40,7 @@ class ApplicationApprovedByDepartment extends AppNotification
     {
         return (new MailMessage)
             ->subject('Approval '.$this->departmentLabel.' — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pengajuan KIM Anda telah disetujui oleh '.$this->departmentLabel.'.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->action('Buka Pengajuan', url('/transportir/kim-applications'));

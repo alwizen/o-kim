@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\DocumentVerificationStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\KimApplication;
 use App\Notifications\InspectionScheduled;
+use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
@@ -35,15 +35,9 @@ class KimApplicationsTable
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
                     ->searchable(),
-                TextColumn::make('vehicle.documents_count')
+                TextColumn::make('pending_documents_count')
                     ->label('Dokumen Pending')
-                    ->state(function (KimApplication $record): int {
-                        return $record->vehicle->documents()
-                            ->whereNull('replaced_by_id')
-                            ->whereHas('documentType', fn ($query) => $query->where('is_required', true)->where('is_active', true))
-                            ->where('verification_status', DocumentVerificationStatus::Pending)
-                            ->count();
-                    })
+                    ->state(fn (KimApplication $record): int => (int) ($record->vehicle?->pending_documents_count ?? 0))
                     ->badge()
                     ->placeholder('0')
                     ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
@@ -88,6 +82,13 @@ class KimApplicationsTable
             ])
             ->defaultSort('submitted_at', 'desc')
             ->recordActions([
+                Action::make('inspection_report')
+                    ->label('Laporan Pemeriksaan')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->visible(fn (KimApplication $record): bool => (bool) $record->inspection_results_exists)
+                    ->url(fn (KimApplication $record): string => route('inspection-report.download', $record))
+                    ->openUrlInNewTab(),
                 Action::make('inspect')
                     ->label('Isi Checklist')
                     ->icon('heroicon-o-clipboard-document-check')
@@ -112,7 +113,7 @@ class KimApplicationsTable
                     ->visible(fn (KimApplication $record): bool => in_array($record->status, [
                         ApplicationStatus::Submitted,
                         ApplicationStatus::Inspection,
-                    ], true) && auth()->user()->can('view_applications'))
+                    ], true) && auth()->user()->can('schedule_inspection'))
                     ->schema([
                         DateTimePicker::make('inspection_scheduled_at')
                             ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
@@ -146,12 +147,25 @@ class KimApplicationsTable
                             'inspection_scheduled_by' => auth()->id(),
                         ]);
 
+                        $scheduledAt = Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i');
+
                         AppNotifier::notifyTransporter(
                             $record->transporter_id,
                             new InspectionScheduled(
                                 $record->application_number,
                                 $record->vehicle->registration_number,
-                                Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i'),
+                                $scheduledAt,
+                            ),
+                        );
+
+                        AppNotifier::notifyStaffWithPermission(
+                            'schedule_inspection',
+                            new InspectionScheduledForStaff(
+                                $record->application_number,
+                                $record->vehicle->registration_number,
+                                $scheduledAt,
+                                $isReschedule,
+                                (string) $record->getRouteKey(),
                             ),
                         );
 

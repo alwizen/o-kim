@@ -28,9 +28,9 @@ class TransporterResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Pendaftaran Transportir';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Operasional';
+    protected static string|UnitEnum|null $navigationGroup = 'User Manajemen';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 98;
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AccountStatus;
 use App\Models\Transporter;
+use App\Models\User;
 use App\Notifications\TransporterRegistered;
 use App\Notifications\TransporterRegistrationSubmitted;
 use App\Support\AppNotifier;
@@ -15,6 +16,8 @@ class TransporterRegistrationController extends Controller
     public function edit(Request $request)
     {
         $user = $request->user();
+
+        $this->ensurePendingTransporter($user);
 
         if ($user->account_status !== AccountStatus::Pending) {
             return redirect('/')->with('error', 'Akun Anda sudah tidak dalam status pendaftaran.');
@@ -28,6 +31,8 @@ class TransporterRegistrationController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+
+        $this->ensurePendingTransporter($user);
 
         if ($user->account_status !== AccountStatus::Pending) {
             return redirect('/')->with('error', 'Akun Anda sudah tidak dalam status pendaftaran.');
@@ -78,5 +83,14 @@ class TransporterRegistrationController extends Controller
 
         return redirect()->route('registration.profile.edit')
             ->with('success', 'Data perusahaan berhasil disimpan. Menunggu verifikasi admin.');
+    }
+
+    /**
+     * Hanya akun transportir yang boleh memakai alur pendaftaran ini.
+     * Akun internal juga berstatus Pending, sehingga pemeriksaan status saja tidak cukup.
+     */
+    private function ensurePendingTransporter(?User $user): void
+    {
+        abort_if($user === null || ! $user->hasRole('transportir'), 403, 'Halaman ini hanya untuk pendaftaran transportir.');
     }
 }

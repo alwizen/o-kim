@@ -59,10 +59,10 @@ class RoleAccessMatrixTest extends TestCase
             'admin_verifikasi' => [
                 UserResource::class => false,
                 TransporterResource::class => true,
-                KimCardResource::class => false,
-                KimApplicationResource::class => false,
-                FindingResource::class => false,
-                InspectionChecklistResource::class => false,
+                KimCardResource::class => true,
+                KimApplicationResource::class => true,
+                FindingResource::class => true,
+                InspectionChecklistResource::class => true,
                 DocumentTypeResource::class => false,
                 VehicleResource::class => true,
             ],
@@ -74,7 +74,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => true,
+                VehicleResource::class => false,
             ],
             'distribusi' => [
                 UserResource::class => false,
@@ -84,7 +84,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => true,
+                VehicleResource::class => false,
             ],
             'qq' => [
                 UserResource::class => false,
@@ -94,7 +94,7 @@ class RoleAccessMatrixTest extends TestCase
                 FindingResource::class => true,
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
-                VehicleResource::class => true,
+                VehicleResource::class => false,
             ],
             'ftm' => [
                 UserResource::class => false,
@@ -105,6 +105,16 @@ class RoleAccessMatrixTest extends TestCase
                 InspectionChecklistResource::class => false,
                 DocumentTypeResource::class => false,
                 VehicleResource::class => true,
+            ],
+            'pengawas_hsse' => [
+                UserResource::class => false,
+                TransporterResource::class => false,
+                KimCardResource::class => true,
+                KimApplicationResource::class => true,
+                FindingResource::class => true,
+                InspectionChecklistResource::class => false,
+                DocumentTypeResource::class => false,
+                VehicleResource::class => false,
             ],
             'transportir' => [
                 UserResource::class => false,
@@ -243,7 +253,10 @@ class RoleAccessMatrixTest extends TestCase
         $this->assertFalse(Gate::forUser($ftm)->allows('approve', [$application, Department::Hsse]));
 
         $hsse = $this->userWithRole('hsse');
-        $this->assertTrue(Gate::forUser($hsse)->allows('approve', [$application, Department::Hsse]));
-        $this->assertFalse(Gate::forUser($hsse)->allows('approve', [$application, Department::Ftm]));
+        $this->assertFalse(Gate::forUser($hsse)->allows('approve', [$application, Department::Hsse]));
+
+        $pengawasHsse = $this->userWithRole('pengawas_hsse');
+        $this->assertTrue(Gate::forUser($pengawasHsse)->allows('approve', [$application, Department::Hsse]));
+        $this->assertFalse(Gate::forUser($pengawasHsse)->allows('approve', [$application, Department::Ftm]));
     }
 }

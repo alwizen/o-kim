@@ -13,7 +13,7 @@ class DocumentTypesTable
     {
         return $table
             ->columns([
-                TextColumn::make('code')->label('Kode')->searchable()->sortable(),
+                TextColumn::make('code')->label('Kode')->searchable(),
                 TextColumn::make('name')->label('Nama Dokumen')->searchable(),
                 IconColumn::make('is_required')->label('Wajib')->boolean(),
                 IconColumn::make('has_expiry_date')->label('Ada Kedaluwarsa')->boolean(),

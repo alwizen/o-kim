@@ -28,6 +28,11 @@ class SettingSeeder extends Seeder
             );
         }
 
+        Setting::firstOrCreate(
+            ['key' => 'notification.expiry_warning_days'],
+            ['value' => '60', 'group' => SettingsService::GROUP_NOTIFICATION]
+        );
+
         app(SettingsService::class)->flush();
     }
 }

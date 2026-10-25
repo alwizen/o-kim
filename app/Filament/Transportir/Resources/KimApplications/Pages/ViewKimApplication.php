@@ -146,6 +146,13 @@ class ViewKimApplication extends ViewRecord
                 ->color('success')
                 ->visible(fn (): bool => $this->record->kimCard()->exists())
                 ->url(fn (): string => route('kim.download', $this->record->kimCard)),
+            Action::make('inspection_report')
+                ->label('Cetak Laporan Pemeriksaan')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
+                ->url(fn (): string => route('inspection-report.download', $this->record))
+                ->openUrlInNewTab(),
             Action::make('submit')
                 ->label('Kirim Pengajuan')
                 ->color('primary')

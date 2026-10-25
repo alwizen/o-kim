@@ -39,7 +39,7 @@ class InternalAccountRejected extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran O-KIM Ditolak')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Mohon maaf, pendaftaran akun internal Anda ditolak.')
             ->line('Alasan: '.$this->reason)
             ->line('Silakan hubungi super admin untuk informasi lebih lanjut.');

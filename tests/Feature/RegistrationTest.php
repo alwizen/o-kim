@@ -142,6 +142,45 @@ class RegistrationTest extends TestCase
             ->assertRedirect('/');
     }
 
+    public function test_pending_internal_user_cannot_access_transporter_registration(): void
+    {
+        $user = User::factory()->create(['account_status' => AccountStatus::Pending]);
+        $user->assignRole('hsse');
+
+        $this->actingAs($user)
+            ->get(route('registration.profile.edit'))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->post(route('registration.profile.update'), [
+                'pic_name' => 'Nama',
+                'company_name' => 'PT Tidak Sah',
+                'company_address' => 'Alamat',
+                'phone' => '08123',
+            ])
+            ->assertForbidden();
+
+        $this->assertNull(Transporter::where('company_name', 'PT Tidak Sah')->first());
+    }
+
+    public function test_google_callback_without_email_is_handled_gracefully(): void
+    {
+        $googleUser = \Mockery::mock(SocialiteUser::class);
+        $googleUser->shouldReceive('getId')->andReturn('google-no-email');
+        $googleUser->shouldReceive('getEmail')->andReturn(null);
+        $googleUser->shouldReceive('getName')->andReturn('Tanpa Email');
+        $googleUser->shouldReceive('getNickname')->andReturn(null);
+
+        Socialite::shouldReceive('driver')->with('google')->andReturnSelf();
+        Socialite::shouldReceive('user')->andReturn($googleUser);
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect('/')
+            ->assertSessionHas('error');
+
+        $this->assertGuest();
+    }
+
     public function test_admin_can_approve_pending_registration(): void
     {
         Notification::fake();

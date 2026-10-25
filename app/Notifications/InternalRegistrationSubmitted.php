@@ -40,7 +40,7 @@ class InternalRegistrationSubmitted extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran Pengguna Internal Baru — O-KIM')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Ada pendaftaran pengguna internal baru yang menunggu verifikasi.')
             ->line('Nama: '.$this->name)
             ->line('Role: '.$this->roleLabel)

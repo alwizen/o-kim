@@ -130,13 +130,13 @@ class VehicleDocumentVerificationTest extends TestCase
 
     public function test_admin_panel_staff_can_verify(): void
     {
-        $hsse = User::factory()->create(['account_status' => AccountStatus::Approved]);
-        $hsse->assignRole('hsse');
+        $adminVerifikasi = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $adminVerifikasi->assignRole('admin_verifikasi');
 
         $document = $this->uploadPending('STNK');
 
         $this->assertTrue(
-            Gate::forUser($hsse)->allows('verify', $document)
+            Gate::forUser($adminVerifikasi)->allows('verify', $document)
         );
     }
 

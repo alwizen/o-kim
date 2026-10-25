@@ -3,8 +3,11 @@
 namespace App\Services\Application;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\FindingStatus;
+use App\Models\Finding;
+use App\Models\InspectionItem;
 use App\Models\KimApplication;
 use App\Services\Inspection\InspectionService;
 
@@ -18,19 +21,22 @@ class VehicleProgressService
     /**
      * Susun lima langkah progres pengajuan untuk satu pengajuan KIM.
      *
+     * Checklist dan temuan digabung menjadi satu tahap "Pemeriksaan & Temuan"
+     * karena keduanya merupakan satu rangkaian pemeriksaan yang sama.
+     *
      * State yang dipakai: done, active, warning, failed, pending.
      *
      * @return array<int, array{key: string, label: string, state: string, description: string, url: string}>
      */
     public function stepsFor(KimApplication $application): array
     {
-        $application->loadMissing(['vehicle', 'findings', 'kimCard']);
+        $application->loadMissing(['vehicle', 'findings', 'kimCard', 'approvals']);
 
         return [
             $this->vehicleStep($application),
             $this->documentStep($application),
-            $this->checklistStep($application),
-            $this->findingStep($application),
+            $this->inspectionStep($application),
+            $this->approvalStep($application),
             $this->kimStep($application),
         ];
     }
@@ -93,69 +99,138 @@ class VehicleProgressService
     }
 
     /**
+     * Tahap pemeriksaan: progres checklist seluruh fungsi sekaligus status temuan.
+     *
      * @return array{key: string, label: string, state: string, description: string, url: string}
      */
-    private function checklistStep(KimApplication $application): array
+    private function inspectionStep(KimApplication $application): array
     {
-        $completedDepartments = collect(Department::inspectingDepartments())
-            ->filter(fn (Department $department) => $this->inspectionService
-                ->isDepartmentInspectionComplete($application, $department))
-            ->count();
-
+        $completion = $this->departmentCompletionMap($application);
+        $completedDepartments = count(array_filter($completion));
         $totalDepartments = count(Department::inspectingDepartments());
 
-        $state = 'pending';
-        $description = 'Menunggu pengajuan dikirim';
+        $findings = $application->findings;
+        $openFindings = $findings->filter(
+            fn (Finding $finding) => $finding->status !== FindingStatus::Verified
+        );
 
-        if ($completedDepartments >= $totalDepartments) {
-            $state = 'done';
-            $description = 'Seluruh checklist fungsi selesai';
-        } elseif (in_array($application->status, [
+        $checklistDone = $completedDepartments >= $totalDepartments;
+        $findingsDone = $openFindings->isEmpty();
+        $isInspectionPhase = in_array($application->status, [
             ApplicationStatus::Submitted,
             ApplicationStatus::Inspection,
             ApplicationStatus::RevisionRequired,
-        ], true)) {
-            $state = 'active';
-            $description = $completedDepartments.' dari '.$totalDepartments.' fungsi selesai diperiksa';
+        ], true);
+
+        if ($application->status === ApplicationStatus::Rejected) {
+            return [
+                'key' => 'inspection',
+                'label' => 'Pemeriksaan & Temuan',
+                'state' => 'failed',
+                'description' => 'Pengajuan ditolak',
+                'url' => '/transportir/findings',
+            ];
+        }
+
+        // Masih ada temuan terbuka: ini yang paling perlu perhatian transportir.
+        if (! $findingsDone) {
+            return [
+                'key' => 'inspection',
+                'label' => 'Pemeriksaan & Temuan',
+                'state' => 'warning',
+                'description' => $openFindings->count().' temuan perlu ditindaklanjuti'
+                    .($checklistDone ? '' : ' · checklist '.$completedDepartments.'/'.$totalDepartments.' fungsi'),
+                'url' => '/transportir/findings',
+            ];
+        }
+
+        if ($checklistDone && $findingsDone) {
+            return [
+                'key' => 'inspection',
+                'label' => 'Pemeriksaan & Temuan',
+                'state' => 'done',
+                'description' => $findings->isEmpty()
+                    ? 'Seluruh checklist selesai, tanpa temuan'
+                    : 'Seluruh checklist selesai dan temuan tuntas',
+                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+            ];
+        }
+
+        if ($isInspectionPhase) {
+            return [
+                'key' => 'inspection',
+                'label' => 'Pemeriksaan & Temuan',
+                'state' => 'active',
+                'description' => $completedDepartments.' dari '.$totalDepartments.' fungsi selesai diperiksa',
+                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+            ];
         }
 
         return [
-            'key' => 'checklist',
-            'label' => 'Checklist Pemeriksaan',
-            'state' => $state,
-            'description' => $description,
+            'key' => 'inspection',
+            'label' => 'Pemeriksaan & Temuan',
+            'state' => 'pending',
+            'description' => 'Menunggu pengajuan dikirim',
             'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
         ];
     }
 
     /**
+     * Tahap approval: HSSE, Distribusi, dan QQ harus menyetujui sebelum FTM.
+     *
      * @return array{key: string, label: string, state: string, description: string, url: string}
      */
-    private function findingStep(KimApplication $application): array
+    private function approvalStep(KimApplication $application): array
     {
-        $findings = $application->findings;
-        $openFindings = $findings->where('status', '!=', FindingStatus::Verified);
+        $departments = Department::inspectingDepartments();
+        $totalFunctions = count($departments);
 
-        if ($application->status === ApplicationStatus::Rejected) {
+        $approvals = $application->approvals;
+
+        $approvedDepartments = $approvals
+            ->where('decision', ApprovalDecision::Approved)
+            ->pluck('department')
+            ->map(fn (Department $department) => $department->value)
+            ->unique();
+
+        $rejected = $approvals->first(
+            fn ($approval) => $approval->decision === ApprovalDecision::Rejected
+        );
+
+        $ftmApproved = $approvedDepartments->contains(Department::Ftm->value);
+
+        $approvedFunctions = collect($departments)
+            ->filter(fn (Department $department) => $approvedDepartments->contains($department->value))
+            ->count();
+
+        $state = 'pending';
+        $description = 'Menunggu pemeriksaan selesai';
+
+        if ($rejected !== null || $application->status === ApplicationStatus::Rejected) {
             $state = 'failed';
-            $description = 'Pengajuan ditolak';
-        } elseif ($findings->isEmpty()) {
+            $description = $rejected !== null
+                ? 'Ditolak oleh '.$rejected->department->label()
+                : 'Pengajuan ditolak';
+        } elseif ($ftmApproved) {
             $state = 'done';
-            $description = 'Tidak ada temuan';
-        } elseif ($openFindings->isEmpty()) {
-            $state = 'done';
-            $description = 'Seluruh temuan selesai';
-        } else {
-            $state = 'warning';
-            $description = $openFindings->count().' temuan perlu ditindaklanjuti';
+            $description = 'Disetujui seluruh fungsi dan FTM';
+        } elseif ($totalFunctions > 0 && $approvedFunctions >= $totalFunctions) {
+            $state = 'active';
+            $description = 'Menunggu approval final FTM';
+        } elseif ($approvedFunctions > 0) {
+            $state = 'active';
+            $description = $approvedFunctions.' dari '.$totalFunctions.' fungsi menyetujui';
+        } elseif ($application->status === ApplicationStatus::PendingApproval) {
+            $state = 'active';
+            $description = 'Menunggu approval fungsi';
         }
 
         return [
-            'key' => 'findings',
-            'label' => 'Temuan Pemeriksaan',
+            'key' => 'approval',
+            'label' => 'Persetujuan',
             'state' => $state,
             'description' => $description,
-            'url' => '/transportir/findings',
+            'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
         ];
     }
 
@@ -187,5 +262,38 @@ class VehicleProgressService
             'description' => $description,
             'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
         ];
+    }
+
+    /**
+     * Peta penyelesaian checklist per departemen dalam dua query agregat
+     * (bukan dua query per departemen).
+     *
+     * @return array<string, bool> [department value => complete]
+     */
+    public function departmentCompletionMap(KimApplication $application): array
+    {
+        $requiredByDepartment = InspectionItem::query()
+            ->where('is_active', true)
+            ->where('is_required', true)
+            ->whereHas('checklist', fn ($query) => $query->where('is_active', true))
+            ->with('checklist:id,department')
+            ->get()
+            ->groupBy(fn (InspectionItem $item) => $item->checklist->department->value)
+            ->map(fn ($items) => $items->pluck('id')->all());
+
+        $completedItemIds = $application->inspectionResults()
+            ->pluck('inspection_item_id')
+            ->flip();
+
+        $map = [];
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $requiredIds = $requiredByDepartment->get($department->value, []);
+
+            $map[$department->value] = $requiredIds === []
+                || collect($requiredIds)->every(fn (int $id) => $completedItemIds->has($id));
+        }
+
+        return $map;
     }
 }

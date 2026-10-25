@@ -69,7 +69,11 @@ class InspectionResult extends Model
      */
     public function checkedPointMap(): array
     {
-        return $this->pointResults()
+        $points = $this->relationLoaded('pointResults')
+            ? $this->pointResults
+            : $this->pointResults()->get();
+
+        return $points
             ->pluck('is_checked', 'inspection_item_point_id')
             ->map(fn ($value) => (bool) $value)
             ->all();
