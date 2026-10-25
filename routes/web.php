@@ -3,9 +3,11 @@
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\InternalRegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PendingInternalController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FindingAttachmentController;
+use App\Http\Controllers\InspectionReportController;
 use App\Http\Controllers\InspectionResultAttachmentController;
 use App\Http\Controllers\KimDownloadController;
 use App\Http\Controllers\KimValidationController;
@@ -34,6 +36,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/daftar/internal', [InternalRegisterController::class, 'store'])->middleware('throttle:6,1');
     Route::get('/masuk', [LoginController::class, 'show'])->name('login.form');
     Route::post('/masuk', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.attempt');
+
+    // Reset kata sandi — hanya untuk akun email + kata sandi (bukan akun Google).
+    Route::get('/lupa-kata-sandi', [PasswordResetController::class, 'showRequest'])->name('password.request');
+    Route::post('/lupa-kata-sandi', [PasswordResetController::class, 'sendLink'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('/reset-kata-sandi/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-kata-sandi', [PasswordResetController::class, 'reset'])
+        ->middleware('throttle:6,1')
+        ->name('password.store');
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
@@ -74,4 +86,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/kim/{card}/unduh', KimDownloadController::class)
         ->name('kim.download');
+
+    // Laporan hasil pemeriksaan checklist (printout PDF)
+    Route::get('/pengajuan/{application}/laporan-pemeriksaan', [InspectionReportController::class, 'download'])
+        ->middleware('throttle:30,1')
+        ->name('inspection-report.download');
+
+    Route::get('/pengajuan/{application}/laporan-pemeriksaan/pratinjau', [InspectionReportController::class, 'preview'])
+        ->middleware('throttle:30,1')
+        ->name('inspection-report.preview');
 });
