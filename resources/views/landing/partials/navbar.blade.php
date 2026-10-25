@@ -36,11 +36,71 @@
                         </x-landing.button>
                     @endif
                 @else
-                    <a href="{{ route('login.form') }}" class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 group-data-[scrolled]:text-ocean-800 group-data-[scrolled]:hover:bg-white/70">Masuk</a>
-                    <x-landing.button href="{{ route('register') }}" variant="light" size="sm">
-                        <x-heroicon-o-arrow-right-end-on-rectangle class="h-4 w-4" />
-                        Daftar
-                    </x-landing.button>
+                    <div class="relative" data-dropdown>
+                        <button type="button" data-dropdown-trigger
+                                aria-expanded="false" aria-haspopup="true"
+                                class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 group-data-[scrolled]:text-ocean-800 group-data-[scrolled]:hover:bg-white/70">
+                            Masuk
+                            <x-heroicon-m-chevron-down class="h-4 w-4 transition-transform" data-dropdown-icon />
+                        </button>
+                        <div data-dropdown-panel hidden
+                             class="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-ocean-100 bg-white shadow-xl shadow-ocean-900/10">
+                            <p class="border-b border-ocean-50 bg-ocean-50/60 px-4 py-2.5 text-xs font-medium text-slate-500">Masuk sebagai</p>
+                            <a href="{{ route('login.form') }}"
+                               class="flex items-start gap-3 px-4 py-3 transition hover:bg-ocean-50">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ocean-100 text-ocean-700">
+                                    <x-heroicon-o-truck class="h-4 w-4" />
+                                </span>
+                                <span>
+                                    <span class="block text-sm font-semibold text-slate-800">Transportir</span>
+                                    <span class="block text-xs text-slate-500">Pengajuan & kelola KIM armada</span>
+                                </span>
+                            </a>
+                            <a href="/admin/login"
+                               class="flex items-start gap-3 px-4 py-3 transition hover:bg-ocean-50">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ocean-100 text-ocean-700">
+                                    <x-heroicon-o-identification class="h-4 w-4" />
+                                </span>
+                                <span>
+                                    <span class="block text-sm font-semibold text-slate-800">Petugas Internal</span>
+                                    <span class="block text-xs text-slate-500">Pemeriksaan, approval & admin</span>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="relative" data-dropdown>
+                        <button type="button" data-dropdown-trigger
+                                aria-expanded="false" aria-haspopup="true"
+                                class="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ocean-800 shadow-lg shadow-ocean-900/10 transition-all duration-300 hover:bg-ocean-50 hover:-translate-y-0.5">
+                            Daftar
+                            <x-heroicon-m-chevron-down class="h-4 w-4 transition-transform" data-dropdown-icon />
+                        </button>
+                        <div data-dropdown-panel hidden
+                             class="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-ocean-100 bg-white shadow-xl shadow-ocean-900/10">
+                            <p class="border-b border-ocean-50 bg-ocean-50/60 px-4 py-2.5 text-xs font-medium text-slate-500">Daftar sebagai</p>
+                            <a href="{{ route('register') }}"
+                               class="flex items-start gap-3 px-4 py-3 transition hover:bg-ocean-50">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ocean-100 text-ocean-700">
+                                    <x-heroicon-o-truck class="h-4 w-4" />
+                                </span>
+                                <span>
+                                    <span class="block text-sm font-semibold text-slate-800">Transportir</span>
+                                    <span class="block text-xs text-slate-500">Perusahaan angkutan / mobil tangki</span>
+                                </span>
+                            </a>
+                            <a href="{{ route('register.internal') }}"
+                               class="flex items-start gap-3 px-4 py-3 transition hover:bg-ocean-50">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ocean-100 text-ocean-700">
+                                    <x-heroicon-o-identification class="h-4 w-4" />
+                                </span>
+                                <span>
+                                    <span class="block text-sm font-semibold text-slate-800">Petugas Internal</span>
+                                    <span class="block text-xs text-slate-500">HSSE, QQ, Distribusi, FTM, dll.</span>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
                 @endauth
             </div>
 
@@ -67,11 +127,39 @@
                         </x-landing.button>
                     </div>
                 @else
-                    <a href="{{ route('login.form') }}" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-ocean-50">Masuk</a>
-                    <x-landing.button href="{{ route('register') }}" class="mt-2 w-full">
-                        <x-heroicon-o-user-plus class="h-4 w-4" />
-                        Buat Akun
-                    </x-landing.button>
+                    <div class="mt-2" data-dropdown>
+                        <button type="button" data-dropdown-trigger
+                                aria-expanded="false" aria-haspopup="true"
+                                class="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-ocean-50">
+                            Masuk
+                            <x-heroicon-m-chevron-down class="h-4 w-4" />
+                        </button>
+                        <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
+                            <a href="{{ route('login.form') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
+                                🚛 Masuk sebagai Transportir
+                            </a>
+                            <a href="/admin/login" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
+                                🪪 Masuk sebagai Petugas Internal
+                            </a>
+                        </div>
+                    </div>
+
+                    <div data-dropdown>
+                        <button type="button" data-dropdown-trigger
+                                aria-expanded="false" aria-haspopup="true"
+                                class="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-ocean-50">
+                            Daftar
+                            <x-heroicon-m-chevron-down class="h-4 w-4" />
+                        </button>
+                        <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
+                            <a href="{{ route('register') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
+                                🚛 Daftar sebagai Transportir
+                            </a>
+                            <a href="{{ route('register.internal') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
+                                🪪 Daftar sebagai Petugas Internal
+                            </a>
+                        </div>
+                    </div>
                 @endauth
             </div>
         </div>

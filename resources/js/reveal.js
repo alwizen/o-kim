@@ -120,11 +120,60 @@ function initMobileMenu() {
     });
 }
 
+function initDropdowns() {
+    document.querySelectorAll('[data-dropdown]').forEach((dropdown) => {
+        const trigger = dropdown.querySelector('[data-dropdown-trigger]');
+        const panel = dropdown.querySelector('[data-dropdown-panel]');
+
+        if (!trigger || !panel) {
+            return;
+        }
+
+        const setOpen = (open) => {
+            panel.toggleAttribute('hidden', !open);
+            trigger.setAttribute('aria-expanded', String(open));
+        };
+
+        trigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            // Tutup dropdown lain yang masih terbuka.
+            document.querySelectorAll('[data-dropdown-panel]').forEach((other) => {
+                if (other !== panel) {
+                    other.toggleAttribute('hidden', true);
+                    other.closest('[data-dropdown]')
+                        ?.querySelector('[data-dropdown-trigger]')
+                        ?.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            setOpen(panel.hasAttribute('hidden'));
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!dropdown.contains(event.target)) {
+                setOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        });
+
+        panel.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', () => setOpen(false));
+        });
+    });
+}
+
 function boot() {
     initReveal();
     initScrollProgress();
     initHeader();
     initMobileMenu();
+    initDropdowns();
 }
 
 if (document.readyState === 'loading') {

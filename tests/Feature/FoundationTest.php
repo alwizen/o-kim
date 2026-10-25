@@ -20,15 +20,15 @@ class FoundationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $this->seed(RolePermissionSeeder::class);
 
-        $this->assertSame(7, Role::count());
-        $this->assertSame(22, Permission::count());
+        $this->assertSame(10, Role::count());
+        $this->assertSame(27, Permission::count());
     }
 
     public function test_all_required_roles_are_seeded(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
-        foreach (['super_admin', 'admin_verifikasi', 'hsse', 'distribusi', 'qq', 'ftm', 'transportir'] as $role) {
+        foreach (['super_admin', 'admin_verifikasi', 'hsse', 'distribusi', 'qq', 'ftm', 'transportir', 'pengawas_hsse', 'pengawas_qq', 'pengawas_distribusi'] as $role) {
             $this->assertDatabaseHas('roles', ['name' => $role, 'guard_name' => 'web']);
         }
     }
