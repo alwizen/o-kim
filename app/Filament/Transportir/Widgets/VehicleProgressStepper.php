@@ -28,20 +28,27 @@ class VehicleProgressStepper extends Widget
         $this->applicationId = $this->defaultApplicationId();
     }
 
+    private ?Collection $applicationsCache = null;
+
     /**
      * Pengajuan milik perusahaan pengguna, terbaru lebih dahulu.
+     * Hasil di-cache per request agar tidak query berulang saat widget dirender.
      *
      * @return Collection<int, KimApplication>
      */
     public function getApplications(): Collection
     {
+        if ($this->applicationsCache !== null) {
+            return $this->applicationsCache;
+        }
+
         $transporterIds = auth()->user()->transporters()->pluck('transporters.id')->all();
 
         if ($transporterIds === []) {
-            return new Collection;
+            return $this->applicationsCache = new Collection;
         }
 
-        return KimApplication::query()
+        return $this->applicationsCache = KimApplication::query()
             ->with('vehicle')
             ->whereIn('transporter_id', $transporterIds)
             ->orderByDesc('id')

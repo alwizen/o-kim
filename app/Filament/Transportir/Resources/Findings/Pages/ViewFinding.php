@@ -16,11 +16,23 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class ViewFinding extends ViewRecord
 {
     protected static string $resource = FindingResource::class;
+
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->loadMissing([
+            'application',
+            'inspectionResult.attachments',
+            'actions.submitter',
+            'actions.attachments',
+            'verifications.verifier',
+        ]);
+    }
 
     public function infolist(Schema $schema): Schema
     {
@@ -107,7 +119,7 @@ class ViewFinding extends ViewRecord
                         ])
                         ->columns(4),
                 ])
-                ->visible(fn ($record) => $record->actions()->exists()),
+                ->visible(fn ($record) => $record->actions->isNotEmpty()),
             Section::make('Riwayat Verifikasi')
                 ->schema([
                     RepeatableEntry::make('verifications')
@@ -131,7 +143,7 @@ class ViewFinding extends ViewRecord
                         ])
                         ->columns(2),
                 ])
-                ->visible(fn ($record) => $record->verifications()->exists()),
+                ->visible(fn ($record) => $record->verifications->isNotEmpty()),
         ]);
     }
 
@@ -156,6 +168,7 @@ class ViewFinding extends ViewRecord
                         ->label('Bukti (PDF/JPG/PNG, maks 5 MB per berkas)')
                         ->multiple()
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->rules(['mimes:pdf,jpg,jpeg,png'])
                         ->maxSize(5120)
                         ->disk('local')
                         ->storeFiles(false)

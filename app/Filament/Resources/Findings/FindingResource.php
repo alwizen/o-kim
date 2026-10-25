@@ -55,7 +55,10 @@ class FindingResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['inspectionResult.item']);
+        return parent::getEloquentQuery()->with([
+            'application.transporter',
+            'inspectionResult.item',
+        ]);
     }
 
     public static function table(Table $table): Table

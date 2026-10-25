@@ -122,6 +122,36 @@ class AppNotifier
     }
 
     /**
+     * Prefetch seluruh PIC untuk sekumpulan transportir, dikelompokkan per transporter_id.
+     * Satu query untuk semua transportir (menghindari N+1 saat notifikasi massal).
+     *
+     * @param  array<int, int>  $transporterIds
+     * @return array<int, Collection<int, User>>
+     */
+    public static function usersGroupedByTransporter(array $transporterIds): array
+    {
+        $transporterIds = array_values(array_unique(array_map('intval', $transporterIds)));
+
+        if ($transporterIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+
+        User::query()
+            ->with(['transporters' => fn ($query) => $query->whereIn('transporters.id', $transporterIds)])
+            ->whereHas('transporters', fn ($query) => $query->whereIn('transporters.id', $transporterIds))
+            ->get()
+            ->each(function (User $user) use (&$grouped) {
+                foreach ($user->transporters as $transporter) {
+                    $grouped[$transporter->id][] = $user;
+                }
+            });
+
+        return $grouped;
+    }
+
+    /**
      * Tandai notifikasi tertentu sebagai sudah dibaca (untuk diarahkan dari email/WA dsb).
      */
     public static function markRead(User $user, DatabaseNotification $notification): void

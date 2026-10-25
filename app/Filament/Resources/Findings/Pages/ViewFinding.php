@@ -16,11 +16,21 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class ViewFinding extends ViewRecord
 {
     protected static string $resource = FindingResource::class;
+
+    protected function resolveRecord(int|string $key): Model
+    {
+        return parent::resolveRecord($key)->loadMissing([
+            'application.transporter',
+            'actions.submitter',
+            'actions.attachments',
+        ]);
+    }
 
     public function infolist(Schema $schema): Schema
     {
@@ -78,13 +88,13 @@ class ViewFinding extends ViewRecord
                         ])
                         ->columns(4),
                 ])
-                ->visible(fn ($record) => $record->actions()->exists()),
+                ->visible(fn ($record) => $record->actions->isNotEmpty()),
         ]);
     }
 
     protected function getHeaderActions(): array
     {
-        $latestAction = $this->record->actions()->latest('id')->first();
+        $latestAction = $this->record->actions->sortByDesc('id')->first();
 
         return [
             Action::make('verify_accept')
@@ -94,7 +104,7 @@ class ViewFinding extends ViewRecord
                 ->requiresConfirmation()
                 ->visible(fn (): bool => $this->record->status === FindingStatus::SubmittedForVerification
                     && $latestAction !== null
-                    && auth()->user()->can('inspect_'.$this->record->department->value))
+                    && auth()->user()->canVerifyFinding($this->record))
                 ->action(function () use ($latestAction): void {
                     $this->verify($latestAction, true);
                 }),
@@ -104,7 +114,7 @@ class ViewFinding extends ViewRecord
                 ->color('danger')
                 ->visible(fn (): bool => $this->record->status === FindingStatus::SubmittedForVerification
                     && $latestAction !== null
-                    && auth()->user()->can('inspect_'.$this->record->department->value))
+                    && auth()->user()->canVerifyFinding($this->record))
                 ->schema([
                     Textarea::make('notes')
                         ->label('Catatan Penolakan')

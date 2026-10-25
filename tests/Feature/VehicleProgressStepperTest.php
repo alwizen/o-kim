@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AccountStatus;
 use App\Enums\ApplicationStatus;
+use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\DocumentVerificationStatus;
 use App\Enums\FindingStatus;
@@ -115,26 +116,26 @@ class VehicleProgressStepperTest extends TestCase
         $this->assertSame('done', $this->step($this->steps($application), 'documents')['state']);
     }
 
-    // ---------- Service: tahap checklist ----------
+    // ---------- Service: tahap pemeriksaan (checklist + temuan) ----------
 
-    public function test_checklist_step_is_pending_for_draft_application(): void
+    public function test_inspection_step_is_pending_for_draft_application(): void
     {
         $application = $this->makeApplication();
 
-        $this->assertSame('pending', $this->step($this->steps($application), 'checklist')['state']);
+        $this->assertSame('pending', $this->step($this->steps($application), 'inspection')['state']);
     }
 
-    public function test_checklist_step_is_active_while_inspection_running(): void
+    public function test_inspection_step_is_active_while_inspection_running(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
 
-        $step = $this->step($this->steps($application), 'checklist');
+        $step = $this->step($this->steps($application), 'inspection');
 
         $this->assertSame('active', $step['state']);
         $this->assertStringContainsString('0 dari 3', $step['description']);
     }
 
-    public function test_checklist_step_is_done_when_all_departments_complete(): void
+    public function test_inspection_step_is_done_when_all_departments_complete(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
         $application->update(['inspection_scheduled_at' => now()->subDay()]);
@@ -164,22 +165,42 @@ class VehicleProgressStepperTest extends TestCase
             }
         }
 
-        $this->assertSame('done', $this->step($this->steps($application), 'checklist')['state']);
+        $this->assertSame('done', $this->step($this->steps($application), 'inspection')['state']);
     }
 
-    // ---------- Service: tahap temuan ----------
-
-    public function test_finding_step_is_done_without_findings(): void
+    public function test_inspection_step_is_done_without_findings_after_all_checklists(): void
     {
-        $application = $this->makeApplication();
+        $application = $this->makeApplication(ApplicationStatus::Inspection);
+        $application->update(['inspection_scheduled_at' => now()->subDay()]);
 
-        $step = $this->step($this->steps($application), 'findings');
+        $inspection = app(InspectionService::class);
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+            $officer->assignRole($department->value);
+
+            $items = InspectionItem::whereHas(
+                'checklist',
+                fn ($query) => $query->where('department', $department->value)
+            )->get();
+
+            foreach ($items as $item) {
+                $inspection->recordResult(
+                    $application->fresh(),
+                    $item,
+                    InspectionResultValue::Compliant,
+                    $officer,
+                );
+            }
+        }
+
+        $step = $this->step($this->steps($application), 'inspection');
 
         $this->assertSame('done', $step['state']);
-        $this->assertSame('Tidak ada temuan', $step['description']);
+        $this->assertSame('Seluruh checklist selesai, tanpa temuan', $step['description']);
     }
 
-    public function test_finding_step_warns_when_open_findings_exist(): void
+    public function test_inspection_step_warns_when_open_findings_exist(): void
     {
         $application = $this->makeApplication(ApplicationStatus::RevisionRequired);
 
@@ -191,15 +212,33 @@ class VehicleProgressStepperTest extends TestCase
             'created_by' => $this->transportir->id,
         ]);
 
-        $step = $this->step($this->steps($application), 'findings');
+        $step = $this->step($this->steps($application), 'inspection');
 
         $this->assertSame('warning', $step['state']);
         $this->assertStringContainsString('1 temuan', $step['description']);
     }
 
-    public function test_finding_step_is_done_when_all_findings_verified(): void
+    public function test_inspection_step_warning_includes_checklist_progress(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::RevisionRequired);
+
+        Finding::create([
+            'kim_application_id' => $application->id,
+            'department' => Department::Hsse,
+            'description' => 'APAR kedaluwarsa',
+            'status' => FindingStatus::Open,
+            'created_by' => $this->transportir->id,
+        ]);
+
+        $step = $this->step($this->steps($application), 'inspection');
+
+        $this->assertStringContainsString('checklist 0/3 fungsi', $step['description']);
+    }
+
+    public function test_inspection_step_is_done_when_all_findings_verified_and_checklists_complete(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
+        $application->update(['inspection_scheduled_at' => now()->subDay()]);
 
         Finding::create([
             'kim_application_id' => $application->id,
@@ -210,17 +249,38 @@ class VehicleProgressStepperTest extends TestCase
             'closed_at' => now(),
         ]);
 
-        $step = $this->step($this->steps($application), 'findings');
+        $inspection = app(InspectionService::class);
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+            $officer->assignRole($department->value);
+
+            $items = InspectionItem::whereHas(
+                'checklist',
+                fn ($query) => $query->where('department', $department->value)
+            )->get();
+
+            foreach ($items as $item) {
+                $inspection->recordResult(
+                    $application->fresh(),
+                    $item,
+                    InspectionResultValue::Compliant,
+                    $officer,
+                );
+            }
+        }
+
+        $step = $this->step($this->steps($application), 'inspection');
 
         $this->assertSame('done', $step['state']);
-        $this->assertSame('Seluruh temuan selesai', $step['description']);
+        $this->assertSame('Seluruh checklist selesai dan temuan tuntas', $step['description']);
     }
 
-    public function test_finding_step_fails_when_application_rejected(): void
+    public function test_inspection_step_fails_when_application_rejected(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Rejected);
 
-        $this->assertSame('failed', $this->step($this->steps($application), 'findings')['state']);
+        $this->assertSame('failed', $this->step($this->steps($application), 'inspection')['state']);
     }
 
     // ---------- Service: tahap KIM ----------
@@ -257,8 +317,108 @@ class VehicleProgressStepperTest extends TestCase
 
         $this->assertCount(5, $steps);
         $this->assertSame(
-            ['vehicle', 'documents', 'checklist', 'findings', 'kim'],
+            ['vehicle', 'documents', 'inspection', 'approval', 'kim'],
             array_column($steps, 'key')
+        );
+    }
+
+    // ---------- Service: tahap approval ----------
+
+    private function approveApplication(KimApplication $application, array $departments, ApprovalDecision $decision = ApprovalDecision::Approved): void
+    {
+        foreach ($departments as $department) {
+            $application->approvals()->create([
+                'department' => $department->value,
+                'decision' => $decision,
+                'approved_by' => $this->transportir->id,
+                'decided_at' => now(),
+            ]);
+        }
+    }
+
+    public function test_approval_step_is_pending_before_inspection_finished(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::Inspection);
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('pending', $step['state']);
+        $this->assertSame('Menunggu pemeriksaan selesai', $step['description']);
+    }
+
+    public function test_approval_step_shows_partial_function_approvals(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, [Department::Hsse]);
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('active', $step['state']);
+        $this->assertSame('1 dari 3 fungsi menyetujui', $step['description']);
+    }
+
+    public function test_approval_step_waits_for_ftm_after_all_functions_approve(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, Department::inspectingDepartments());
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('active', $step['state']);
+        $this->assertSame('Menunggu approval final FTM', $step['description']);
+    }
+
+    public function test_approval_step_is_done_when_ftm_approved(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::Approved);
+
+        $this->approveApplication($application, [
+            ...Department::inspectingDepartments(),
+            Department::Ftm,
+        ]);
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('done', $step['state']);
+        $this->assertSame('Disetujui seluruh fungsi dan FTM', $step['description']);
+    }
+
+    public function test_approval_step_fails_when_function_rejects(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, [Department::Hsse]);
+        $this->approveApplication($application, [Department::Distribusi], ApprovalDecision::Rejected);
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('failed', $step['state']);
+        $this->assertSame('Ditolak oleh Distribusi', $step['description']);
+    }
+
+    public function test_approval_step_fails_when_application_rejected_without_record(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::Rejected);
+
+        $step = $this->step($this->steps($application), 'approval');
+
+        $this->assertSame('failed', $step['state']);
+        $this->assertSame('Pengajuan ditolak', $step['description']);
+    }
+
+    public function test_approval_step_becomes_current_index_when_pending_approval(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, [Department::Hsse]);
+
+        $steps = $this->steps($application);
+
+        $this->assertSame(
+            array_search('approval', array_column($steps, 'key'), true),
+            app(VehicleProgressService::class)->currentStepIndex($steps)
         );
     }
 
@@ -287,8 +447,8 @@ class VehicleProgressStepperTest extends TestCase
             ->assertSee('Progres Pengajuan KIM')
             ->assertSee('Pendaftaran Kendaraan')
             ->assertSee('Verifikasi Dokumen')
-            ->assertSee('Checklist Pemeriksaan')
-            ->assertSee('Temuan Pemeriksaan')
+            ->assertSee('Pemeriksaan & Temuan')
+            ->assertSee('Persetujuan')
             ->assertSee('KIM Terbit')
             ->assertSee($this->vehicle->registration_number);
     }
