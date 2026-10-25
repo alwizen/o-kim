@@ -40,7 +40,7 @@ class ApplicationPendingFinalApproval extends AppNotification
     {
         return (new MailMessage)
             ->subject('Menunggu Approval Final — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('HSSE, Distribusi, dan QQ telah menyetujui. Pengajuan menunggu approval final Anda.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('NOPOL: '.$this->registrationNumber)

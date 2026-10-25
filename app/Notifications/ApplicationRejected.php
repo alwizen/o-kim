@@ -41,7 +41,7 @@ class ApplicationRejected extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pengajuan KIM Ditolak — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pengajuan KIM Anda ditolak.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('Ditolek oleh: '.$this->departmentLabel)

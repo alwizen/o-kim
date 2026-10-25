@@ -41,7 +41,7 @@ class KimApplicationSubmitted extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pengajuan KIM Baru — '.$this->applicationNumber)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Pengajuan KIM baru telah dikirim dan menunggu pemeriksaan.')
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('NOPOL: '.$this->registrationNumber)

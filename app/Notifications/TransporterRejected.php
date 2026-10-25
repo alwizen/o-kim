@@ -32,7 +32,7 @@ class TransporterRejected extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran O-KIM Ditolak')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Mohon maaf, pendaftaran akun transportir Anda tidak dapat kami setujui.')
             ->line('Alasan: '.$this->reason)
             ->line('Jika Anda merasa ini adalah kesalahan, silakan hubungi admin Fuel Terminal Tegal.');

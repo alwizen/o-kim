@@ -41,7 +41,7 @@ class VehicleDocumentRejected extends AppNotification
     {
         return (new MailMessage)
             ->subject('Dokumen Kendaraan Ditolak — O-KIM')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line("Dokumen {$this->documentTypeName} untuk kendaraan {$this->registrationNumber} ditolak.")
             ->line('Alasan: '.$this->reason)
             ->line('Silakan unggah ulang dokumen yang sudah diperbaiki melalui panel transportir.')

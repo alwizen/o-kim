@@ -35,7 +35,7 @@ class InternalAccountApproved extends AppNotification
     {
         return (new MailMessage)
             ->subject('Akun O-KIM Disetujui')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Selamat! Akun internal Anda telah disetujui oleh super admin.')
             ->line('Anda sekarang dapat mengakses panel admin sesuai kewenangan Anda.')
             ->action('Masuk Panel Admin', url('/admin/login'));

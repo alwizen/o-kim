@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             SettingSeeder::class,
+            NotificationSettingSeeder::class,
             DocumentTypeSeeder::class,
             InspectionChecklistSeeder::class,
         ]);

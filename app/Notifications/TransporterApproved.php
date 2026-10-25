@@ -35,7 +35,7 @@ class TransporterApproved extends AppNotification
     {
         return (new MailMessage)
             ->subject('Pendaftaran O-KIM Disetujui')
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Yth '.$notifiable->name.',')
             ->line('Selamat! Pendaftaran akun transportir Anda telah disetujui.')
             ->line('Anda sekarang dapat mengakses panel transportir untuk mengelola kendaraan dan pengajuan KIM.')
             ->action('Masuk Panel Transportir', url('/transportir'));
