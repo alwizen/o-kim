@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\FindingActionSubmitted;
 use App\Support\AppNotifier;
 use App\Support\SafeFilename;
+use App\Support\SecureFileResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,18 @@ use Illuminate\Validation\ValidationException;
 
 class FindingService
 {
+    private const ALLOWED_MIME_TYPES = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+    ];
+
+    private const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
+
+    private const MAX_SIZE_KILOBYTES = 5120;
+
+    private const MAX_FILES_PER_ACTION = 5;
+
     private const DISK = 'local';
 
     /**
@@ -36,7 +49,19 @@ class FindingService
             ]);
         }
 
-        return DB::transaction(function () use ($finding, $submitter, $description, $files) {
+        $files = array_values(array_filter($files, fn ($file) => $file instanceof UploadedFile));
+
+        if (count($files) > self::MAX_FILES_PER_ACTION) {
+            throw ValidationException::withMessages([
+                'attachments' => 'Maksimum '.self::MAX_FILES_PER_ACTION.' berkas per tindak lanjut.',
+            ]);
+        }
+
+        foreach ($files as $file) {
+            $this->validateFile($file);
+        }
+
+        $action = DB::transaction(function () use ($finding, $submitter, $description, $files) {
             $action = FindingAction::create([
                 'finding_id' => $finding->id,
                 'submitted_by' => $submitter->id,
@@ -60,7 +85,9 @@ class FindingService
             return $action;
         });
 
-        $this->notifyVerifierOfAction($finding);
+        $this->notifyVerifierOfAction($finding->fresh());
+
+        return $action;
     }
 
     private function notifyVerifierOfAction(Finding $finding): void
@@ -79,7 +106,7 @@ class FindingService
      */
     public function verifyAction(Finding $finding, FindingAction $action, User $verifier, bool $accepted, ?string $notes = null): FindingVerification
     {
-        if (! $verifier->can('inspect_'.$finding->department->value)) {
+        if (! $verifier->canVerifyFinding($finding)) {
             throw ValidationException::withMessages([
                 'verifier' => 'Anda tidak berwenang memverifikasi temuan fungsi '.$finding->department->label().'.',
             ]);
@@ -128,7 +155,8 @@ class FindingService
 
         return Storage::disk(self::DISK)->download(
             $attachment->file_path,
-            SafeFilename::make($attachment->original_filename)
+            SafeFilename::make($attachment->original_filename),
+            SecureFileResponse::DOWNLOAD_HEADERS
         );
     }
 
@@ -142,9 +170,30 @@ class FindingService
         return Storage::disk(self::DISK)->response(
             $attachment->file_path,
             SafeFilename::make($attachment->original_filename),
-            ['Content-Type' => $attachment->mime_type],
+            [
+                'Content-Type' => $attachment->mime_type,
+                ...SecureFileResponse::PREVIEW_HEADERS,
+            ],
             'inline'
         );
+    }
+
+    private function validateFile(UploadedFile $file): void
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (! in_array($extension, self::ALLOWED_EXTENSIONS, true)
+            || ! in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+            throw ValidationException::withMessages([
+                'attachments' => 'Format berkas tidak diizinkan. Gunakan PDF, JPG, atau PNG.',
+            ]);
+        }
+
+        if ($file->getSize() > self::MAX_SIZE_KILOBYTES * 1024) {
+            throw ValidationException::withMessages([
+                'attachments' => 'Ukuran berkas melebihi batas maksimum 5 MB.',
+            ]);
+        }
     }
 
     private function ensureAttachmentExists(FindingActionAttachment $attachment): void

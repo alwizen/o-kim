@@ -6,6 +6,7 @@ use App\Models\InspectionResult;
 use App\Models\InspectionResultAttachment;
 use App\Models\User;
 use App\Support\SafeFilename;
+use App\Support\SecureFileResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +19,8 @@ class InspectionAttachmentService
         'image/jpeg',
         'image/png',
     ];
+
+    private const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
 
     private const MAX_SIZE_KILOBYTES = 5120;
 
@@ -93,7 +96,8 @@ class InspectionAttachmentService
 
         return Storage::disk(self::DISK)->download(
             $attachment->file_path,
-            SafeFilename::make($attachment->original_filename)
+            SafeFilename::make($attachment->original_filename),
+            SecureFileResponse::DOWNLOAD_HEADERS
         );
     }
 
@@ -107,7 +111,10 @@ class InspectionAttachmentService
         return Storage::disk(self::DISK)->response(
             $attachment->file_path,
             SafeFilename::make($attachment->original_filename),
-            ['Content-Type' => $attachment->mime_type],
+            [
+                'Content-Type' => $attachment->mime_type,
+                ...SecureFileResponse::PREVIEW_HEADERS,
+            ],
             'inline'
         );
     }
@@ -137,7 +144,10 @@ class InspectionAttachmentService
 
     private function validateFile(UploadedFile $file): void
     {
-        if (! in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (! in_array($extension, self::ALLOWED_EXTENSIONS, true)
+            || ! in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
             throw ValidationException::withMessages([
                 'attachments' => 'Format berkas tidak diizinkan. Gunakan PDF, JPG, atau PNG.',
             ]);
