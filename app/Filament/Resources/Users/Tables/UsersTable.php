@@ -15,6 +15,12 @@ class UsersTable
     {
         return $table
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('name')
                     ->label('Nama')
                     ->searchable()

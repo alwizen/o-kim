@@ -30,9 +30,9 @@ class UserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Pengguna Internal';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
+    protected static string|UnitEnum|null $navigationGroup = 'User Manajemen';
 
-    protected static ?int $navigationSort = 13;
+    protected static ?int $navigationSort = 99;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -48,7 +48,9 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()->can('manage_users');
+        $user = auth()->user();
+
+        return $user->can('manage_users') || $user->can('manage_roles');
     }
 
     public static function getEloquentQuery(): Builder

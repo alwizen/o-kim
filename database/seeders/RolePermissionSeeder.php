@@ -36,11 +36,35 @@ class RolePermissionSeeder extends Seeder
             'view_kim_cards',
             'view_audit_logs',
             'manage_settings',
+            'issue_kim',
+            'schedule_inspection',
+            'manage_roles',
+            'manage_notification_settings',
+            'approve_tad_findings',
         ];
 
         foreach ($permissions as $permission) {
             Permission::findOrCreate($permission, 'web');
         }
+
+        $tadPermissions = fn (string $dept): array => [
+            'access_admin_panel',
+            'view_applications',
+            'inspect_'.$dept,
+            'manage_findings',
+            'view_findings',
+        ];
+
+        $pengawasPermissions = fn (string $dept): array => [
+            'access_admin_panel',
+            'view_applications',
+            'view_findings',
+            'verify_finding_actions',
+            'approve_tad_findings',
+            'approve_'.$dept,
+            'issue_kim',
+            'view_kim_cards',
+        ];
 
         $roles = [
             'super_admin' => $permissions,
@@ -48,47 +72,31 @@ class RolePermissionSeeder extends Seeder
                 'access_admin_panel',
                 'review_transporter_registrations',
                 'manage_transporters',
+                'manage_vehicles',
                 'verify_documents',
-            ],
-            'hsse' => [
-                'access_admin_panel',
                 'view_applications',
-                'inspect_hsse',
-                'manage_findings',
                 'view_findings',
-                'verify_finding_actions',
-                'approve_hsse',
-                'verify_documents',
+                'manage_checklists',
+                'schedule_inspection',
+                'issue_kim',
+                'view_kim_cards',
             ],
-            'distribusi' => [
-                'access_admin_panel',
-                'view_applications',
-                'inspect_distribusi',
-                'manage_findings',
-                'view_findings',
-                'verify_finding_actions',
-                'approve_distribusi',
-                'verify_documents',
-            ],
-            'qq' => [
-                'access_admin_panel',
-                'view_applications',
-                'inspect_qq',
-                'manage_findings',
-                'view_findings',
-                'verify_finding_actions',
-                'approve_qq',
-                'verify_documents',
-            ],
+            'hsse' => $tadPermissions('hsse'),
+            'distribusi' => $tadPermissions('distribusi'),
+            'qq' => $tadPermissions('qq'),
             'ftm' => [
                 'access_admin_panel',
                 'view_applications',
                 'view_findings',
                 'approve_final',
+                'issue_kim',
                 'view_kim_cards',
                 'verify_documents',
             ],
             'transportir' => [],
+            'pengawas_hsse' => $pengawasPermissions('hsse'),
+            'pengawas_qq' => $pengawasPermissions('qq'),
+            'pengawas_distribusi' => $pengawasPermissions('distribusi'),
         ];
 
         foreach ($roles as $name => $rolePermissions) {
