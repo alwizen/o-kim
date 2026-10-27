@@ -18,6 +18,13 @@ class ViewKimCard extends ViewRecord
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
                 ->url(fn (): string => route('kim.download', $this->record)),
+            Action::make('download_image')
+                ->label('Unduh Gambar (Kartu ATM)')
+                ->icon('heroicon-o-photo')
+                ->color('gray')
+                ->visible(fn (): bool => (bool) config('kim.image_download_enabled'))
+                ->tooltip('PNG 85,6 × 54 mm — cetak aktual 100%, jangan "fit to page".')
+                ->url(fn (): string => route('kim.download-image', $this->record)),
         ];
     }
 }

@@ -21,7 +21,8 @@ class SendNotificationMail implements ShouldQueue
 
     /**
      * Cukup percobaan untuk melewati gangguan transport singkat
-     * (relay SES memutus koneksi idle) tanpa menahan antrean terlalu lama.
+     * (mis. relay SMTP memutus koneksi idle atau API mailer timeout)
+     * tanpa menahan antrean terlalu lama.
      */
     public int $tries = 5;
 

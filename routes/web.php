@@ -10,6 +10,7 @@ use App\Http\Controllers\FindingAttachmentController;
 use App\Http\Controllers\InspectionReportController;
 use App\Http\Controllers\InspectionResultAttachmentController;
 use App\Http\Controllers\KimDownloadController;
+use App\Http\Controllers\KimDownloadImageController;
 use App\Http\Controllers\KimValidationController;
 use App\Http\Controllers\TransporterRegistrationController;
 use App\Http\Controllers\VehicleDocumentDownloadController;
@@ -86,6 +87,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/kim/{card}/unduh', KimDownloadController::class)
         ->name('kim.download');
+
+    Route::get('/kim/{card}/unduh-gambar', KimDownloadImageController::class)
+        ->name('kim.download-image');
 
     // Laporan hasil pemeriksaan checklist (printout PDF)
     Route::get('/pengajuan/{application}/laporan-pemeriksaan', [InspectionReportController::class, 'download'])

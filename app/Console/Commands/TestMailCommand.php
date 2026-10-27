@@ -10,7 +10,7 @@ class TestMailCommand extends Command
 {
     protected $signature = 'okim:test-mail {email : Alamat tujuan uji}';
 
-    protected $description = 'Mengirim email uji untuk memverifikasi konfigurasi SMTP O-KIM';
+    protected $description = 'Mengirim email uji untuk memverifikasi konfigurasi mailer O-KIM';
 
     public function handle(): int
     {
@@ -33,14 +33,18 @@ class TestMailCommand extends Command
             $this->components->warn('MAIL_MAILER masih "log" — email hanya dicatat di storage/logs/laravel.log.');
         }
 
+        if ($mailer === 'resend' && blank(config('services.resend.key'))) {
+            $this->components->warn('RESEND_API_KEY belum diisi — pengiriman akan gagal.');
+        }
+
         $body = "Email uji dari O-KIM.\n\n"
             .'Waktu: '.now()->translatedFormat('d M Y H:i:s')."\n"
             .'Mailer: '.$mailer."\n\n"
-            .'Jika Anda menerima email ini, konfigurasi SMTP sudah benar.';
+            .'Jika Anda menerima email ini, konfigurasi email sudah benar.';
 
         try {
             Mail::raw($body, function ($message) use ($email): void {
-                $message->to($email)->subject('Uji SMTP O-KIM — Fuel Terminal Tegal');
+                $message->to($email)->subject('Uji Email O-KIM — Fuel Terminal Tegal');
             });
         } catch (Throwable $e) {
             $this->components->error('Gagal mengirim email: '.$e->getMessage());
@@ -49,6 +53,10 @@ class TestMailCommand extends Command
         }
 
         $this->components->info('Email uji berhasil diproses untuk '.$email.'.');
+
+        if ($mailer === 'resend') {
+            $this->components->info('Status pengiriman dapat dilihat di https://resend.com/emails.');
+        }
 
         return self::SUCCESS;
     }
