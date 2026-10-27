@@ -146,6 +146,13 @@ class ViewKimApplication extends ViewRecord
                 ->color('success')
                 ->visible(fn (): bool => $this->record->kimCard()->exists())
                 ->url(fn (): string => route('kim.download', $this->record->kimCard)),
+            Action::make('download_kim_image')
+                ->label('Unduh Gambar (Kartu ATM)')
+                ->icon('heroicon-o-photo')
+                ->color('gray')
+                ->visible(fn (): bool => (bool) config('kim.image_download_enabled') && $this->record->kimCard()->exists())
+                ->tooltip('PNG 85,6 × 54 mm — cetak aktual 100%, jangan "fit to page".')
+                ->url(fn (): string => route('kim.download-image', $this->record->kimCard)),
             Action::make('inspection_report')
                 ->label('Cetak Laporan Pemeriksaan')
                 ->icon('heroicon-o-printer')

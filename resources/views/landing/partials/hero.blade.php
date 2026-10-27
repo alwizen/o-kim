@@ -22,7 +22,7 @@
             <div>
                 <span class="reveal inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur">
                     <x-heroicon-o-shield-check class="h-4 w-4" />
-                    Online - Kartu Izin Masuk (O-KIM)
+                    Online - Kartu Izin Masuk
                 </span>
 
                 <h1 class="reveal text-balance-heading mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl" style="--reveal-delay:80ms">

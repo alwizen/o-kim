@@ -298,18 +298,54 @@ GOOGLE_REDIRECT_URI=/auth/google/callback
 Daftarkan **Authorized redirect URI** di Google Cloud Console:
 `{APP_URL}/auth/google/callback`
 
-### Email (SMTP)
+### Email
 
 Tahap pengembangan memakai driver `log` — email **tidak terkirim**, hanya dicatat di
 `storage/logs/laravel.log`. Ini memudahkan pengujian alur notifikasi tanpa risiko mengirim email nyata.
 
-Ada tiga pilihan konfigurasi: **Mailtrap** (testing), **Amazon SES** (produksi), dan
-**Google Workspace** (alternatif produksi). Mengganti penyedia **tidak perlu mengubah kode** —
-cukup ubah variabel `MAIL_*` di `.env` lalu `php artisan config:clear`.
+Pilihan konfigurasi: **Resend** (produksi), **Mailtrap** (testing), **Amazon SES** (alternatif
+produksi), dan **Google Workspace** (alternatif produksi). Mengganti penyedia **tidak perlu
+mengubah kode** — cukup ubah variabel `MAIL_*` / `RESEND_API_KEY` di `.env` lalu
+`php artisan config:clear`.
+
+#### Resend — produksi (opsi utama)
+
+Memakai **API Resend**, bukan SMTP, sehingga tidak ada masalah koneksi SMTP yang menggantung.
+Paket `resend/resend-php` sudah terpasang di `composer.json`.
+
+**Langkah aktivasi:**
+
+1. Verifikasi **domain** di <https://resend.com/domains>. Tambahkan record DNS:
+   - **DKIM** (disediakan Resend)
+   - **SPF** — `v=spf1 include:amazonses.com ~all` bila memakai Resend via SES,
+     atau record yang ditampilkan Resend
+   - **DMARC** — `v=DMARC1; p=none; rua=mailto:dmarc@domain-anda.com`
+2. Buat **API key** dengan permission *Sending access* di <https://resend.com/api-keys>.
+3. Isi `.env`:
+
+```env
+MAIL_MAILER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
+MAIL_FROM_ADDRESS=no-reply@domain-anda.com
+MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
+```
+
+4. Bersihkan cache, uji, lalu restart worker:
+
+```bash
+php artisan config:clear
+php artisan okim:test-mail alamat-uji@domain-anda.com
+php artisan queue:restart
+```
+
+> `MAIL_FROM_ADDRESS` **wajib** memakai domain yang terverifikasi di Resend. Untuk uji cepat
+> sebelum domain aktif, Resend mengizinkan `onboarding@resend.dev` ke email pemilik akun.
+> Status pengiriman dapat dilihat di <https://resend.com/emails>.
 
 #### Aturan `MAIL_SCHEME`
 
-Nilai ini diteruskan ke Symfony Mailer yang hanya mendukung **`smtp`** dan **`smtps`**:
+Hanya berlaku untuk mailer berbasis **SMTP** (Mailtrap, SES, Google Workspace). Nilai ini
+diteruskan ke Symfony Mailer yang hanya mendukung **`smtp`** dan **`smtps`**:
 
 | Port | `MAIL_SCHEME` |
 |---|---|
@@ -318,6 +354,8 @@ Nilai ini diteruskan ke Symfony Mailer yang hanya mendukung **`smtp`** dan **`sm
 
 > **Jangan memakai `tls`.** Nilai itu tidak didukung dan menghasilkan
 > `UnsupportedSchemeException: The "tls" scheme is not supported`.
+> Mailer `resend` mengabaikan `MAIL_SCHEME`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
+> dan `MAIL_PASSWORD`.
 
 #### Mailtrap — pengujian
 
@@ -337,9 +375,10 @@ MAIL_FROM_NAME="O-KIM Fuel Terminal Tegal"
 
 Gunakan menu **Email Testing** (sandbox), bukan *Email Sending*.
 
-#### Amazon SES — produksi (belum aktif)
+#### Amazon SES — alternatif produksi (SMTP)
 
-Pilihan utama untuk produksi karena biaya paling rendah dengan deliverability terbaik.
+Biaya paling rendah dengan deliverability terbaik, tetapi memakai relay SMTP yang memutus
+koneksi idle (lihat bagian *Queue worker*). Gunakan Resend bila ingin menghindari masalah ini.
 
 | Pos | Nilai |
 |---|---|
@@ -422,9 +461,10 @@ Pantau kegagalan pengiriman dengan `php artisan queue:failed`.
 
 **Koneksi SMTP basi (error `451 4.4.2 Timeout waiting for data from client`)**
 
-Relay SES memutus koneksi SMTP yang idle ±60 detik, sementara proteksi ping bawaan Symfony baru
-berjalan setelah 100 detik. Tanpa penanganan, worker yang lama menganggur akan gagal pada email
-berikutnya. Pengaturan yang dipakai:
+Hanya relevan untuk mailer **SMTP** (SES/Google Workspace). Mailer `resend` memakai API HTTP
+sehingga tidak terkena masalah ini. Relay SES memutus koneksi SMTP yang idle ±60 detik,
+sementara proteksi ping bawaan Symfony baru berjalan setelah 100 detik. Tanpa penanganan,
+worker yang lama menganggur akan gagal pada email berikutnya. Pengaturan yang dipakai:
 
 | Lokasi | Nilai | Fungsi |
 |---|---|---|
@@ -436,6 +476,8 @@ berikutnya. Pengaturan yang dipakai:
 Uji jeda: kirim email, diamkan >90 detik, lalu picu notifikasi lain — harus selesai tanpa `451`.
 
 > `php artisan config:clear` wajib dijalankan setelah mengubah `MAIL_TIMEOUT`.
+> Setelah mengganti `MAIL_MAILER`, jalankan juga `php artisan queue:restart` agar worker
+> memuat konfigurasi baru.
 
 ### Storage
 Dokumen sensitif disimpan di **disk private** (`storage/app/private`).
@@ -647,7 +689,7 @@ Setiap peristiwa penting memicu notifikasi yang tersimpan di database:
 Klik notifikasi untuk menandainya dibaca; setiap notifikasi memiliki tombol **Lihat** yang menuju
 langsung ke data terkait.
 
-Semua peristiwa di atas **juga dikirim sebagai email** melalui queue (lihat bagian *Email (SMTP)*).
+Semua peristiwa di atas **juga dikirim sebagai email** melalui queue (lihat bagian *Email*).
 Notifikasi email tidak memblokir request dan kegagalan pengiriman tidak membatalkan proses bisnis —
 kegagalan tercatat pada tabel `failed_jobs`.
 

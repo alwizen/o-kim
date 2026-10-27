@@ -57,6 +57,12 @@ class KimCardsTable
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
                     ->url(fn ($record): string => route('kim.download', $record)),
+                Action::make('download_image')
+                    ->label('Unduh Gambar (Kartu ATM)')
+                    ->icon('heroicon-o-photo')
+                    ->color('gray')
+                    ->visible(fn (): bool => (bool) config('kim.image_download_enabled'))
+                    ->url(fn ($record): string => route('kim.download-image', $record)),
                 ViewAction::make(),
             ]);
     }

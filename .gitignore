@@ -21,14 +21,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+/docs
 _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
-tambahan.md
-rpd.md
-status.md
-color.png
-tutor.md
-future.md
-patch.md

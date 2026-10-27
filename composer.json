@@ -15,6 +15,7 @@
         "laravel/framework": "^13.17",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
+        "resend/resend-php": "^1.17",
         "spatie/laravel-permission": "^7.0"
     },
     "require-dev": {

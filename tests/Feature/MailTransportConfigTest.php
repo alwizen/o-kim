@@ -6,7 +6,9 @@ use App\Jobs\SendNotificationMail;
 use App\Models\User;
 use App\Notifications\KimCardIssued;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Transport\ResendTransport;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class MailTransportConfigTest extends TestCase
@@ -25,6 +27,22 @@ class MailTransportConfigTest extends TestCase
     {
         // Laravel 13 memakai MAIL_SCHEME, bukan MAIL_ENCRYPTION.
         $this->assertArrayNotHasKey('encryption', config('mail.mailers.smtp'));
+    }
+
+    public function test_resend_mailer_is_configured(): void
+    {
+        $this->assertSame('resend', config('mail.mailers.resend.transport'));
+        $this->assertArrayHasKey('resend', config('services'));
+    }
+
+    public function test_resend_transport_can_be_resolved(): void
+    {
+        // Memastikan paket resend/resend-php terpasang; tanpa paket test ini gagal.
+        $this->assertTrue(class_exists(\Resend::class));
+
+        $transport = Mail::mailer('resend')->getSymfonyTransport();
+
+        $this->assertInstanceOf(ResendTransport::class, $transport);
     }
 
     public function test_notification_mail_job_retries_more_than_once_with_backoff(): void

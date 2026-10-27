@@ -10,7 +10,7 @@ class KimCard extends Model
 {
     protected $fillable = [
         'kim_application_id', 'kim_number', 'issued_at',
-        'expires_at', 'qr_token', 'pdf_path', 'status',
+        'expires_at', 'qr_token', 'pdf_path', 'image_path', 'status',
     ];
 
     protected function casts(): array
