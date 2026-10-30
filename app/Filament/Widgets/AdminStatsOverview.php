@@ -22,7 +22,16 @@ class AdminStatsOverview extends StatsOverviewWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->can('access_admin_panel') ?? false;
+        // Statistik operasional menyeluruh hanya relevan bagi admin verifikasi
+        // dan super admin. TAD, Pengawas, dan FTM punya widget sendiri.
+        $user = auth()->user();
+
+        if ($user === null || ! $user->can('access_admin_panel')) {
+            return false;
+        }
+
+        return $user->hasRole('super_admin')
+            || $user->hasRole('admin_verifikasi');
     }
 
     protected function getStats(): array
@@ -37,7 +46,16 @@ class AdminStatsOverview extends StatsOverviewWidget
             ApplicationStatus::RevisionRequired->value,
         ])->count();
 
-        $openFindings = Finding::where('status', '!=', FindingStatus::Verified->value)->count();
+        $openFindings = Finding::whereNotIn('status', [
+            FindingStatus::Verified->value,
+            FindingStatus::Dispensation->value,
+        ])->count();
+
+        $dispensatedFindings = Finding::where('status', FindingStatus::Dispensation->value)->count();
+
+        $dueDispensations = Finding::where('status', FindingStatus::Dispensation->value)
+            ->whereDate('dispensation_due_date', '<', now()->toDateString())
+            ->count();
 
         $pendingApproval = KimApplication::where('status', ApplicationStatus::PendingApproval->value)->count();
 
@@ -69,6 +87,15 @@ class AdminStatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
                 ->color($openFindings > 0 ? 'danger' : 'success')
                 ->icon('heroicon-o-exclamation-triangle')
+                ->url('/admin/findings'),
+
+            Stat::make('Temuan Dispensasi', $dispensatedFindings)
+                ->description($dueDispensations > 0
+                    ? $dueDispensations.' sudah jatuh tempo'
+                    : 'Dispensasi FTM aktif')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color($dueDispensations > 0 ? 'danger' : ($dispensatedFindings > 0 ? 'warning' : 'gray'))
+                ->icon('heroicon-o-clock')
                 ->url('/admin/findings'),
 
             Stat::make('Menunggu Approval', $pendingApproval)

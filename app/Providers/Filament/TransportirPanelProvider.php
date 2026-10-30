@@ -2,9 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Transportir\Widgets\MyDispensationRequests;
+use App\Filament\Transportir\Widgets\RejectedFollowUps;
 use App\Filament\Transportir\Widgets\TransportirExpiringDocumentsTable;
 use App\Filament\Transportir\Widgets\TransportirStatsOverview;
 use App\Filament\Transportir\Widgets\VehicleProgressStepper;
+use App\Filament\Widgets\RecentActivity;
+use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -44,14 +48,21 @@ class TransportirPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->plugin(
-                PressFilamentTheme::make()->telex()->rail(false)
+                PressFilamentTheme::make()->runtimeSwitch([PressVariant::Broadsheet, PressVariant::Vellum])->rail(false)
+            )
+            ->font(
+                'Inter',
+                url: asset('fonts/filament/filament/inter/index.css')
             )
             ->discoverWidgets(in: app_path('Filament/Transportir/Widgets'), for: 'App\Filament\Transportir\Widgets')
             ->widgets([
                 TransportirStatsOverview::class,
                 VehicleProgressStepper::class,
-                // AccountWidget::class,
+                RejectedFollowUps::class,
+                MyDispensationRequests::class,
                 TransportirExpiringDocumentsTable::class,
+                RecentActivity::class,
+                // AccountWidget::class,
                 // FilamentInfoWidget::class,
             ])
             ->middleware([

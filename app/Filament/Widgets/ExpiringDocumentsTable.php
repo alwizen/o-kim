@@ -27,7 +27,14 @@ class ExpiringDocumentsTable extends TableWidget
             ->query(app(DocumentExpiryService::class)->expiringDocumentsQuery())
             ->description('Dokumen kendaraan yang kedaluwarsa atau akan kedaluwarsa dalam '
                 .DocumentExpiryService::WARNING_THRESHOLD_DAYS.' hari')
+            ->paginated([10, 25, 50])
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('vehicle.transporter.company_name')
                     ->label('Perusahaan')
                     ->searchable()

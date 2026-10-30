@@ -3,11 +3,22 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\AdminStatsOverview;
+use App\Filament\Widgets\ApplicationTrendChart;
+use App\Filament\Widgets\ExpiringDispensations;
 use App\Filament\Widgets\ExpiringDocumentsTable;
+use App\Filament\Widgets\FindingTrendChart;
+use App\Filament\Widgets\FtmDecisionQueue;
+use App\Filament\Widgets\FtmPendingDispensations;
+use App\Filament\Widgets\FtmStatsOverview;
+use App\Filament\Widgets\InspectionsDueToday;
+use App\Filament\Widgets\PendingDocumentVerification;
+use App\Filament\Widgets\PengawasApprovalQueue;
+use App\Filament\Widgets\PengawasStatsOverview;
+use App\Filament\Widgets\RecentActivity;
+use App\Filament\Widgets\TadInspectionQueue;
+use App\Filament\Widgets\TadStatsOverview;
+use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
-use Filament\Enums\DatabaseNotificationsPosition;
-use Filament\Enums\GlobalSearchPosition;
-use Filament\Enums\UserMenuPosition;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -34,15 +45,11 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandlogo(asset('img/logo.png'))
+            ->brandlogo(asset('img/v3.png'))
             ->brandLogoHeight('3rem')
             ->favicon(asset('img/fav.svg'))
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications()
-            // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar)
-            // ->globalSearch(position: GlobalSearchPosition::Sidebar)
-            // ->userMenu(position: UserMenuPosition::Sidebar)
-            // ->topbar(false)
             ->maxContentWidth(Width::Full)
             ->login()
             ->colors([
@@ -56,8 +63,21 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AdminStatsOverview::class,
-                // AccountWidget::class,
+                TadStatsOverview::class,
+                PengawasStatsOverview::class,
+                FtmStatsOverview::class,
+                TadInspectionQueue::class,
+                PengawasApprovalQueue::class,
+                FtmDecisionQueue::class,
+                PendingDocumentVerification::class,
+                ExpiringDispensations::class,
+                InspectionsDueToday::class,
                 ExpiringDocumentsTable::class,
+                FtmPendingDispensations::class,
+                ApplicationTrendChart::class,
+                FindingTrendChart::class,
+                RecentActivity::class,
+                // AccountWidget::class,
                 // FilamentInfoWidget::class,
             ])
             ->middleware([
@@ -72,7 +92,11 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugin(
-                PressFilamentTheme::make()->vellum()->rail(false)
+                PressFilamentTheme::make()->runtimeSwitch([PressVariant::Broadsheet, PressVariant::Vellum])->rail(false)
+            )
+            ->font(
+                'Inter',
+                url: asset('fonts/filament/filament/inter/index.css')
             )
             ->authMiddleware([
                 Authenticate::class,
