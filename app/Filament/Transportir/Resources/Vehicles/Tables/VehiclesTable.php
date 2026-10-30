@@ -14,6 +14,12 @@ class VehiclesTable
     {
         return $table
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('registration_number')
                     ->label('NOPOL')
                     ->searchable()

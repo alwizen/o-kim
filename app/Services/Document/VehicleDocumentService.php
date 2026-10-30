@@ -8,6 +8,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Notifications\VehicleDocumentUploaded;
 use App\Support\AppNotifier;
+use App\Support\ImageCompressor;
 use App\Support\SafeFilename;
 use App\Support\SecureFileResponse;
 use Illuminate\Http\UploadedFile;
@@ -27,7 +28,14 @@ class VehicleDocumentService
 
     private const MAX_SIZE_KILOBYTES = 5120;
 
-    private const DISK = 'local';
+    public function __construct(
+        private readonly ImageCompressor $compressor = new ImageCompressor,
+    ) {}
+
+    private function disk(): string
+    {
+        return config('media.disk');
+    }
 
     public function upload(Vehicle $vehicle, int $documentTypeId, UploadedFile $file, array $metadata = []): VehicleDocument
     {
@@ -57,9 +65,12 @@ class VehicleDocumentService
                 ->latest('id')
                 ->first();
 
+            // Kompres gambar agar hemat storage (PDF diteruskan apa adanya).
+            [$file, $mimeType, $fileSize] = $this->compressor->compress($file);
+
             $path = $file->store(
-                "vehicle-documents/{$vehicle->id}",
-                ['disk' => self::DISK]
+                'vehicle-documents/'.$vehicle->storageFolder(),
+                ['disk' => $this->disk()]
             );
 
             $document = VehicleDocument::create([
@@ -68,8 +79,8 @@ class VehicleDocumentService
                 'document_number' => $metadata['document_number'] ?? null,
                 'file_path' => $path,
                 'original_filename' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
+                'mime_type' => $mimeType,
+                'file_size' => $fileSize,
                 'issued_at' => $metadata['issued_at'] ?? null,
                 'expires_at' => $metadata['expires_at'] ?? null,
                 'verification_status' => DocumentVerificationStatus::Pending,
@@ -111,7 +122,7 @@ class VehicleDocumentService
     public function delete(VehicleDocument $document): void
     {
         DB::transaction(function () use ($document) {
-            Storage::disk(self::DISK)->delete($document->file_path);
+            Storage::disk($this->disk())->delete($document->file_path);
             $document->delete();
         });
     }
@@ -120,7 +131,7 @@ class VehicleDocumentService
     {
         $this->ensureFileExists($document);
 
-        return Storage::disk(self::DISK)->download(
+        return Storage::disk($this->disk())->download(
             $document->file_path,
             SafeFilename::make($document->original_filename),
             SecureFileResponse::DOWNLOAD_HEADERS
@@ -134,7 +145,7 @@ class VehicleDocumentService
     {
         $this->ensureFileExists($document);
 
-        return Storage::disk(self::DISK)->response(
+        return Storage::disk($this->disk())->response(
             $document->file_path,
             SafeFilename::make($document->original_filename),
             [
@@ -148,7 +159,7 @@ class VehicleDocumentService
     private function ensureFileExists(VehicleDocument $document): void
     {
         abort_unless(
-            Storage::disk(self::DISK)->exists($document->file_path),
+            Storage::disk($this->disk())->exists($document->file_path),
             404,
             'Berkas tidak ditemukan.'
         );

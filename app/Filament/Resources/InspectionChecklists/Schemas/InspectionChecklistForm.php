@@ -30,8 +30,8 @@ class InspectionChecklistForm
                         ->label('Kode')
                         ->required()
                         ->maxLength(30)
-                        ->unique(ignoreRecord: true)
-                        ->helperText('Contoh: HSSE-STD'),
+                        ->unique(ignoreRecord: true),
+                    // ->helperText('Contoh: HSSE-STD'),
                     TextInput::make('title')
                         ->label('Judul Checklist')
                         ->required()

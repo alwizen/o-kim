@@ -3,6 +3,7 @@
 namespace App\Filament\Transportir\Resources\Findings\Tables;
 
 use App\Enums\FindingStatus;
+use App\Models\Finding;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -14,6 +15,12 @@ class FindingsTable
     {
         return $table
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('application.application_number')
                     ->label('No. Pengajuan')
                     ->searchable(),
@@ -36,12 +43,14 @@ class FindingsTable
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (FindingStatus $state) => $state->label())
-                    ->color(fn (FindingStatus $state) => match ($state) {
-                        FindingStatus::Open => 'danger',
-                        FindingStatus::SubmittedForVerification => 'warning',
-                        FindingStatus::Verified => 'success',
-                        FindingStatus::Rejected => 'danger',
-                    }),
+                    ->color(fn (FindingStatus $state) => $state->color()),
+                TextColumn::make('dispensation_due_date')
+                    ->label('Batas Dispensasi')
+                    ->date('d M Y')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state, Finding $record): string => $record->isDispensationExpired() ? 'danger' : 'warning')
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d M Y')

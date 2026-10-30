@@ -15,6 +15,7 @@ class VehiclesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->paginated([25, 50, 100, 'all'])
             ->columns([
                 TextColumn::make('no')
                     ->label('No')

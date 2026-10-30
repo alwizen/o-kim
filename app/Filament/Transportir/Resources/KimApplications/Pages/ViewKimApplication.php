@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\FindingStatus;
 use App\Filament\Transportir\Resources\KimApplications\KimApplicationResource;
 use App\Services\Application\KimApplicationService;
+use App\Services\Finding\FindingReportService;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -80,12 +81,7 @@ class ViewKimApplication extends ViewRecord
                                 ->label('Status')
                                 ->badge()
                                 ->formatStateUsing(fn ($state) => $state->label())
-                                ->color(fn ($state) => match ($state) {
-                                    FindingStatus::Open => 'danger',
-                                    FindingStatus::SubmittedForVerification => 'warning',
-                                    FindingStatus::Verified => 'success',
-                                    FindingStatus::Rejected => 'danger',
-                                }),
+                                ->color(fn (FindingStatus $state): string => $state->color()),
                             TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
                         ])
                         ->columns(5),
@@ -159,6 +155,13 @@ class ViewKimApplication extends ViewRecord
                 ->color('gray')
                 ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
                 ->url(fn (): string => route('inspection-report.download', $this->record))
+                ->openUrlInNewTab(),
+            Action::make('berita_acara')
+                ->label('Cetak Berita Acara')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->visible(fn (): bool => app(FindingReportService::class)->isEligible($this->record))
+                ->url(fn (): string => route('berita-acara.download', $this->record))
                 ->openUrlInNewTab(),
             Action::make('submit')
                 ->label('Kirim Pengajuan')

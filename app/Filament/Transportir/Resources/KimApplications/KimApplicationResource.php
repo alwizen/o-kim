@@ -13,6 +13,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class KimApplicationResource extends Resource
 {
@@ -45,6 +46,8 @@ class KimApplicationResource extends Resource
     protected static ?string $navigationLabel = 'Pengajuan KIM';
 
     protected static ?string $modelLabel = 'Pengajuan KIM';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional KIM';
 
     protected static ?int $navigationSort = 10;
 

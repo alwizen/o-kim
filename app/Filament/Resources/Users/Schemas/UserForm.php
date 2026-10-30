@@ -27,27 +27,28 @@ class UserForm
         'manage_notification_settings',
         'issue_kim',
         'approve_final',
+        'dispensate_findings',
     ];
 
     private static function actorIsSuperAdmin(): bool
     {
-        return (bool) auth()->user()?->hasRole(InternalRole::SuperAdmin->value);
+        return (bool) auth()->user()?->hasRole(
+            InternalRole::SuperAdmin->value
+        );
     }
 
     /**
-     * Role bawaan enum + role yang dibuat lewat manajemen role (fleksibel).
+     * Role bawaan enum + role kustom.
      */
     public static function roleOptions(): array
     {
         $enumOptions = InternalRole::options();
 
-        // super_admin hanya boleh diberikan oleh super_admin.
+        // Super admin hanya boleh diberikan oleh super admin.
         if (! self::actorIsSuperAdmin()) {
             unset($enumOptions[InternalRole::SuperAdmin->value]);
         }
 
-        // Bandingkan dengan daftar enum penuh agar super_admin tidak terbaca
-        // sebagai "role kustom" setelah opsi di atas dibuang.
         $custom = Role::query()
             ->whereNotIn('name', array_keys(InternalRole::options()))
             ->where('name', '!=', 'transportir')
@@ -58,10 +59,7 @@ class UserForm
     }
 
     /**
-     * Sembunyikan permission sensitif dari pemegang manage_users yang bukan super admin.
-     *
-     * @param  array<string, string>  $options
-     * @return array<string, string>
+     * Sembunyikan permission sensitif dari non-super-admin.
      */
     private static function filterPrivilegedPermissions(array $options): array
     {
@@ -70,63 +68,126 @@ class UserForm
         }
 
         return collect($options)
-            ->reject(fn (string $label, string $name) => in_array($name, self::PRIVILEGED_PERMISSIONS, true))
+            ->reject(
+                fn (string $label, string $name) => in_array(
+                    $name,
+                    self::PRIVILEGED_PERMISSIONS,
+                    true
+                )
+            )
             ->all();
     }
 
+    /**
+     * Konfigurasi form user.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+
+            /*
+             * DATA AKUN
+             * HP: 1 kolom
+             * Tablet: 2 kolom
+             * Desktop besar: 3 kolom
+             */
             Section::make('Data Akun')
-                ->columns(2)
+                ->columnSpanFull()
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                    'xl' => 3,
+                ])
                 ->schema([
                     TextInput::make('name')
                         ->label('Nama')
                         ->required()
                         ->maxLength(255),
+
+                    TextInput::make('jabatan')
+                        ->label('Jabatan')
+                        ->maxLength(100)
+                        ->helperText(
+                            'Jabatan fungsional, mis. Safety Officer. Berbeda dengan role sistem.'
+                        ),
+
                     TextInput::make('email')
                         ->label('Email')
                         ->email()
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true),
+
                     TextInput::make('password')
                         ->label('Kata Sandi')
                         ->password()
                         ->revealable()
-                        ->rules(fn (?string $state): array => filled($state)
-                            ? [Password::min(8)->letters()->mixedCase()->numbers()]
-                            : [])
-                        ->required(fn (string $operation): bool => $operation === 'create')
-                        ->dehydrated(fn (?string $state): bool => filled($state))
-                        ->helperText(fn (string $operation): ?string => $operation === 'edit'
-                            ? 'Biarkan kosong bila tidak ingin mengubah kata sandi.'
-                            : 'Minimal 8 karakter, kombinasi huruf besar, huruf kecil, dan angka.')
-                        ->columnSpanFull(),
+                        ->rules(
+                            fn (?string $state): array => filled($state)
+                                ? [
+                                    Password::min(8)
+                                        ->letters()
+                                        ->mixedCase()
+                                        ->numbers(),
+                                ]
+                                : []
+                        )
+                        ->required(
+                            fn (string $operation): bool => $operation === 'create'
+                        )
+                        ->dehydrated(
+                            fn (?string $state): bool => filled($state)
+                        )
+                        ->helperText(
+                            fn (string $operation): ?string => $operation === 'edit'
+                                ? 'Biarkan kosong bila tidak ingin mengubah kata sandi.'
+                                : 'Minimal 8 karakter, kombinasi huruf besar, huruf kecil, dan angka.'
+                        ),
+
                     TextInput::make('password_confirmation')
                         ->label('Konfirmasi Kata Sandi')
                         ->password()
                         ->revealable()
                         ->same('password')
-                        ->required(fn (string $operation): bool => $operation === 'create')
-                        ->dehydrated(false)
-                        ->columnSpanFull(),
+                        ->required(
+                            fn (string $operation): bool => $operation === 'create'
+                        )
+                        ->dehydrated(false),
                 ]),
 
+            /*
+             * ROLE & STATUS
+             * HP: 1 kolom
+             * Tablet ke atas: 2 kolom
+             */
             Section::make('Peran & Status')
-                ->columns(2)
+                ->columnSpanFull()
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
                 ->schema([
                     CheckboxList::make('roles')
                         ->label('Role')
                         ->options(self::roleOptions())
-                        ->descriptions(collect(self::roleOptions())
-                            ->mapWithKeys(fn (string $label, string $value) => [$value => $label])
-                            ->all())
+                        ->descriptions(
+                            collect(self::roleOptions())
+                                ->mapWithKeys(
+                                    fn (string $label, string $value) => [
+                                        $value => $label,
+                                    ]
+                                )
+                                ->all()
+                        )
                         ->required()
-                        ->columns(2)
+                        ->columns([
+                            'default' => 1,
+                            'md' => 2,
+                            'xl' => 3,
+                        ])
                         ->columnSpanFull()
                         ->formatStateUsing(function ($component, $state) {
-                            // Isi dari relasi Spatie (nama role) saat halaman dibuka.
+                            // Ambil role dari relasi Spatie saat edit.
                             $record = $component->getRecord();
 
                             if (! $record) {
@@ -137,7 +198,13 @@ class UserForm
 
                             return $record->roles
                                 ->pluck('name')
-                                ->filter(fn (string $name) => in_array($name, $allowed, true))
+                                ->filter(
+                                    fn (string $name) => in_array(
+                                        $name,
+                                        $allowed,
+                                        true
+                                    )
+                                )
                                 ->values()
                                 ->all();
                         })
@@ -152,69 +219,141 @@ class UserForm
                             $allowed = array_keys(self::roleOptions());
 
                             $roles = collect((array) $state)
-                                ->filter(fn ($name) => in_array($name, $allowed, true))
+                                ->filter(
+                                    fn ($name) => in_array(
+                                        $name,
+                                        $allowed,
+                                        true
+                                    )
+                                )
                                 ->values()
                                 ->all();
 
                             $record->syncRoles($roles);
                         }),
+
                     Select::make('account_status')
                         ->label('Status Akun')
-                        ->options(collect(AccountStatus::cases())->mapWithKeys(
-                            fn (AccountStatus $status) => [$status->value => $status->label()]
-                        ))
+                        ->options(
+                            collect(AccountStatus::cases())
+                                ->mapWithKeys(
+                                    fn (AccountStatus $status) => [
+                                        $status->value => $status->label(),
+                                    ]
+                                )
+                        )
                         ->default(AccountStatus::Approved->value)
                         ->required()
                         ->native(false),
                 ]),
 
+            /*
+             * PERMISSION TAMBAHAN
+             * HP: 1 kolom
+             * Tablet: 2 kolom
+             * Desktop besar: 3 kolom
+             */
             ...collect(RoleForm::groupedPermissions())
-                ->map(fn (array $options, string $group) => Section::make('Permission Tambahan — '.$group)
-                    ->description('Beri akses tambahan di luar role (fleksibel).')
-                    ->columns(2)
-                    ->schema([
-                        CheckboxList::make('extra_permissions_'.$group)
-                            ->hiddenLabel()
-                            ->options(self::filterPrivilegedPermissions($options))
-                            ->descriptions(collect(self::filterPrivilegedPermissions($options))
-                                ->mapWithKeys(fn (string $label, string $name) => [
-                                    $name => RoleForm::permissionDescription($name),
+                ->map(
+                    fn (array $options, string $group) => Section::make(
+                        'Permission Tambahan — '.$group
+                    )
+                        ->description(
+                            'Beri akses tambahan di luar role (fleksibel).'
+                        )
+                        ->collapsed()
+                        ->columnSpanFull()
+                        ->columns([
+                            'default' => 1,
+                            'md' => 2,
+                        ])
+                        ->schema([
+                            CheckboxList::make('extra_permissions_'.$group)
+                                ->hiddenLabel()
+                                ->options(
+                                    self::filterPrivilegedPermissions($options)
+                                )
+                                ->descriptions(
+                                    collect(
+                                        self::filterPrivilegedPermissions($options)
+                                    )
+                                        ->mapWithKeys(
+                                            fn (string $label, string $name) => [
+                                                $name => RoleForm::permissionDescription(
+                                                    $name
+                                                ),
+                                            ]
+                                        )
+                                        ->all()
+                                )
+                                ->columns([
+                                    'default' => 1,
+                                    'md' => 2,
+                                    'xl' => 3,
                                 ])
-                                ->all())
-                            ->columns(2)
-                            ->columnSpanFull()
-                            ->bulkToggleable()
-                            ->formatStateUsing(fn ($component) => $component
-                                ->getRecord()
-                                ?->permissions
-                                ->pluck('name')
-                                ->intersect(array_keys(self::filterPrivilegedPermissions($options)))
-                                ->values()
-                                ->all() ?? [])
-                            ->dehydrated(false)
-                            ->visible(fn () => (bool) auth()->user()?->can('manage_users'))
-                            ->saveRelationshipsUsing(function ($component, $state) use ($options) {
-                                $record = $component->getRecord();
+                                ->columnSpanFull()
+                                ->bulkToggleable()
+                                ->formatStateUsing(
+                                    fn ($component) => $component
+                                        ->getRecord()
+                                        ?->permissions
+                                        ->pluck('name')
+                                        ->intersect(
+                                            array_keys(
+                                                self::filterPrivilegedPermissions(
+                                                    $options
+                                                )
+                                            )
+                                        )
+                                        ->values()
+                                        ->all() ?? []
+                                )
+                                ->dehydrated(false)
+                                ->visible(
+                                    fn () => (bool) auth()->user()?->can(
+                                        'manage_users'
+                                    )
+                                )
+                                ->saveRelationshipsUsing(
+                                    function ($component, $state) use ($options) {
+                                        $record = $component->getRecord();
 
-                                if (! $record) {
-                                    return;
-                                }
+                                        if (! $record) {
+                                            return;
+                                        }
 
-                                // Pertahankan permission di luar grup ini,
-                                // sinkronkan hanya yang ada dalam grup.
-                                $allowed = array_keys(self::filterPrivilegedPermissions($options));
+                                        // Pertahankan permission di luar grup ini.
+                                        $allowed = array_keys(
+                                            self::filterPrivilegedPermissions(
+                                                $options
+                                            )
+                                        );
 
-                                $others = $record->permissions
-                                    ->pluck('name')
-                                    ->reject(fn (string $name) => array_key_exists($name, $options));
+                                        $others = $record->permissions
+                                            ->pluck('name')
+                                            ->reject(
+                                                fn (string $name) => array_key_exists(
+                                                    $name,
+                                                    $options
+                                                )
+                                            );
 
-                                $record->syncPermissions(
-                                    $others->merge(collect((array) $state)->intersect($allowed))->values()->all()
-                                );
-                            }),
-                    ]))
+                                        $record->syncPermissions(
+                                            $others
+                                                ->merge(
+                                                    collect((array) $state)
+                                                        ->intersect($allowed)
+                                                )
+                                                ->values()
+                                                ->all()
+                                        );
+                                    }
+                                ),
+                        ])
+                )
                 ->values()
                 ->all(),
+
         ]);
     }
 }

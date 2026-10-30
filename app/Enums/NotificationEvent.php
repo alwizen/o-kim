@@ -11,6 +11,10 @@ use App\Notifications\ExpiryReminder;
 use App\Notifications\ExpiryReminderStaff;
 use App\Notifications\FindingActionSubmitted;
 use App\Notifications\FindingCreated;
+use App\Notifications\FindingDispensationExpired;
+use App\Notifications\FindingDispensationExpiredStaff;
+use App\Notifications\FindingDispensationGranted;
+use App\Notifications\FindingDispensationGrantedStaff;
 use App\Notifications\InspectionScheduled;
 use App\Notifications\InspectionScheduledForStaff;
 use App\Notifications\InternalAccountApproved;
@@ -50,6 +54,8 @@ enum NotificationEvent: string
     case TransporterApplicationApproved = 'transporter.application_approved';
     case TransporterApplicationRejected = 'transporter.application_rejected';
     case TransporterFindingCreated = 'transporter.finding_created';
+    case TransporterFindingDispensationGranted = 'transporter.finding_dispensation_granted';
+    case TransporterFindingDispensationExpired = 'transporter.finding_dispensation_expired';
     case TransporterKimIssued = 'transporter.kim_issued';
     case TransporterExpiryReminder = 'transporter.expiry_reminder';
 
@@ -61,6 +67,8 @@ enum NotificationEvent: string
     case InternalApplicationSubmitted = 'internal.application_submitted';
     case InternalInspectionScheduled = 'internal.inspection_scheduled';
     case InternalFindingActionSubmitted = 'internal.finding_action_submitted';
+    case InternalFindingDispensationGranted = 'internal.finding_dispensation_granted';
+    case InternalFindingDispensationExpired = 'internal.finding_dispensation_expired';
     case InternalDepartmentApprovalNeeded = 'internal.department_approval_needed';
     case InternalFinalApprovalNeeded = 'internal.final_approval_needed';
     case InternalExpiryReminder = 'internal.expiry_reminder';
@@ -89,6 +97,8 @@ enum NotificationEvent: string
             self::TransporterApplicationApproved => 'Pengajuan Disetujui',
             self::TransporterApplicationRejected => 'Pengajuan Ditolak',
             self::TransporterFindingCreated => 'Temuan Checklist',
+            self::TransporterFindingDispensationGranted => 'Temuan Didispensasi FTM',
+            self::TransporterFindingDispensationExpired => 'KIM Sementara Kedaluwarsa',
             self::TransporterKimIssued => 'KIM Terbit',
             self::TransporterExpiryReminder => 'Pengingat Kedaluwarsa (Harian)',
             self::InternalTransporterRegistration => 'Pendaftaran Transportir Baru',
@@ -98,6 +108,8 @@ enum NotificationEvent: string
             self::InternalApplicationSubmitted => 'Pengajuan KIM Baru',
             self::InternalInspectionScheduled => 'Jadwal / Reschedule Checklist',
             self::InternalFindingActionSubmitted => 'Transportir Kirim Tindak Lanjut',
+            self::InternalFindingDispensationGranted => 'Dispensasi Temuan Diberikan',
+            self::InternalFindingDispensationExpired => 'KIM Sementara Kedaluwarsa',
             self::InternalDepartmentApprovalNeeded => 'Membutuhkan Approval Fungsi',
             self::InternalFinalApprovalNeeded => 'Membutuhkan Approval Final',
             self::InternalExpiryReminder => 'Ringkasan Kedaluwarsa (Harian)',
@@ -120,6 +132,8 @@ enum NotificationEvent: string
             self::TransporterApplicationApproved => 'Dikirim saat Fuel Terminal Manager menyetujui final.',
             self::TransporterApplicationRejected => 'Dikirim saat pengajuan KIM ditolak.',
             self::TransporterFindingCreated => 'Dikirim saat petugas mencatat temuan pemeriksaan.',
+            self::TransporterFindingDispensationGranted => 'Dikirim saat FTM memberi dispensasi atas temuan.',
+            self::TransporterFindingDispensationExpired => 'Dikirim saat KIM sementara kedaluwarsa karena batas dispensasi terlampaui.',
             self::TransporterKimIssued => 'Dikirim saat KIM diterbitkan.',
             self::TransporterExpiryReminder => 'Email harian berisi dokumen dan KIM yang akan kedaluwarsa.',
             self::InternalTransporterRegistration => 'Dikirim saat ada pendaftaran transportir baru menunggu verifikasi.',
@@ -129,6 +143,8 @@ enum NotificationEvent: string
             self::InternalApplicationSubmitted => 'Dikirim saat transportir mengirim pengajuan KIM.',
             self::InternalInspectionScheduled => 'Dikirim saat jadwal pemeriksaan ditetapkan atau diubah (mis. HSSE untuk checklist).',
             self::InternalFindingActionSubmitted => 'Dikirim saat transportir mengirim tindak lanjut temuan.',
+            self::InternalFindingDispensationGranted => 'Dikirim ke FTM dan pengawas fungsi saat dispensasi diberikan.',
+            self::InternalFindingDispensationExpired => 'Dikirim ke FTM dan pengawas fungsi saat KIM sementara kedaluwarsa.',
             self::InternalDepartmentApprovalNeeded => 'Dikirim saat checklist suatu fungsi selesai dan menunggu approval.',
             self::InternalFinalApprovalNeeded => 'Dikirim saat ketiga fungsi menyetujui dan menunggu approval final.',
             self::InternalExpiryReminder => 'Ringkasan harian dokumen dan KIM yang akan kedaluwarsa untuk petugas.',
@@ -151,6 +167,8 @@ enum NotificationEvent: string
             self::TransporterApplicationApproved,
             self::TransporterApplicationRejected,
             self::TransporterFindingCreated,
+            self::TransporterFindingDispensationGranted,
+            self::TransporterFindingDispensationExpired,
             self::TransporterKimIssued,
             self::TransporterExpiryReminder => self::GROUP_TRANSPORTER,
 
@@ -178,6 +196,8 @@ enum NotificationEvent: string
             self::TransporterApplicationApproved => ApplicationApproved::class,
             self::TransporterApplicationRejected => ApplicationRejected::class,
             self::TransporterFindingCreated => FindingCreated::class,
+            self::TransporterFindingDispensationGranted => FindingDispensationGranted::class,
+            self::TransporterFindingDispensationExpired => FindingDispensationExpired::class,
             self::TransporterKimIssued => KimCardIssued::class,
             self::TransporterExpiryReminder => ExpiryReminder::class,
             self::InternalTransporterRegistration => TransporterRegistrationSubmitted::class,
@@ -187,6 +207,8 @@ enum NotificationEvent: string
             self::InternalApplicationSubmitted => KimApplicationSubmitted::class,
             self::InternalInspectionScheduled => InspectionScheduledForStaff::class,
             self::InternalFindingActionSubmitted => FindingActionSubmitted::class,
+            self::InternalFindingDispensationGranted => FindingDispensationGrantedStaff::class,
+            self::InternalFindingDispensationExpired => FindingDispensationExpiredStaff::class,
             self::InternalDepartmentApprovalNeeded => ApplicationPendingDepartmentApproval::class,
             self::InternalFinalApprovalNeeded => ApplicationPendingFinalApproval::class,
             self::InternalExpiryReminder => ExpiryReminderStaff::class,
@@ -216,6 +238,8 @@ enum NotificationEvent: string
             self::TransporterApplicationApproved,
             self::TransporterApplicationRejected,
             self::TransporterFindingCreated,
+            self::TransporterFindingDispensationGranted,
+            self::TransporterFindingDispensationExpired,
             self::TransporterKimIssued,
             self::TransporterExpiryReminder => ['transportir'],
 
@@ -230,6 +254,8 @@ enum NotificationEvent: string
             ),
             self::InternalInspectionScheduled => array_merge(['hsse', 'distribusi', 'qq', 'ftm'], $pengawas, ['super_admin']),
             self::InternalFindingActionSubmitted => array_merge(['hsse', 'distribusi', 'qq'], $pengawas, ['super_admin']),
+            self::InternalFindingDispensationGranted,
+            self::InternalFindingDispensationExpired => array_merge(['ftm'], $pengawas),
             self::InternalDepartmentApprovalNeeded => array_merge($pengawas, ['super_admin']),
             self::InternalFinalApprovalNeeded => ['ftm', 'super_admin'],
             self::InternalExpiryReminder => ['admin_verifikasi', 'ftm', 'super_admin'],

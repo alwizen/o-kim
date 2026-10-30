@@ -98,6 +98,7 @@ class ViewVehicle extends ViewRecord
                             TableColumn::make('Status'),
                             TableColumn::make('Dibuat'),
                             TableColumn::make('No. KIM'),
+                            TableColumn::make('Jenis KIM'),
                             TableColumn::make('Status KIM'),
                         ])
                         ->schema([
@@ -106,12 +107,25 @@ class ViewVehicle extends ViewRecord
                             TextEntry::make('status')->badge()->formatStateUsing(fn (ApplicationStatus $state) => $state->label()),
                             TextEntry::make('created_at')->label('Dibuat')->dateTime('d M Y'),
                             TextEntry::make('kimCard.kim_number')->label('No. KIM')->placeholder('—'),
+                            TextEntry::make('kimCard.is_dispensation')
+                                ->label('Jenis KIM')
+                                ->badge()
+                                ->placeholder('—')
+                                ->formatStateUsing(fn ($state): string => $state ? 'Sementara' : 'Normal')
+                                ->color(fn ($state): string => $state ? 'warning' : 'gray'),
                             TextEntry::make('kimCard.status')
                                 ->label('Status KIM')
                                 ->badge()
                                 ->placeholder('—')
-                                ->formatStateUsing(fn ($state) => $state instanceof KimCardStatus ? $state->label() : $state)
-                                ->color(fn ($state) => $state instanceof KimCardStatus && $state === KimCardStatus::Active ? 'success' : 'gray'),
+                                ->formatStateUsing(fn ($state, $record) => $record->kimCard
+                                    ? $record->kimCard->currentStatus()->label()
+                                    : null)
+                                ->color(fn ($state, $record) => match ($record->kimCard?->currentStatus()) {
+                                    KimCardStatus::Active => 'success',
+                                    KimCardStatus::Expired => 'warning',
+                                    KimCardStatus::Revoked => 'danger',
+                                    default => 'gray',
+                                }),
                         ])
                         ->columns(3),
                 ])

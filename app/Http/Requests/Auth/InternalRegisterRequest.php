@@ -18,6 +18,7 @@ class InternalRegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255', 'unique:users,email'],
             'role' => ['required', 'string', Rule::in(array_keys(RegistrationService::internalRoleOptions()))],
             'password' => [
@@ -41,6 +42,7 @@ class InternalRegisterRequest extends FormRequest
     {
         return [
             'name' => 'nama',
+            'jabatan' => 'jabatan',
             'email' => 'email',
             'role' => 'role',
             'password' => 'kata sandi',

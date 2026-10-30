@@ -31,6 +31,12 @@ class TransportirExpiringDocumentsTable extends TableWidget
             ->description('Dokumen kendaraan Anda yang kedaluwarsa atau akan kedaluwarsa dalam '
                 .DocumentExpiryService::WARNING_THRESHOLD_DAYS.' hari')
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
                     ->searchable(),

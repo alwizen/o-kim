@@ -13,10 +13,10 @@ class UserSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
 
         $admin = User::updateOrCreate(
-            ['email' => 'admin@admin.com'],
+            ['email' => 'alwizen@outlook.com'],
             [
                 'name' => 'Super Admin',
-                'password' => 'password',
+                'password' => 'akuganteng#',
                 'account_status' => AccountStatus::Approved,
             ]
         );

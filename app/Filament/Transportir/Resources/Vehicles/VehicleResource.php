@@ -15,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class VehicleResource extends Resource
 {
@@ -45,7 +46,9 @@ class VehicleResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Kendaraan';
 
-    protected static ?int $navigationSort = 1;
+    protected static string|UnitEnum|null $navigationGroup = 'Data & Profil';
+
+    protected static ?int $navigationSort = 10;
 
     public static function getEloquentQuery(): Builder
     {

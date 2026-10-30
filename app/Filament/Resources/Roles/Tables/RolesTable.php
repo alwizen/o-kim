@@ -13,6 +13,7 @@ class RolesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->paginated([50, 100])
             ->columns([
                 TextColumn::make('no')
                     ->label('No')

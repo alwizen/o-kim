@@ -86,6 +86,7 @@ class RoleForm
                 'approve_final',
                 'verify_finding_actions',
                 'approve_tad_findings',
+                'dispensate_findings',
             ],
             'KIM' => [
                 'issue_kim',
@@ -222,6 +223,7 @@ class RoleForm
             'approve_final' => 'Approval final (FTM)',
             'verify_finding_actions' => 'Verifikasi tindak lanjut temuan',
             'approve_tad_findings' => 'Verifikasi temuan dari user TAD',
+            'dispensate_findings' => 'Beri/perpanjang/cabut dispensasi temuan (khusus FTM)',
             'issue_kim' => 'Terbitkan KIM',
             'view_kim_cards' => 'Lihat kartu KIM',
             default => 'Permission tambahan',

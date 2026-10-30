@@ -28,6 +28,11 @@ class UsersTable
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('jabatan')
+                    ->label('Jabatan')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('roles.name')
                     ->label('Role')
                     ->badge()

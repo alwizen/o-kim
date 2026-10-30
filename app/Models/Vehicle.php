@@ -51,6 +51,21 @@ class Vehicle extends Model
         return strtoupper((string) preg_replace('/\s+/', ' ', trim($value)));
     }
 
+    /**
+     * NOPOL sebagai nama folder penyimpanan berkas.
+     *
+     * NOPOL bisa mengandung spasi/titik/strip, sehingga dinormalisasi menjadi
+     * hanya huruf dan angka (mis. "G 1234 AB" -> "G1234AB") agar aman dipakai
+     * pada path object storage maupun S3.
+     */
+    public function storageFolder(): string
+    {
+        $folder = (string) preg_replace('/[^A-Za-z0-9]/', '', (string) $this->registration_number);
+
+        // Fallback agar tidak pernah menghasilkan folder kosong.
+        return $folder !== '' ? strtoupper($folder) : 'vehicle-'.$this->id;
+    }
+
     public function transporter(): BelongsTo
     {
         return $this->belongsTo(Transporter::class);

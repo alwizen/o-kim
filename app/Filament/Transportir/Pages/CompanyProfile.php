@@ -13,6 +13,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use UnitEnum;
 
 class CompanyProfile extends Page implements HasForms
 {
@@ -24,7 +25,9 @@ class CompanyProfile extends Page implements HasForms
 
     protected static ?string $title = 'Profil Perusahaan';
 
-    protected static ?int $navigationSort = 2;
+    protected static string|UnitEnum|null $navigationGroup = 'Data & Profil';
+
+    protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.transportir.pages.company-profile';
 

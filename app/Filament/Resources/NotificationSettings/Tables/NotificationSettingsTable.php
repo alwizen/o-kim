@@ -15,7 +15,7 @@ class NotificationSettingsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->paginated([10, 25, 50])
+            ->paginated([50, 100])
             ->columns([
                 TextColumn::make('event_key')
                     ->label('Notifikasi')
@@ -51,8 +51,7 @@ class NotificationSettingsTable
                             ?? str($role)->replace('_', ' ')->title()->toString())
                         ->all())
                     ->placeholder('Belum dipilih')
-                    ->limitList(4)
-                    ->expandableLimitedList(),
+                    ->wrap(),
                 TextColumn::make('updated_at')
                     ->label('Terakhir Diubah')
                     ->dateTime('d M Y H:i')

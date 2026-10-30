@@ -4,10 +4,8 @@ namespace App\Filament\Resources\InspectionChecklists\RelationManagers;
 
 use App\Models\InspectionChecklist;
 use App\Models\InspectionItem;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -16,6 +14,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -33,8 +32,8 @@ class ItemsRelationManager extends RelationManager
     {
         return $schema->components([
             Section::make('Butir Pemeriksaan')
-                // ->columns(2)
                 ->columnSpanFull()
+                ->columns(2)
                 ->schema([
                     TextInput::make('item_code')
                         ->label('Kode Butir')
@@ -74,7 +73,7 @@ class ItemsRelationManager extends RelationManager
                 ]),
 
             Section::make('Status')
-                // ->columns(2)
+                ->columns(2)
                 ->columnSpanFull()
                 ->schema([
                     Toggle::make('is_required')
@@ -93,11 +92,11 @@ class ItemsRelationManager extends RelationManager
                         ->relationship('points')
                         ->hiddenLabel()
                         ->addActionLabel('Tambah Sub-butir')
-                        ->reorderableWithButtons()
+                        ->columnSpanFull()
                         ->orderColumn('sort_order')
                         ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
                         ->collapsible()
-                        ->cloneable()
+                        ->itemNumbers()
                         ->schema([
                             TextInput::make('label')
                                 ->label('Sub-butir')
@@ -119,6 +118,12 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('label')
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('item_code')
                     ->label('Kode')
                     ->badge()
@@ -147,7 +152,7 @@ class ItemsRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Tambah Butir')
-                    ->modalWidth('3xl')
+                    ->modalWidth(Width::FiveExtraLarge)
                     ->using(function (array $data): InspectionItem {
                         $data['item_code'] = $data['item_code']
                             ?? $this->generateItemCode($this->getOwnerRecord());
@@ -156,13 +161,8 @@ class ItemsRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
-                EditAction::make()->modalWidth('3xl'),
+                EditAction::make()->modalWidth(Width::FiveExtraLarge),
                 DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

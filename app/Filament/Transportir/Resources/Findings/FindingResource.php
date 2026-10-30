@@ -10,6 +10,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class FindingResource extends Resource
 {
@@ -42,6 +43,8 @@ class FindingResource extends Resource
     protected static ?string $navigationLabel = 'Temuan & Tindak Lanjut';
 
     protected static ?string $modelLabel = 'Temuan';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Operasional KIM';
 
     protected static ?int $navigationSort = 11;
 

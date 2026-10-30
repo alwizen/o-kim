@@ -4,6 +4,7 @@ namespace App\Filament\Transportir\Resources\Findings\Pages;
 
 use App\Enums\FindingStatus;
 use App\Filament\Transportir\Resources\Findings\FindingResource;
+use App\Services\Finding\DispensationService;
 use App\Services\Finding\FindingService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -31,6 +32,9 @@ class ViewFinding extends ViewRecord
             'actions.submitter',
             'actions.attachments',
             'verifications.verifier',
+            'dispensator',
+            'dispensationRequests.requester',
+            'dispensationRequests.decider',
         ]);
     }
 
@@ -43,9 +47,33 @@ class ViewFinding extends ViewRecord
                 ->schema([
                     TextEntry::make('application.application_number')->label('No. Pengajuan'),
                     TextEntry::make('department')->label('Fungsi')->badge()->formatStateUsing(fn ($state) => $state->label()),
-                    TextEntry::make('status')->badge()->formatStateUsing(fn ($state) => $state->label()),
+                    TextEntry::make('status')
+                        ->badge()
+                        ->formatStateUsing(fn ($state) => $state->label())
+                        ->color(fn ($state) => $state->color()),
                     TextEntry::make('created_at')->label('Dibuat')->dateTime('d M Y H:i'),
                     TextEntry::make('description')->label('Deskripsi Temuan')->columnSpanFull(),
+                ]),
+            Section::make('Dispensasi FTM')
+                ->description('Temuan ini didispensasi oleh Fuel Terminal Manager. Selesaikan perbaikan sebelum batas waktu.')
+                ->columns(3)
+                ->columnSpanFull()
+                ->visible(fn ($record): bool => $record->dispensation_reason !== null)
+                ->schema([
+                    TextEntry::make('dispensation_due_date')
+                        ->label('Batas Perbaikan')
+                        ->date('d M Y')
+                        ->badge()
+                        ->color(fn ($record): string => $record->isDispensationExpired() ? 'danger' : 'warning'),
+                    TextEntry::make('dispensator.name')->label('Diberikan Oleh')->placeholder('—'),
+                    TextEntry::make('dispensation_state')
+                        ->label('Kondisi')
+                        ->state(fn ($record): string => $record->isDispensationExpired() ? 'BATAS TERLAMPAUI' : 'Aktif')
+                        ->badge()
+                        ->color(fn ($record): string => $record->isDispensationExpired() ? 'danger' : 'success'),
+                    TextEntry::make('dispensation_reason')
+                        ->label('Alasan Dispensasi')
+                        ->columnSpanFull(),
                 ]),
             Section::make('Dokumentasi Temuan')
                 ->description('Foto atau dokumen dari petugas pemeriksa terkait butir ini.')
@@ -76,7 +104,7 @@ class ViewFinding extends ViewRecord
                         ->columns(2),
                 ]),
             Section::make('Riwayat Tindak Lanjut')
-                // ->columnSpanFull()
+                ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('actions')
                         ->columnSpanFull()
@@ -144,19 +172,89 @@ class ViewFinding extends ViewRecord
                         ->columns(2),
                 ])
                 ->visible(fn ($record) => $record->verifications->isNotEmpty()),
+            Section::make('Permohonan KIM Sementara (Dispensasi)')
+                ->description('Ajukan permohonan penundaan perbaikan bila temuan tidak dapat diselesaikan segera (mis. menunggu suku cadang).')
+                ->columnSpanFull()
+                ->schema([
+                    RepeatableEntry::make('dispensationRequests')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->table([
+                            TableColumn::make('Status'),
+                            TableColumn::make('Alasan'),
+                            TableColumn::make('Diajukan Oleh'),
+                            TableColumn::make('Waktu'),
+                            TableColumn::make('Batas Perbaikan'),
+                            TableColumn::make('Catatan FTM'),
+                        ])
+                        ->schema([
+                            TextEntry::make('status')
+                                ->label('Status')
+                                ->badge()
+                                ->formatStateUsing(fn ($state) => $state->label())
+                                ->color(fn ($state) => $state->color()),
+                            TextEntry::make('reason')->label('Alasan'),
+                            TextEntry::make('requester.name')->label('Diajukan Oleh')->placeholder('—'),
+                            TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
+                            TextEntry::make('due_date')->label('Batas Perbaikan')->date('d M Y')->placeholder('—'),
+                            TextEntry::make('decision_notes')->label('Catatan FTM')->placeholder('—'),
+                        ])
+                        ->columns(2),
+                ])
+                ->visible(fn ($record) => $record->dispensationRequests->isNotEmpty()),
         ]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('request_dispensation')
+                ->label('Ajukan Dispensasi')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('warning')
+                ->visible(fn (): bool => in_array($this->record->status, FindingStatus::actionableCases(), true)
+                    && $this->record->pendingDispensationRequest() === null)
+                ->modalHeading('Ajukan Permohonan KIM Sementara')
+                ->modalDescription('Permohonan akan ditinjau oleh Fuel Terminal Manager. Temuan tetap dianggap terbuka sampai permohonan disetujui.')
+                ->schema([
+                    Textarea::make('reason')
+                        ->label('Alasan Permohonan')
+                        ->helperText('Contoh: perbaikan menunggu suku cadang (inden) yang diperkirakan tiba dalam 2 minggu.')
+                        ->required()
+                        ->minLength(10)
+                        ->maxLength(1000)
+                        ->rows(4),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        app(DispensationService::class)->request(
+                            $this->record,
+                            auth()->user(),
+                            $data['reason'],
+                        );
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Gagal mengajukan dispensasi')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->title('Permohonan terkirim')
+                        ->body('Menunggu keputusan Fuel Terminal Manager.')
+                        ->success()
+                        ->send();
+                }),
             Action::make('submit_action')
                 ->label('Kirim Tindak Lanjut')
                 ->icon('heroicon-o-wrench-screwdriver')
                 ->color('primary')
                 ->visible(fn (): bool => in_array(
                     $this->record->status,
-                    [FindingStatus::Open, FindingStatus::Rejected],
+                    FindingStatus::actionableCases(),
                     true
                 ))
                 ->schema([
@@ -170,7 +268,7 @@ class ViewFinding extends ViewRecord
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
                         ->rules(['mimes:pdf,jpg,jpeg,png'])
                         ->maxSize(5120)
-                        ->disk('local')
+                        ->disk(config('media.disk'))
                         ->storeFiles(false)
                         ->maxFiles(5),
                 ])

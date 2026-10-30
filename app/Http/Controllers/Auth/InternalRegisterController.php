@@ -27,6 +27,7 @@ class InternalRegisterController extends Controller
     {
         $user = $registration->createPendingInternal([
             'name' => $request->validated('name'),
+            'jabatan' => $request->validated('jabatan'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'),
         ], $request->validated('role'));

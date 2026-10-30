@@ -56,7 +56,7 @@ class DocumentsRelationManager extends RelationManager
                         ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
                         ->rules(['mimes:pdf,jpg,jpeg,png'])
                         ->maxSize(5120)
-                        ->disk('local')
+                        ->disk(config('media.disk'))
                         ->required()
                         ->storeFiles(false),
                 ]),
