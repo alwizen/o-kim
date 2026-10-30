@@ -25,9 +25,11 @@ class KimValidityService
      * - KIM mengikuti tanggal kedaluwarsa paling awal dari dokumen wajib yang aktif.
      * - Dibatasi maksimum masa berlaku dari pengaturan sistem (default 6 bulan).
      *
+     * Batas dispensasi (bila ada) ikut membatasi masa berlaku KIM sementara.
+     *
      * @throws ValidationException jika dokumen wajib tidak valid pada saat penerbitan
      */
-    public function calculateExpiresAt(KimApplication $application, Carbon $issuedAt): Carbon
+    public function calculateExpiresAt(KimApplication $application, Carbon $issuedAt, ?Carbon $dispensationDueDate = null): Carbon
     {
         $requiredDocs = $application->vehicle->documents()
             ->whereNull('replaced_by_id')
@@ -62,10 +64,13 @@ class KimValidityService
 
         $maxExpiry = $issuedAt->copy()->addMonths($this->settings->kimValidityMonths());
 
-        if (! $earliestExpiry) {
-            return $maxExpiry;
+        $expiry = $earliestExpiry && $earliestExpiry->lt($maxExpiry) ? $earliestExpiry : $maxExpiry;
+
+        // KIM dispensasi tidak boleh melewati batas dispensasi terawal.
+        if ($dispensationDueDate !== null && $dispensationDueDate->lt($expiry)) {
+            $expiry = $dispensationDueDate->copy();
         }
 
-        return $earliestExpiry->lt($maxExpiry) ? $earliestExpiry : $maxExpiry;
+        return $expiry;
     }
 }

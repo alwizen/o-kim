@@ -13,6 +13,7 @@ use App\Notifications\KimCardIssued;
 use App\Services\Approval\ApprovalService;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -35,7 +36,8 @@ class KimIssuanceService
             $this->ensureIssuable($application);
 
             $issuedAt = now();
-            $expiresAt = $this->validityService->calculateExpiresAt($application, $issuedAt);
+            $dispensationDueDate = $this->earliestDispensationDueDate($application);
+            $expiresAt = $this->validityService->calculateExpiresAt($application, $issuedAt, $dispensationDueDate);
 
             $card = KimCard::create([
                 'kim_application_id' => $application->id,
@@ -44,6 +46,8 @@ class KimIssuanceService
                 'expires_at' => $expiresAt,
                 'qr_token' => Str::random(48),
                 'status' => KimCardStatus::Active,
+                'is_dispensation' => $dispensationDueDate !== null,
+                'dispensation_expires_at' => $dispensationDueDate?->toDateString(),
             ]);
 
             $application->update([
@@ -82,9 +86,9 @@ class KimIssuanceService
             ]);
         }
 
-        if ($application->findings()->where('status', '!=', FindingStatus::Verified)->exists()) {
+        if ($application->hasBlockingFindings()) {
             throw ValidationException::withMessages([
-                'findings' => 'Masih ada temuan yang belum selesai.',
+                'findings' => 'Masih ada temuan yang belum selesai atau dispensasinya telah kedaluwarsa.',
             ]);
         }
 
@@ -111,6 +115,19 @@ class KimIssuanceService
                 'approvals' => 'Approval final FTM belum tersedia.',
             ]);
         }
+    }
+
+    /**
+     * Batas dispensasi terawal pada pengajuan (null bila tidak ada dispensasi).
+     */
+    private function earliestDispensationDueDate(KimApplication $application): ?Carbon
+    {
+        $dueDate = $application->findings()
+            ->where('status', FindingStatus::Dispensation->value)
+            ->whereNotNull('dispensation_due_date')
+            ->min('dispensation_due_date');
+
+        return $dueDate !== null ? Carbon::parse($dueDate) : null;
     }
 
     /**

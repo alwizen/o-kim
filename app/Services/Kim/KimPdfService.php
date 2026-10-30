@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class KimPdfService
 {
-    private const DISK = 'local';
+    private function disk(): string
+    {
+        return config('media.disk');
+    }
 
     public function generate(KimCard $card): string
     {
@@ -22,7 +25,7 @@ class KimPdfService
 
         $path = 'kim-cards/'.$this->safeFilename($card->kim_number);
 
-        Storage::disk(self::DISK)->put($path, $pdf->output());
+        Storage::disk($this->disk())->put($path, $pdf->output());
 
         $card->update(['pdf_path' => $path]);
 
@@ -31,12 +34,12 @@ class KimPdfService
 
     public function download(KimCard $card)
     {
-        if (! $card->pdf_path || ! Storage::disk(self::DISK)->exists($card->pdf_path)) {
+        if (! $card->pdf_path || ! Storage::disk($this->disk())->exists($card->pdf_path)) {
             $this->generate($card);
             $card->refresh();
         }
 
-        return Storage::disk(self::DISK)->download(
+        return Storage::disk($this->disk())->download(
             $card->pdf_path,
             $this->safeFilename($card->kim_number)
         );

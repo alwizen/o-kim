@@ -46,6 +46,21 @@ class KimCardInfolist
                     TextEntry::make('updated_at')
                         ->label('Terakhir Diperbarui')
                         ->dateTime('d M Y H:i'),
+                    TextEntry::make('is_dispensation')
+                        ->label('Jenis KIM')
+                        ->badge()
+                        ->formatStateUsing(fn ($state): string => $state ? 'KIM Sementara (Dispensasi)' : 'KIM Normal')
+                        ->color(fn ($state): string => $state ? 'warning' : 'gray'),
+                    TextEntry::make('dispensation_expires_at')
+                        ->label('Batas Dispensasi')
+                        ->date('d M Y')
+                        ->placeholder('—')
+                        ->badge()
+                        ->color(fn ($record): string => $record->isDispensationLapsed() ? 'danger' : 'warning'),
+                    TextEntry::make('dispensation_lapsed_at')
+                        ->label('Ditandai Kedaluwarsa')
+                        ->dateTime('d M Y H:i')
+                        ->placeholder('—'),
                 ]),
             Section::make('Kendaraan & Pengajuan')
                 ->columns(2)

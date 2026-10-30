@@ -13,7 +13,14 @@ class KimCardsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->paginated([50, 100, 'all'])
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('kim_number')
                     ->label('Nomor KIM')
                     ->searchable()
@@ -36,6 +43,17 @@ class KimCardsTable
                     ->label('Berlaku Hingga')
                     ->date('d M Y')
                     ->sortable(),
+                TextColumn::make('is_dispensation')
+                    ->label('Jenis KIM')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? 'Sementara' : 'Normal')
+                    ->color(fn ($state): string => $state ? 'warning' : 'gray')
+                    ->toggleable(),
+                TextColumn::make('dispensation_expires_at')
+                    ->label('Batas Dispensasi')
+                    ->date('d M Y')
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()

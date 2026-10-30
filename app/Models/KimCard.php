@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Enums\KimCardStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class KimCard extends Model
 {
     protected $fillable = [
         'kim_application_id', 'kim_number', 'issued_at',
         'expires_at', 'qr_token', 'pdf_path', 'image_path', 'status',
+        'is_dispensation', 'dispensation_expires_at', 'dispensation_lapsed_at',
     ];
 
     protected function casts(): array
@@ -19,6 +21,9 @@ class KimCard extends Model
             'issued_at' => 'datetime',
             'expires_at' => 'date',
             'status' => KimCardStatus::class,
+            'is_dispensation' => 'boolean',
+            'dispensation_expires_at' => 'date',
+            'dispensation_lapsed_at' => 'datetime',
         ];
     }
 
@@ -33,10 +38,25 @@ class KimCard extends Model
             return KimCardStatus::Revoked;
         }
 
+        // KIM dispensasi otomatis tidak berlaku setelah batas dispensasi.
+        if ($this->isDispensationLapsed()) {
+            return KimCardStatus::Expired;
+        }
+
         if ($this->expires_at->isPast()) {
             return KimCardStatus::Expired;
         }
 
         return KimCardStatus::Active;
+    }
+
+    /**
+     * Batas dispensasi sudah terlewati (berlaku sampai akhir tanggal batas).
+     */
+    public function isDispensationLapsed(): bool
+    {
+        return (bool) $this->is_dispensation
+            && $this->dispensation_expires_at !== null
+            && $this->dispensation_expires_at->lt(Carbon::today());
     }
 }

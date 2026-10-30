@@ -20,7 +20,10 @@ use RuntimeException;
  */
 class KimCardImageService
 {
-    private const DISK = 'local';
+    private function disk(): string
+    {
+        return config('media.disk');
+    }
 
     /** Ukuran kartu di 300 DPI (px). */
     public const WIDTH = 1011;
@@ -55,7 +58,7 @@ class KimCardImageService
 
         $path = 'kim-cards/'.$this->safeFilename($card->kim_number);
 
-        Storage::disk(self::DISK)->put($path, $this->toPng());
+        Storage::disk($this->disk())->put($path, $this->toPng());
 
         $card->update(['image_path' => $path]);
 
@@ -64,12 +67,12 @@ class KimCardImageService
 
     public function download(KimCard $card)
     {
-        if (! $card->image_path || ! Storage::disk(self::DISK)->exists($card->image_path)) {
+        if (! $card->image_path || ! Storage::disk($this->disk())->exists($card->image_path)) {
             $this->generate($card);
             $card->refresh();
         }
 
-        return Storage::disk(self::DISK)->download(
+        return Storage::disk($this->disk())->download(
             $card->image_path,
             $this->safeFilename($card->kim_number)
         );
@@ -113,48 +116,121 @@ class KimCardImageService
 
     private function drawHeader(KimCard $card): void
     {
-        $this->text('KARTU IZIN MASUK (KIM)', 40, 52, 28, true, self::COLOR_WHITE);
-        $this->text('FUEL TERMINAL TEGAL', 42, 88, 15, false, [0xC7, 0xD2, 0xF7]);
+        // Logo K3 di kiri dan PPN di kanan, mengikuti tata letak dokumen checklist.
+        $logoK3Size = 76;
+        $logoPpnWidth = 156;
+        $logoPpnHeight = (int) round($logoPpnWidth * 199 / 800);
 
-        // Nomor KIM di kanan atas.
-        $number = (string) $card->kim_number;
-        $size = 20;
+        $this->drawLogo('img/K3.png', 40, intdiv(116 - $logoK3Size, 2), $logoK3Size, $logoK3Size);
+        $this->drawLogo(
+            'img/ppn.png',
+            self::WIDTH - 40 - $logoPpnWidth,
+            intdiv(116 - $logoPpnHeight, 2),
+            $logoPpnWidth,
+            $logoPpnHeight
+        );
 
-        $this->text($number, self::WIDTH - 40 - $this->textWidth($number, $size, true), 52, $size, true, self::COLOR_WHITE);
-        $this->text('NOMOR KIM', self::WIDTH - 40 - $this->textWidth('NOMOR KIM', 13), 88, 13, false, [0xC7, 0xD2, 0xF7]);
+        // Judul di tengah, di antara kedua logo.
+        $centerLeft = 40 + $logoK3Size + 24;
+        $centerRight = self::WIDTH - 40 - $logoPpnWidth - 24;
+        $centerWidth = $centerRight - $centerLeft;
+
+        $title = ($card->is_dispensation ? 'KIM — SEMENTARA' : 'KARTU IZIN MASUK (KIM)');
+        $titleSize = 24;
+
+        $this->text(
+            $this->ellipsize($title, $centerWidth, $titleSize, true),
+            $centerLeft + intdiv($centerWidth - $this->textWidth($title, $titleSize, true), 2),
+            46,
+            $titleSize,
+            true,
+            self::COLOR_WHITE
+        );
+
+        $subtitle = 'FUEL TERMINAL TEGAL';
+        $subtitleSize = 14;
+
+        $this->text(
+            $subtitle,
+            $centerLeft + intdiv($centerWidth - $this->textWidth($subtitle, $subtitleSize), 2),
+            76,
+            $subtitleSize,
+            false,
+            [0xC7, 0xD2, 0xF7]
+        );
+    }
+
+    /**
+     * Tempel logo PNG pada kanvas kartu dengan ukuran tertentu.
+     */
+    private function drawLogo(string $relativePath, int $x, int $y, int $width, int $height): void
+    {
+        $path = public_path($relativePath);
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        $logo = @imagecreatefrompng($path);
+
+        if ($logo === false) {
+            return;
+        }
+
+        $sourceWidth = imagesx($logo);
+        $sourceHeight = imagesy($logo);
+
+        imagealphablending($this->canvas, true);
+        imagesavealpha($this->canvas, true);
+
+        imagecopyresampled(
+            $this->canvas,
+            $logo,
+            $x,
+            $y,
+            0,
+            0,
+            $width,
+            $height,
+            $sourceWidth,
+            $sourceHeight
+        );
+
+        imagedestroy($logo);
     }
 
     private function drawFields(KimCard $card): void
     {
         $fields = [
+            ['NOMOR KIM', (string) $card->kim_number],
             ['NOPOL', (string) $card->application->vehicle->registration_number],
             ['PERUSAHAAN', (string) $card->application->transporter->company_name],
             ['TANGGAL TERBIT', $card->issued_at->format('d M Y')],
             ['BERLAKU HINGGA', $card->expires_at->format('d M Y')],
         ];
 
-        $top = 155;
-        $rowHeight = 94;
+        if ($card->is_dispensation && $card->dispensation_expires_at !== null) {
+            $fields[] = ['BATAS DISPENSASI', $card->dispensation_expires_at->format('d M Y')];
+        }
+
+        $top = 152;
+        // Tinggi baris disesuaikan agar tetap muat bila ada baris dispensasi.
+        $rowHeight = count($fields) > 4 ? 68 : 88;
         $qrPanelLeft = self::WIDTH - 40 - 240; // ruang QR di sisi kanan
         $maxValueWidth = $qrPanelLeft - 40 - 24; // batas lebar teks kiri agar tidak nabrak QR
 
         foreach ($fields as $index => [$label, $value]) {
             $offset = $top + ($index * $rowHeight);
 
-            $this->text($label, 40, $offset, 13, false, self::COLOR_MUTED);
+            $this->text($label, 40, $offset, 12, false, self::COLOR_MUTED);
             $this->text(
-                $this->ellipsize($value, $maxValueWidth, 24, true),
+                $this->ellipsize($value, $maxValueWidth, 22, true),
                 40,
-                $offset + 32,
-                24,
+                $offset + 28,
+                22,
                 true,
                 self::COLOR_TEXT
             );
-
-            // Garis pemisah tipis, kecuali setelah baris terakhir.
-            if ($index < count($fields) - 1) {
-                imageline($this->canvas, 40, $offset + 68, $qrPanelLeft - 20, $offset + 68, $this->color(self::COLOR_BORDER));
-            }
         }
     }
 
