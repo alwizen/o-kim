@@ -20,7 +20,7 @@
         }
 
         .header {
-            border-bottom: 2px solid #1e3a8a;
+            border-bottom: 2px solid #000000;
             padding-bottom: 8px;
             margin-bottom: 12px;
         }
@@ -30,26 +30,55 @@
             border-collapse: collapse;
         }
 
+        .header td.logo-left {
+            width: 22%;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .header td.center {
+            width: 56%;
+            text-align: center;
+            vertical-align: middle;
+            padding: 0 8px;
+        }
+
+        .header td.logo-right {
+            width: 22%;
+            text-align: right;
+            vertical-align: middle;
+        }
+
+        .header .logo-k3 {
+            height: 52px;
+            width: auto;
+        }
+
+        .header .logo-ppn {
+            height: 30px;
+            width: auto;
+        }
+
         .header .brand {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            color: #1e3a8a;
+            color: #000000;
         }
 
         .header .sub {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #6b7280;
+            margin-top: 1px;
         }
 
         .header .doc-title {
-            text-align: right;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
-            color: #1e3a8a;
+            color: #000000;
+            margin-top: 2px;
         }
 
         .header .doc-meta {
-            text-align: right;
             font-size: 8px;
             color: #6b7280;
         }
@@ -57,7 +86,7 @@
         .section-title {
             font-size: 10px;
             font-weight: bold;
-            color: #1e3a8a;
+            color: #000000;
             border-left: 3px solid #1e3a8a;
             padding-left: 6px;
             margin: 14px 0 6px;
@@ -82,6 +111,7 @@
         table.meta td.value {
             width: 26%;
             font-weight: bold;
+            color: #000000;
         }
 
         table.summary {
@@ -91,7 +121,7 @@
         }
 
         table.summary td {
-            border: 1px solid #d1d5db;
+            border: 1px solid #000000;
             text-align: center;
             padding: 5px 3px;
             width: 16.66%;
@@ -116,16 +146,16 @@
         }
 
         table.grid thead th {
-            background: #eff6ff;
-            border: 1px solid #93c5fd;
+            background: #ffffff;
+            border: 1px solid #000000;
             padding: 4px 5px;
             font-size: 8px;
             text-align: left;
-            color: #1e3a8a;
+            color: #000000;
         }
 
         table.grid tbody td {
-            border: 1px solid #d1d5db;
+            border: 1px solid #000000;
             padding: 4px 5px;
             vertical-align: top;
         }
@@ -135,12 +165,12 @@
         }
 
         .col-no { width: 5%; text-align: center; }
-        .col-code { width: 11%; }
         .col-status { width: 12%; }
         .col-note { width: 20%; }
 
         .item-label {
             font-weight: bold;
+            color: #000000;
         }
 
         .item-desc {
@@ -193,7 +223,7 @@
         .department-head {
             font-size: 10px;
             font-weight: bold;
-            color: #1e3a8a;
+            color: #000000;
             margin: 14px 0 4px;
         }
 
@@ -209,31 +239,6 @@
             background: #fef3c7;
             border: 1px solid #fde68a;
             padding: 5px 6px;
-        }
-
-        .signatures {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 26px;
-        }
-
-        .signatures td {
-            width: 33.33%;
-            text-align: center;
-            vertical-align: top;
-            padding: 0 8px;
-        }
-
-        .signatures .role {
-            font-size: 8px;
-            color: #6b7280;
-        }
-
-        .signatures .line {
-            margin-top: 44px;
-            border-top: 1px solid #374151;
-            padding-top: 3px;
-            font-size: 8px;
         }
 
         .disclaimer {
@@ -269,14 +274,16 @@
 <div class="header">
     <table>
         <tr>
-            <td>
-                <div class="brand">O-KIM — Fuel Terminal Tegal</div>
-                <div class="sub">Sistem Kartu Izin Masuk Digital</div>
+            <td class="logo-left">
+                <img src="{{ public_path('img/K3.png') }}" alt="Logo K3" class="logo-k3">
             </td>
-            <td>
-                <div class="doc-title">LAPORAN HASIL PEMERIKSAAN O-KIM FUEL TERMINAL TEGAL</div>
+            <td class="center">
+                <div class="brand">O-KIM — Fuel Terminal Tegal</div>
+                <div class="doc-title">LAPORAN HASIL PEMERIKSAAN</div>
                 <div class="doc-meta">No. Pengajuan: {{ $application->application_number }}</div>
-                <div class="doc-meta">Dicetak: {{ $printedAt->translatedFormat('d M Y H:i') }}</div>
+            </td>
+            <td class="logo-right">
+                <img src="{{ public_path('img/ppn.png') }}" alt="Logo PPN" class="logo-ppn">
             </td>
         </tr>
     </table>
@@ -305,7 +312,7 @@
 </table>
 
 <div class="section-title">Ringkasan Pemeriksaan</div>
-<table class="summary">
+{{-- <table class="summary">
     <tr>
         <td>
             <div class="num">{{ $summary['assessed_items'] }}/{{ $summary['total_items'] }}</div>
@@ -332,7 +339,7 @@
             <div class="caption">Temuan terbuka</div>
         </td>
     </tr>
-</table>
+</table> --}}
 
 @forelse ($departments as $index => $department)
     <div class="{{ $index > 0 ? 'page-break' : '' }}">
@@ -351,7 +358,6 @@
                 <thead>
                     <tr>
                         <th class="col-no">No</th>
-                        <th class="col-code">Kode</th>
                         <th>Butir Pemeriksaan</th>
                         <th class="col-status">Hasil</th>
                         <th class="col-note">Catatan</th>
@@ -363,7 +369,6 @@
                         @php($result = $row['result'])
                         <tr>
                             <td class="col-no">{{ $rowIndex + 1 }}</td>
-                            <td class="col-code">{{ $row['item']->item_code }}</td>
                             <td>
                                 <span class="item-label">{{ $row['item']->label }}</span>
                                 @if ($row['item']->description)
@@ -416,23 +421,6 @@
 @empty
     <div class="empty-note">Belum ada checklist aktif yang dapat dilaporkan.</div>
 @endforelse
-
-<table class="signatures">
-    <tr>
-        <td>
-            <div class="role">Diperiksa oleh,</div>
-            <div class="line">Petugas Pemeriksa (HSSE / Distribusi / QQ)</div>
-        </td>
-        <td>
-            <div class="role">Diperiksa oleh,</div>
-            <div class="line">Pengawas Fungsi</div>
-        </td>
-        <td>
-            <div class="role">Disetujui oleh,</div>
-            <div class="line">Fuel Terminal Manager</div>
-        </td>
-    </tr>
-</table>
 
 <div class="disclaimer">
     Dokumen ini dihasilkan otomatis oleh O-KIM berdasarkan data hasil pemeriksaan yang tersimpan pada sistem.

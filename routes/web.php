@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PendingInternalController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\FindingAttachmentController;
+use App\Http\Controllers\FindingReportController;
 use App\Http\Controllers\InspectionReportController;
 use App\Http\Controllers\InspectionResultAttachmentController;
 use App\Http\Controllers\KimDownloadController;
@@ -99,4 +100,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pengajuan/{application}/laporan-pemeriksaan/pratinjau', [InspectionReportController::class, 'preview'])
         ->middleware('throttle:30,1')
         ->name('inspection-report.preview');
+
+    // Berita acara tindak lanjut temuan (printout PDF)
+    Route::get('/pengajuan/{application}/berita-acara', [FindingReportController::class, 'download'])
+        ->middleware('throttle:30,1')
+        ->name('berita-acara.download');
+
+    Route::get('/pengajuan/{application}/berita-acara/pratinjau', [FindingReportController::class, 'preview'])
+        ->middleware('throttle:30,1')
+        ->name('berita-acara.preview');
 });
