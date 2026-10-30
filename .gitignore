@@ -5,10 +5,12 @@
 .env.production
 .phpactor.json
 .phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
+.agent/
+.claude
+.codex
+.cursor/
+.idea
+.nova
 /.phpunit.cache
 /.vscode
 /.zed
@@ -26,3 +28,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+opencode.json
+boost.json
+.mcp.json
+.agents/
