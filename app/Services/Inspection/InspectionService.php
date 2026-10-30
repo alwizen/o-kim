@@ -225,7 +225,9 @@ class InspectionService
     }
 
     /**
-     * Pengajuan siap masuk tahap approval bila seluruh fungsi selesai dan tidak ada temuan terbuka.
+     * Pengajuan siap masuk tahap approval bila seluruh fungsi selesai dan tidak ada
+     * temuan yang menghalangi. Temuan berstatus Dispensation tidak menghalangi
+     * selama batas dispensasinya belum terlewati.
      */
     public function isReadyForApproval(KimApplication $application): bool
     {
@@ -235,8 +237,6 @@ class InspectionService
             }
         }
 
-        return ! $application->findings()
-            ->where('status', '!=', FindingStatus::Verified)
-            ->exists();
+        return ! $application->hasBlockingFindings();
     }
 }

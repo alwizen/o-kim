@@ -41,6 +41,7 @@ class RolePermissionSeeder extends Seeder
             'manage_roles',
             'manage_notification_settings',
             'approve_tad_findings',
+            'dispensate_findings',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,7 +68,9 @@ class RolePermissionSeeder extends Seeder
         ];
 
         $roles = [
-            'super_admin' => $permissions,
+            // Dispensasi temuan hanya boleh diberikan oleh FTM (keputusan bisnis),
+            // sehingga tidak diberikan ke super_admin secara bawaan.
+            'super_admin' => array_values(array_diff($permissions, ['dispensate_findings'])),
             'admin_verifikasi' => [
                 'access_admin_panel',
                 'review_transporter_registrations',
@@ -92,6 +95,7 @@ class RolePermissionSeeder extends Seeder
                 'issue_kim',
                 'view_kim_cards',
                 'verify_documents',
+                'dispensate_findings',
             ],
             'transportir' => [],
             'pengawas_hsse' => $pengawasPermissions('hsse'),

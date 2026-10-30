@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Findings\Pages;
 
+use App\Enums\DispensationAction;
 use App\Enums\FindingStatus;
+use App\Filament\Resources\Findings\Actions\DispensationActions;
 use App\Filament\Resources\Findings\FindingResource;
+use App\Models\Finding;
 use App\Models\FindingAction;
 use App\Services\Finding\FindingService;
 use Filament\Actions\Action;
@@ -29,6 +32,8 @@ class ViewFinding extends ViewRecord
             'application.transporter',
             'actions.submitter',
             'actions.attachments',
+            'dispensator',
+            'dispensations.user',
         ]);
     }
 
@@ -44,6 +49,65 @@ class ViewFinding extends ViewRecord
                     TextEntry::make('department')->label('Fungsi')->badge()->formatStateUsing(fn ($state) => $state->label()),
                     TextEntry::make('status')->badge()->formatStateUsing(fn ($state) => $state->label()),
                     TextEntry::make('description')->label('Deskripsi Temuan')->columnSpanFull(),
+                ]),
+            Section::make('Dispensasi FTM')
+                ->columnSpanFull()
+                ->columns(4)
+                ->visible(fn (Finding $record): bool => $record->dispensation_reason !== null
+                    || $record->dispensations->isNotEmpty())
+                ->schema([
+                    TextEntry::make('dispensation_due_date')
+                        ->label('Batas Perbaikan')
+                        ->date('d M Y')
+                        ->placeholder('—')
+                        ->badge()
+                        ->color(fn (Finding $record): string => $record->isDispensationExpired() ? 'danger' : 'warning'),
+                    TextEntry::make('dispensated_by')
+                        ->label('Diberikan Oleh')
+                        ->formatStateUsing(fn ($state, Finding $record): string => $record->dispensator?->name ?? '—'),
+                    TextEntry::make('dispensated_at')
+                        ->label('Waktu Dispensasi')
+                        ->dateTime('d M Y H:i')
+                        ->placeholder('—'),
+                    TextEntry::make('dispensation_state')
+                        ->label('Kondisi')
+                        ->state(fn (Finding $record): string => match (true) {
+                            $record->status !== FindingStatus::Dispensation => 'Tidak aktif',
+                            $record->isDispensationExpired() => 'BATAS TERLAMPAUI',
+                            default => 'Aktif',
+                        })
+                        ->badge()
+                        ->color(fn (Finding $record): string => match (true) {
+                            $record->status !== FindingStatus::Dispensation => 'gray',
+                            $record->isDispensationExpired() => 'danger',
+                            default => 'success',
+                        }),
+                    TextEntry::make('dispensation_reason')
+                        ->label('Alasan Dispensasi')
+                        ->placeholder('—')
+                        ->columnSpanFull(),
+                    RepeatableEntry::make('dispensations')
+                        ->label('Riwayat Dispensasi')
+                        ->columnSpanFull()
+                        ->contained(false)
+                        ->placeholder('Belum ada riwayat')
+                        ->table([
+                            TableColumn::make('Aksi'),
+                            TableColumn::make('Oleh'),
+                            TableColumn::make('Batas'),
+                            TableColumn::make('Waktu'),
+                            TableColumn::make('Catatan'),
+                        ])
+                        ->schema([
+                            TextEntry::make('action')
+                                ->badge()
+                                ->formatStateUsing(fn (DispensationAction $state): string => $state->label())
+                                ->color(fn (DispensationAction $state): string => $state->color()),
+                            TextEntry::make('user.name')->label('Oleh'),
+                            TextEntry::make('due_date')->label('Batas')->date('d M Y')->placeholder('—'),
+                            TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
+                            TextEntry::make('notes')->label('Catatan')->placeholder('—'),
+                        ]),
                 ]),
             Section::make('Tindak Lanjut Transportir')
                 ->columnSpanFull()
@@ -124,6 +188,11 @@ class ViewFinding extends ViewRecord
                 ->action(function (array $data) use ($latestAction): void {
                     $this->verify($latestAction, false, $data['notes']);
                 }),
+            // Pemberian dispensasi baru kini melalui menu "Pengajuan KIM Sementara"
+            // agar alur selalu dimulai dari permohonan transportir.
+            DispensationActions::extend(),
+            DispensationActions::updateReason(),
+            DispensationActions::revoke(),
         ];
     }
 

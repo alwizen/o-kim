@@ -5,6 +5,7 @@ namespace App\Services\Inspection;
 use App\Models\InspectionResult;
 use App\Models\InspectionResultAttachment;
 use App\Models\User;
+use App\Support\ImageCompressor;
 use App\Support\SafeFilename;
 use App\Support\SecureFileResponse;
 use Illuminate\Http\UploadedFile;
@@ -26,7 +27,14 @@ class InspectionAttachmentService
 
     private const MAX_FILES_PER_UPLOAD = 10;
 
-    private const DISK = 'local';
+    public function __construct(
+        private readonly ImageCompressor $compressor = new ImageCompressor,
+    ) {}
+
+    private function disk(): string
+    {
+        return config('media.disk');
+    }
 
     /**
      * Unggah satu atau beberapa berkas bukti pemeriksaan sekaligus.
@@ -58,9 +66,12 @@ class InspectionAttachmentService
             $created = [];
 
             foreach ($files as $file) {
+                // Kompres gambar agar hemat storage (PDF diteruskan apa adanya).
+                [$file, $mimeType, $fileSize] = $this->compressor->compress($file);
+
                 $path = $file->store(
                     "inspection-result-attachments/{$result->id}",
-                    ['disk' => self::DISK]
+                    ['disk' => $this->disk()]
                 );
 
                 $created[] = InspectionResultAttachment::create([
@@ -68,8 +79,8 @@ class InspectionAttachmentService
                     'uploaded_by' => $uploader->id,
                     'file_path' => $path,
                     'original_filename' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
+                    'mime_type' => $mimeType,
+                    'file_size' => $fileSize,
                 ]);
             }
 
@@ -85,7 +96,7 @@ class InspectionAttachmentService
         $this->ensureUploaderAuthorized($attachment->result, $user);
 
         DB::transaction(function () use ($attachment) {
-            Storage::disk(self::DISK)->delete($attachment->file_path);
+            Storage::disk($this->disk())->delete($attachment->file_path);
             $attachment->delete();
         });
     }
@@ -94,7 +105,7 @@ class InspectionAttachmentService
     {
         $this->ensureFileExists($attachment);
 
-        return Storage::disk(self::DISK)->download(
+        return Storage::disk($this->disk())->download(
             $attachment->file_path,
             SafeFilename::make($attachment->original_filename),
             SecureFileResponse::DOWNLOAD_HEADERS
@@ -108,7 +119,7 @@ class InspectionAttachmentService
     {
         $this->ensureFileExists($attachment);
 
-        return Storage::disk(self::DISK)->response(
+        return Storage::disk($this->disk())->response(
             $attachment->file_path,
             SafeFilename::make($attachment->original_filename),
             [
@@ -136,7 +147,7 @@ class InspectionAttachmentService
     private function ensureFileExists(InspectionResultAttachment $attachment): void
     {
         abort_unless(
-            Storage::disk(self::DISK)->exists($attachment->file_path),
+            Storage::disk($this->disk())->exists($attachment->file_path),
             404,
             'Berkas tidak ditemukan.'
         );

@@ -8,8 +8,8 @@ class SafeFilename
      * Ubah nama berkas menjadi bentuk aman untuk header unduhan.
      *
      * Mengganti karakter "/" dan "\" (ditolak header Content-Disposition) dengan "-",
-     * lalu menghapus karakter di luar huruf, angka, titik, garis bawah, dan tanda hubung.
-     * Ekstensi asli dipertahankan.
+     * lalu menghapus karakter di luar huruf, angka, titik, garis bawah, tanda hubung,
+     * dan kurung siku (dipakai untuk penanda status berkas). Ekstensi asli dipertahankan.
      */
     public static function make(string $filename, string $fallback = 'berkas'): string
     {
@@ -18,7 +18,7 @@ class SafeFilename
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
         $name = pathinfo($filename, PATHINFO_FILENAME);
 
-        $name = preg_replace('/[^A-Za-z0-9._-]/', '-', $name) ?? '';
+        $name = preg_replace('/[^A-Za-z0-9._\-\[\]]/', '-', $name) ?? '';
         $name = trim($name, '-_.');
         $name = preg_replace('/-+/', '-', $name) ?? $name;
 

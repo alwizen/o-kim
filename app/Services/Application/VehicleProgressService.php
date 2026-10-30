@@ -5,7 +5,6 @@ namespace App\Services\Application;
 use App\Enums\ApplicationStatus;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
-use App\Enums\FindingStatus;
 use App\Models\Finding;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
@@ -111,16 +110,29 @@ class VehicleProgressService
 
         $findings = $application->findings;
         $openFindings = $findings->filter(
-            fn (Finding $finding) => $finding->status !== FindingStatus::Verified
+            fn (Finding $finding) => $finding->blocksApproval()
         );
 
         $checklistDone = $completedDepartments >= $totalDepartments;
         $findingsDone = $openFindings->isEmpty();
-        $isInspectionPhase = in_array($application->status, [
-            ApplicationStatus::Submitted,
-            ApplicationStatus::Inspection,
-            ApplicationStatus::RevisionRequired,
-        ], true);
+
+        /*
+         * Pemeriksaan baru boleh tampil berjalan setelah petugas menetapkan
+         * jadwal DAN tanggalnya tiba. Pengajuan yang baru dikirim (submitted)
+         * masih menunggu penjadwalan, jadi tidak boleh terlihat sedang diperiksa.
+         *
+         * Pemeriksaan yang sudah ada progres/checklist juga dianggap sudah mulai
+         * agar tidak mundur ke pending saat status belum berubah.
+         */
+        $inspectionStarted = $application->isInspectionDue()
+            || $completedDepartments > 0;
+
+        $isInspectionPhase = $inspectionStarted
+            && in_array($application->status, [
+                ApplicationStatus::Submitted,
+                ApplicationStatus::Inspection,
+                ApplicationStatus::RevisionRequired,
+            ], true);
 
         if ($application->status === ApplicationStatus::Rejected) {
             return [
@@ -166,11 +178,27 @@ class VehicleProgressService
             ];
         }
 
+        // Belum masuk fase pemeriksaan: jelaskan apa yang sedang ditunggu.
+        $waitingForSchedule = in_array($application->status, [
+            ApplicationStatus::Submitted,
+            ApplicationStatus::Inspection,
+            ApplicationStatus::RevisionRequired,
+        ], true);
+
+        if ($waitingForSchedule && $application->isInspectionScheduled()) {
+            $description = 'Pemeriksaan dijadwalkan pada '
+                .$application->inspection_scheduled_at->translatedFormat('d M Y H:i');
+        } elseif ($waitingForSchedule) {
+            $description = 'Menunggu penjadwalan pemeriksaan';
+        } else {
+            $description = 'Menunggu pengajuan dikirim';
+        }
+
         return [
             'key' => 'inspection',
             'label' => 'Pemeriksaan & Temuan',
             'state' => 'pending',
-            'description' => 'Menunggu pengajuan dikirim',
+            'description' => $description,
             'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
         ];
     }

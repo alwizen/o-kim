@@ -25,6 +25,12 @@ class KimApplicationsTable
     {
         return $table
             ->columns([
+                TextColumn::make('no')
+                    ->label('No')
+                    ->rowIndex()
+                    ->alignCenter()
+                    ->width(1)
+                    ->grow(false),
                 TextColumn::make('application_number')
                     ->label('No. Pengajuan')
                     ->searchable()

@@ -136,7 +136,7 @@ class InspectKimApplication extends Page implements HasForms
                     ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
                     ->rules(['mimes:pdf,jpg,jpeg,png'])
                     ->maxSize(5120)
-                    ->disk('local')
+                    ->disk(config('media.disk'))
                     ->storeFiles(false)
                     ->columnSpanFull();
 

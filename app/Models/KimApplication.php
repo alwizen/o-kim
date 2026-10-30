@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
+use App\Enums\FindingStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -98,5 +100,20 @@ class KimApplication extends Model
     public function kimCard(): HasOne
     {
         return $this->hasOne(KimCard::class);
+    }
+
+    /**
+     * Temuan yang masih menghalangi approval: belum selesai diverifikasi atau
+     * dispensasinya sudah melewati batas waktu.
+     */
+    public function hasBlockingFindings(): bool
+    {
+        return $this->findings()
+            ->whereNotIn('status', [FindingStatus::Verified->value])
+            ->where(function (Builder $query) {
+                $query->where('status', '!=', FindingStatus::Dispensation->value)
+                    ->orWhereDate('dispensation_due_date', '<', now()->toDateString());
+            })
+            ->exists();
     }
 }

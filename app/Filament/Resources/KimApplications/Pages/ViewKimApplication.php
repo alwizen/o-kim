@@ -8,13 +8,13 @@ use App\Enums\ApplicationStatus;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\DocumentVerificationStatus;
-use App\Enums\FindingStatus;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\VehicleDocument;
 use App\Notifications\InspectionScheduled;
 use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
+use App\Services\Finding\FindingReportService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Kim\KimIssuanceService;
 use App\Support\AppNotifier;
@@ -44,6 +44,7 @@ class ViewKimApplication extends ViewRecord
         return parent::resolveRecord($key)->loadMissing([
             'findings.inspectionResult.item',
             'findings.creator',
+            'findings.dispensator',
             'inspectionResults.attachments',
             'vehicle.documents.documentType',
             'vehicle.documents.vehicle.transporter',
@@ -173,6 +174,7 @@ class ViewKimApplication extends ViewRecord
                             TableColumn::make('Jenis Temuan (Checklist)'),
                             TableColumn::make('Deskripsi'),
                             TableColumn::make('Status'),
+                            TableColumn::make('Batas Dispensasi'),
                             TableColumn::make('Dibuat Oleh'),
                             TableColumn::make('Waktu'),
                         ])
@@ -192,16 +194,17 @@ class ViewKimApplication extends ViewRecord
                                 ->label('Status')
                                 ->badge()
                                 ->formatStateUsing(fn ($state) => $state->label())
-                                ->color(fn ($state) => match ($state) {
-                                    FindingStatus::Open => 'danger',
-                                    FindingStatus::SubmittedForVerification => 'warning',
-                                    FindingStatus::Verified => 'success',
-                                    FindingStatus::Rejected => 'danger',
-                                }),
+                                ->color(fn ($state) => $state->color()),
+                            TextEntry::make('dispensation_due_date')
+                                ->label('Batas Dispensasi')
+                                ->date('d M Y')
+                                ->placeholder('—')
+                                ->badge()
+                                ->color(fn ($state, $record): string => $record->isDispensationExpired() ? 'danger' : 'warning'),
                             TextEntry::make('creator.name')->label('Dibuat Oleh')->placeholder('—'),
                             TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y H:i'),
                         ])
-                        ->columns(6),
+                        ->columns(7),
                 ])
                 ->visible(fn ($record) => $record->findings->isNotEmpty()),
             Section::make('Hasil Pemeriksaan')
@@ -331,8 +334,7 @@ class ViewKimApplication extends ViewRecord
                     DateTimePicker::make('inspection_scheduled_at')
                         ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
                         ->required()
-                        ->seconds(false)
-                        ->native(false),
+                        ->seconds(false),
                 ])
                 ->fillForm(fn (): array => [
                     'inspection_scheduled_at' => $this->record->inspection_scheduled_at,
@@ -390,8 +392,9 @@ class ViewKimApplication extends ViewRecord
                 }),
         ];
 
+        // Dispensasi FTM tidak menghalangi approval selama batasnya belum terlewati.
         $hasOpenFindings = $this->record->findings
-            ->contains(fn ($finding) => $finding->status !== FindingStatus::Verified);
+            ->contains(fn ($finding) => $finding->blocksApproval());
 
         $approvedDepartments = $this->record->approvals
             ->where('decision', ApprovalDecision::Approved)
@@ -411,12 +414,23 @@ class ViewKimApplication extends ViewRecord
         $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
         $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
 
+        // Pemberian dispensasi baru kini melalui menu "Pengajuan KIM Sementara"
+        // agar alur selalu dimulai dari permohonan transportir.
+
         $actions[] = Action::make('inspection_report')
             ->label('Cetak Laporan Pemeriksaan')
             ->icon('heroicon-o-printer')
             ->color('gray')
             ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
             ->url(fn (): string => route('inspection-report.download', $this->record))
+            ->openUrlInNewTab();
+
+        $actions[] = Action::make('berita_acara')
+            ->label('Cetak Berita Acara')
+            ->icon('heroicon-o-document-text')
+            ->color('gray')
+            ->visible(fn (): bool => app(FindingReportService::class)->isEligible($this->record))
+            ->url(fn (): string => route('berita-acara.download', $this->record))
             ->openUrlInNewTab();
 
         $actions[] = Action::make('issue_kim')

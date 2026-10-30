@@ -69,6 +69,7 @@ class ApprovalService
 
             if ($department === Department::Ftm) {
                 $this->ensureFunctionalApprovalsComplete($application);
+                $this->ensureInspectionReady($application);
             }
 
             if ($decision === ApprovalDecision::Approved && $department !== Department::Ftm) {
@@ -150,6 +151,18 @@ class ApprovalService
             ->unique();
 
         return $approved->count() === count(Department::inspectingDepartments());
+    }
+
+    /**
+     * Approval final tetap menunggu temuan selesai/didispensasi dan seluruh checklist terisi.
+     */
+    private function ensureInspectionReady(KimApplication $application): void
+    {
+        if (! $this->inspectionService->isReadyForApproval($application)) {
+            throw ValidationException::withMessages([
+                'findings' => 'Masih ada temuan atau butir pemeriksaan yang belum selesai.',
+            ]);
+        }
     }
 
     private function ensureFunctionalApprovalsComplete(KimApplication $application): void

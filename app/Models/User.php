@@ -19,6 +19,7 @@ class User extends Authenticatable implements FilamentUser
 
     protected $fillable = [
         'name',
+        'jabatan',
         'email',
         'password',
         'google_id',
@@ -123,16 +124,26 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Verifikasi temuan: TAD memverifikasi temuannya sendiri (fungsi terkait),
-     * pengawas hanya boleh memverifikasi temuan yang dibuat user TAD.
+     * Verifikasi tindak lanjut temuan.
+     *
+     * Aturan:
+     * 1. Super admin selalu boleh — jalan terakhir agar temuan tidak macet
+     *    permanen (mis. temuan tercatat dibuat oleh akun non-TAD).
+     * 2. Setiap TAD boleh memverifikasi temuan pada fungsi yang sama, tidak
+     *    terbatas pada temuan yang ia buat sendiri, sehingga pemeriksaan tidak
+     *    tertahan saat petugas pembuat tidak tersedia.
+     * 3. Pengawas boleh memverifikasi temuan yang dibuat oleh user TAD.
      */
     public function canVerifyFinding(Finding $finding): bool
     {
+        if ($this->hasRole(InternalRole::SuperAdmin->value)) {
+            return true;
+        }
+
         $dept = $finding->department->value;
 
         if ($this->isTad()) {
-            return $this->can('inspect_'.$dept)
-                && $finding->created_by === $this->id;
+            return $this->can('inspect_'.$dept);
         }
 
         if (! $this->can('approve_tad_findings')) {

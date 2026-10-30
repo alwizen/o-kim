@@ -57,6 +57,7 @@ class FindingResource extends Resource
     {
         return parent::getEloquentQuery()->with([
             'application.transporter',
+            'application.vehicle',
             'inspectionResult.item',
         ]);
     }

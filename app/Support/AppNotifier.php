@@ -108,6 +108,23 @@ class AppNotifier
     }
 
     /**
+     * Kirim notifikasi berbasis class (email + lonceng) ke seluruh pengguna dengan role tertentu.
+     *
+     * @param  string|array<int, string>  $roles
+     */
+    public static function notifyRole(string|array $roles, Notification $notification): void
+    {
+        $users = User::query()
+            ->where('account_status', AccountStatus::Approved)
+            ->role((array) $roles)
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify($notification);
+        }
+    }
+
+    /**
      * Kirim notifikasi berbasis class (email + lonceng) ke seluruh PIC perusahaan transportir.
      */
     public static function notifyTransporter(int $transporterId, Notification $notification): void

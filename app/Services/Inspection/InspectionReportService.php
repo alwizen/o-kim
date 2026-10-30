@@ -3,7 +3,6 @@
 namespace App\Services\Inspection;
 
 use App\Enums\Department;
-use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
 use App\Models\InspectionChecklist;
 use App\Models\InspectionResult;
@@ -87,7 +86,7 @@ class InspectionReportService
                         $inspectors[$result->inspector->name] = true;
                     }
 
-                    if ($result->finding !== null && $result->finding->status !== FindingStatus::Verified) {
+                    if ($result->finding !== null && $result->finding->blocksApproval()) {
                         $summary['open_findings']++;
                     }
                 }
@@ -152,9 +151,28 @@ class InspectionReportService
 
     /**
      * Nama berkas laporan yang aman.
+     *
+     * Ditandai [ON-PROSES] bila checklist belum terisi seluruhnya, dan [DONE]
+     * bila seluruh butir pada setiap checklist sudah dinilai.
      */
     public function filename(KimApplication $application): string
     {
-        return SafeFilename::make('Laporan-Pemeriksaan-'.$application->application_number.'.pdf', 'laporan-pemeriksaan');
+        $tag = $this->isComplete($application) ? 'DONE' : 'ON-PROSES';
+
+        return SafeFilename::make(
+            "Laporan-Pemeriksaan-{$application->application_number}-[{$tag}].pdf",
+            'laporan-pemeriksaan',
+        );
+    }
+
+    /**
+     * Apakah seluruh butir checklist pada pengajuan sudah dinilai.
+     */
+    public function isComplete(KimApplication $application): bool
+    {
+        $report = $this->buildReport($application);
+        $summary = $report['summary'];
+
+        return $summary['total_items'] > 0 && $summary['assessed_items'] >= $summary['total_items'];
     }
 }
