@@ -44,7 +44,7 @@ class KimCardImageTest extends TestCase
     {
         parent::setUp();
         $this->seed([RolePermissionSeeder::class, DocumentTypeSeeder::class, InspectionChecklistSeeder::class]);
-        Storage::fake('local');
+        Storage::fake(config('media.disk'));
 
         $transporter = Transporter::factory()->create();
         $this->owner = User::factory()->create(['account_status' => AccountStatus::Approved]);
@@ -169,9 +169,9 @@ class KimCardImageTest extends TestCase
 
         $path = app(KimCardImageService::class)->generate($card);
 
-        Storage::disk('local')->assertExists($path);
+        Storage::disk(config('media.disk'))->assertExists($path);
 
-        $size = getimagesizefromstring(Storage::disk('local')->get($path));
+        $size = getimagesizefromstring(Storage::disk(config('media.disk'))->get($path));
 
         $this->assertNotFalse($size);
         $this->assertSame(KimCardImageService::WIDTH, $size[0]);
@@ -198,13 +198,13 @@ class KimCardImageTest extends TestCase
 
         $service->generate($card);
         $firstPath = $card->fresh()->image_path;
-        $firstContents = Storage::disk('local')->get($firstPath);
+        $firstContents = Storage::disk(config('media.disk'))->get($firstPath);
 
         $this->actingAs($this->owner)
             ->get(route('kim.download-image', $card))
             ->assertSuccessful();
 
         $this->assertSame($firstPath, $card->fresh()->image_path);
-        $this->assertSame($firstContents, Storage::disk('local')->get($firstPath));
+        $this->assertSame($firstContents, Storage::disk(config('media.disk'))->get($firstPath));
     }
 }

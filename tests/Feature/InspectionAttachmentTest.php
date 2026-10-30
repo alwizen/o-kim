@@ -50,7 +50,7 @@ class InspectionAttachmentTest extends TestCase
     {
         parent::setUp();
         $this->seed([RolePermissionSeeder::class, DocumentTypeSeeder::class, InspectionChecklistSeeder::class]);
-        Storage::fake('local');
+        Storage::fake(config('media.disk'));
 
         $this->transporter = Transporter::factory()->create();
         $this->transportir = User::factory()->create(['account_status' => AccountStatus::Approved]);
@@ -112,14 +112,21 @@ class InspectionAttachmentTest extends TestCase
         $this->assertSame(3, $this->result->attachments()->count());
 
         foreach ($attachments as $attachment) {
-            Storage::disk('local')->assertExists($attachment->file_path);
+            Storage::disk(config('media.disk'))->assertExists($attachment->file_path);
             $this->assertSame($this->result->id, $attachment->inspection_result_id);
             $this->assertSame($this->hsse->id, $attachment->uploaded_by);
         }
 
+        // Gambar dikonversi ke WebP saat disimpan, PDF tetap apa adanya.
         $this->assertDatabaseHas('inspection_result_attachments', [
             'inspection_result_id' => $this->result->id,
-            'original_filename' => 'foto-1.jpg',
+            'original_filename' => 'foto-1.webp',
+            'mime_type' => 'image/webp',
+        ]);
+        $this->assertDatabaseHas('inspection_result_attachments', [
+            'inspection_result_id' => $this->result->id,
+            'original_filename' => 'dokumen.pdf',
+            'mime_type' => 'application/pdf',
         ]);
     }
 
@@ -167,7 +174,7 @@ class InspectionAttachmentTest extends TestCase
         app(InspectionAttachmentService::class)->delete($attachment, $this->hsse);
 
         $this->assertDatabaseMissing('inspection_result_attachments', ['id' => $attachment->id]);
-        Storage::disk('local')->assertMissing($attachment->file_path);
+        Storage::disk(config('media.disk'))->assertMissing($attachment->file_path);
     }
 
     public function test_officer_of_other_department_cannot_delete_attachment(): void
@@ -224,7 +231,7 @@ class InspectionAttachmentTest extends TestCase
             'record' => $this->application->getRouteKey(),
         ])
             ->assertSuccessful()
-            ->assertSee('bukti-admin.jpg');
+            ->assertSee('bukti-admin.webp');
     }
 
     public function test_attachment_is_visible_on_transportir_view_page(): void
@@ -241,7 +248,7 @@ class InspectionAttachmentTest extends TestCase
             'record' => $this->application->getRouteKey(),
         ])
             ->assertSuccessful()
-            ->assertSee('bukti-transportir.jpg');
+            ->assertSee('bukti-transportir.webp');
     }
 
     public function test_attachment_preview_and_download_are_authorized_for_owner(): void

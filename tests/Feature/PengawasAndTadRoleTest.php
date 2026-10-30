@@ -106,11 +106,11 @@ class PengawasAndTadRoleTest extends TestCase
 
     // ---------- Pengawas hanya bisa verifikasi temuan dari TAD ----------
 
-    private function makeFinding(User $creator): Finding
+    private function makeFinding(User $creator, Department $department = Department::Hsse): Finding
     {
         $finding = Finding::create([
             'kim_application_id' => KimApplication::factory()->create()->id,
-            'department' => Department::Hsse,
+            'department' => $department,
             'description' => 'Temuan uji',
             'status' => FindingStatus::SubmittedForVerification,
             'created_by' => $creator->id,
@@ -145,7 +145,7 @@ class PengawasAndTadRoleTest extends TestCase
         $this->assertFalse($pengawas->canVerifyFinding($finding));
     }
 
-    public function test_tad_can_verify_own_finding_but_not_others(): void
+    public function test_tad_can_verify_any_finding_in_own_function(): void
     {
         $tad = $this->userWithRole('hsse');
         $otherTad = $this->userWithRole('hsse');
@@ -153,8 +153,42 @@ class PengawasAndTadRoleTest extends TestCase
         $own = $this->makeFinding($tad);
         $others = $this->makeFinding($otherTad);
 
+        // TAD boleh memverifikasi temuannya sendiri maupun temuan rekan se-fungsi,
+        // sehingga pemeriksaan tidak macet saat pembuat temuan tidak tersedia.
         $this->assertTrue($tad->canVerifyFinding($own));
-        $this->assertFalse($tad->canVerifyFinding($others));
+        $this->assertTrue($tad->canVerifyFinding($others));
+    }
+
+    public function test_tad_cannot_verify_finding_from_other_function(): void
+    {
+        $tadHsse = $this->userWithRole('hsse');
+        $tadDistribusi = $this->userWithRole('distribusi');
+
+        $finding = $this->makeFinding($tadDistribusi, Department::Distribusi);
+
+        $this->assertTrue($tadDistribusi->canVerifyFinding($finding));
+        $this->assertFalse($tadHsse->canVerifyFinding($finding));
+    }
+
+    public function test_super_admin_can_verify_finding_created_by_non_tad(): void
+    {
+        $superAdmin = $this->userWithRole('super_admin');
+
+        // Temuan yang tercatat dibuat oleh akun non-TAD (mis. super admin sendiri)
+        // tetap dapat diverifikasi sebagai jalan terakhir agar tidak macet.
+        $finding = $this->makeFinding($superAdmin);
+
+        $this->assertTrue($superAdmin->canVerifyFinding($finding));
+    }
+
+    public function test_admin_verifikasi_and_ftm_cannot_verify_finding(): void
+    {
+        $tad = $this->userWithRole('distribusi');
+        $finding = $this->makeFinding($tad, Department::Distribusi);
+
+        foreach (['admin_verifikasi', 'ftm'] as $role) {
+            $this->assertFalse($this->userWithRole($role)->canVerifyFinding($finding));
+        }
     }
 
     // ---------- Admin verifikasi: schedule, checklist, dokumen, KIM ----------

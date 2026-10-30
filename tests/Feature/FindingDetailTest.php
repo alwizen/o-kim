@@ -58,7 +58,7 @@ class FindingDetailTest extends TestCase
     {
         parent::setUp();
         $this->seed([RolePermissionSeeder::class, DocumentTypeSeeder::class, InspectionChecklistSeeder::class]);
-        Storage::fake('local');
+        Storage::fake(config('media.disk'));
 
         $this->transporter = Transporter::factory()->create(['company_name' => 'PT Temuan Uji']);
         $this->owner = User::factory()->create(['account_status' => AccountStatus::Approved]);
@@ -118,7 +118,7 @@ class FindingDetailTest extends TestCase
             'description' => 'APAR sudah diganti',
         ]);
 
-        Storage::disk('local')->put("finding-actions/{$action->id}/bukti.pdf", 'dummy');
+        Storage::disk(config('media.disk'))->put("finding-actions/{$action->id}/bukti.pdf", 'dummy');
 
         $this->attachment = FindingActionAttachment::create([
             'finding_action_id' => $action->id,
@@ -173,7 +173,7 @@ class FindingDetailTest extends TestCase
 
     public function test_missing_file_returns_404(): void
     {
-        Storage::disk('local')->delete($this->attachment->file_path);
+        Storage::disk(config('media.disk'))->delete($this->attachment->file_path);
 
         $this->actingAs($this->owner)
             ->get(route('finding-attachments.download', $this->attachment))
@@ -191,7 +191,7 @@ class FindingDetailTest extends TestCase
         Livewire::test(TransportirViewFinding::class, ['record' => $this->finding->getRouteKey()])
             ->assertSuccessful()
             ->assertSee('Dokumentasi Temuan')
-            ->assertSee('dokumentasi.jpg')
+            ->assertSee('dokumentasi.webp')
             ->assertSee('bukti.pdf')
             ->assertSee('Pratinjau')
             ->assertSee('Unduh');

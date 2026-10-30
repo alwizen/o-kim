@@ -128,11 +128,45 @@ class VehicleProgressStepperTest extends TestCase
     public function test_inspection_step_is_active_while_inspection_running(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
+        // Pemeriksaan berjalan setelah jadwal ditetapkan dan tanggalnya tiba.
+        $application->update(['inspection_scheduled_at' => now()->subHour()]);
 
         $step = $this->step($this->steps($application), 'inspection');
 
         $this->assertSame('active', $step['state']);
         $this->assertStringContainsString('0 dari 3', $step['description']);
+    }
+
+    public function test_inspection_step_is_pending_when_application_submitted_without_schedule(): void
+    {
+        // Bug: dulu status Submitted langsung membuat tahap pemeriksaan aktif.
+        $application = $this->makeApplication(ApplicationStatus::Submitted);
+
+        $step = $this->step($this->steps($application), 'inspection');
+
+        $this->assertSame('pending', $step['state']);
+        $this->assertStringContainsString('Menunggu penjadwalan', $step['description']);
+    }
+
+    public function test_inspection_step_is_pending_when_schedule_is_in_the_future(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::Submitted);
+        $application->update(['inspection_scheduled_at' => now()->addDays(2)]);
+
+        $step = $this->step($this->steps($application), 'inspection');
+
+        $this->assertSame('pending', $step['state']);
+        $this->assertStringContainsString('dijadwalkan pada', $step['description']);
+    }
+
+    public function test_inspection_step_is_active_once_schedule_is_due(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::Submitted);
+        $application->update(['inspection_scheduled_at' => now()->subMinute()]);
+
+        $step = $this->step($this->steps($application), 'inspection');
+
+        $this->assertSame('active', $step['state']);
     }
 
     public function test_inspection_step_is_done_when_all_departments_complete(): void

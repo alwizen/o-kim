@@ -34,6 +34,50 @@ class UserManagementTest extends TestCase
         return $user;
     }
 
+    // ---------- Jabatan internal ----------
+
+    public function test_super_admin_can_set_jabatan_when_creating_internal_user(): void
+    {
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'name' => 'Petugas HSE',
+                'jabatan' => 'Safety Officer',
+                'email' => 'safety@okim.test',
+                'password' => 'Rahasia123',
+                'password_confirmation' => 'Rahasia123',
+                'roles' => ['hsse'],
+                'account_status' => AccountStatus::Approved->value,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $user = User::where('email', 'safety@okim.test')->firstOrFail();
+
+        $this->assertSame('Safety Officer', $user->jabatan);
+        $this->assertTrue($user->hasRole('hsse'));
+    }
+
+    public function test_super_admin_can_edit_jabatan(): void
+    {
+        $this->actingAs($this->superAdmin());
+
+        $target = User::factory()->create([
+            'account_status' => AccountStatus::Approved,
+            'jabatan' => 'Staf Lama',
+        ]);
+        $target->assignRole('qq');
+
+        Livewire::test(EditUser::class, ['record' => $target->getRouteKey()])
+            ->fillForm(['jabatan' => 'Petugas Quality Control'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('Petugas Quality Control', $target->fresh()->jabatan);
+        $this->assertTrue($target->fresh()->hasRole('qq'));
+    }
+
     // ---------- Akses halaman ----------
 
     public function test_super_admin_can_open_internal_users_page(): void

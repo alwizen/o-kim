@@ -84,6 +84,42 @@ class InspectionReportTest extends TestCase
         );
     }
 
+    public function test_report_filename_has_on_proses_tag_when_checklist_incomplete(): void
+    {
+        $this->recordHsseFinding();
+
+        $filename = app(InspectionReportService::class)->filename($this->application->fresh());
+
+        $this->assertStringContainsString('[ON-PROSES]', $filename);
+        $this->assertStringNotContainsString('[DONE]', $filename);
+    }
+
+    public function test_report_filename_has_done_tag_when_all_items_assessed(): void
+    {
+        $service = app(InspectionService::class);
+
+        $inspectors = [
+            'hsse' => $this->hsse,
+            'distribusi' => tap(User::factory()->create(['account_status' => AccountStatus::Approved]), fn (User $u) => $u->assignRole('distribusi')),
+            'qq' => tap(User::factory()->create(['account_status' => AccountStatus::Approved]), fn (User $u) => $u->assignRole('qq')),
+        ];
+
+        InspectionItem::whereHas('checklist', fn ($q) => $q->whereIn('department', array_keys($inspectors)))
+            ->with('checklist')
+            ->get()
+            ->each(fn (InspectionItem $item) => $service->recordResult(
+                $this->application->fresh(),
+                $item,
+                InspectionResultValue::Compliant,
+                $inspectors[$item->checklist->department->value],
+            ));
+
+        $filename = app(InspectionReportService::class)->filename($this->application->fresh());
+
+        $this->assertStringContainsString('[DONE]', $filename);
+        $this->assertStringNotContainsString('[ON-PROSES]', $filename);
+    }
+
     public function test_transporter_owner_can_download_inspection_report_pdf(): void
     {
         $this->recordHsseFinding();

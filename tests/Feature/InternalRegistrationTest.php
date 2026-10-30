@@ -88,6 +88,37 @@ class InternalRegistrationTest extends TestCase
         );
     }
 
+    public function test_registration_stores_jabatan_separately_from_role(): void
+    {
+        Notification::fake();
+
+        $this->post(route('register.internal'), $this->validPayload([
+            'jabatan' => 'Safety Officer',
+        ]))->assertRedirect('/');
+
+        $user = User::where('email', 'petugas@okim.test')->firstOrFail();
+
+        $this->assertSame('Safety Officer', $user->jabatan);
+        $this->assertTrue($user->hasRole('hsse'));
+        $this->assertFalse($user->hasRole('Safety Officer'));
+    }
+
+    public function test_jabatan_is_optional(): void
+    {
+        Notification::fake();
+
+        $this->post(route('register.internal'), $this->validPayload())->assertRedirect('/');
+
+        $this->assertNull(User::where('email', 'petugas@okim.test')->firstOrFail()->jabatan);
+    }
+
+    public function test_registration_form_shows_jabatan_field(): void
+    {
+        $this->get(route('register.internal'))
+            ->assertSuccessful()
+            ->assertSee('name="jabatan"', false);
+    }
+
     public function test_super_admin_role_cannot_be_registered(): void
     {
         $this->from(route('register.internal'))

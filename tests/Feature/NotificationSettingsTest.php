@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountStatus;
+use App\Enums\InternalRole;
 use App\Enums\NotificationEvent;
 use App\Filament\Resources\NotificationSettings\NotificationSettingResource;
 use App\Filament\Resources\NotificationSettings\Pages\EditNotificationSetting;
+use App\Filament\Resources\NotificationSettings\Pages\ListNotificationSettings;
 use App\Jobs\SendNotificationMail;
 use App\Models\NotificationSetting;
 use App\Models\Transporter;
@@ -304,6 +306,30 @@ class NotificationSettingsTest extends TestCase
             NotificationEvent::InternalApplicationSubmitted->defaultRoles(),
             $this->service()->rolesFor(NotificationEvent::InternalApplicationSubmitted),
         );
+    }
+
+    public function test_list_shows_all_recipient_roles_without_truncation(): void
+    {
+        $admin = $this->staff('super_admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $setting = NotificationSetting::where('event_key', NotificationEvent::InternalApplicationSubmitted->value)->firstOrFail();
+
+        $roles = $setting->roleNames();
+        $this->assertGreaterThan(4, count($roles), 'Prasyarat test: event ini memiliki lebih dari 4 role penerima.');
+
+        $expectedLabels = collect($roles)
+            ->map(fn (string $role): string => InternalRole::tryFrom($role)?->label()
+                ?? str($role)->replace('_', ' ')->title()->toString())
+            ->all();
+
+        $this->actingAs($admin);
+
+        $component = Livewire::test(ListNotificationSettings::class)
+            ->assertSuccessful()
+            ->assertDontSee('Lainnya');
+
+        $component->assertSee($expectedLabels);
     }
 
     public function test_super_admin_can_open_list_and_edit_pages(): void

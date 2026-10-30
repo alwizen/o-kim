@@ -51,7 +51,8 @@ class VehicleDocumentTest extends TestCase
 
     private function uploadDocument(Vehicle $vehicle, string $typeCode = 'STNK'): VehicleDocument
     {
-        Storage::fake('local');
+        // Service menulis ke disk aktif; fake harus dipasang pada disk tersebut.
+        Storage::fake(config('media.disk'));
 
         return app(VehicleDocumentService::class)->upload(
             $vehicle,
@@ -146,7 +147,7 @@ class VehicleDocumentTest extends TestCase
 
     public function test_upload_rejects_disallowed_mime_type(): void
     {
-        Storage::fake('local');
+        Storage::fake(config('media.disk'));
 
         $this->expectException(ValidationException::class);
 
@@ -159,7 +160,7 @@ class VehicleDocumentTest extends TestCase
 
     public function test_upload_rejects_oversized_file(): void
     {
-        Storage::fake('local');
+        Storage::fake(config('media.disk'));
 
         $this->expectException(ValidationException::class);
 
@@ -181,11 +182,39 @@ class VehicleDocumentTest extends TestCase
         $this->assertSame(2, $this->ownVehicle->documents()->count());
     }
 
+    public function test_document_file_is_stored_in_folder_named_after_registration_number(): void
+    {
+        $vehicle = Vehicle::factory()->create([
+            'transporter_id' => $this->ownVehicle->transporter_id,
+            'registration_number' => 'G 1234 AB',
+        ]);
+
+        $document = $this->uploadDocument($vehicle);
+
+        // NOPOL dinormalisasi jadi huruf+angka agar aman sebagai nama folder.
+        $this->assertStringStartsWith('vehicle-documents/G1234AB/', $document->file_path);
+        Storage::disk(config('media.disk'))->assertExists($document->file_path);
+    }
+
+    public function test_registration_number_folder_is_uppercase_and_strips_separators(): void
+    {
+        $vehicle = Vehicle::factory()->create([
+            'transporter_id' => $this->ownVehicle->transporter_id,
+            'registration_number' => 'b 9876-xyz',
+        ]);
+
+        $this->assertSame('B9876XYZ', $vehicle->storageFolder());
+
+        $document = $this->uploadDocument($vehicle);
+
+        $this->assertStringStartsWith('vehicle-documents/B9876XYZ/', $document->file_path);
+    }
+
     public function test_document_file_stored_in_private_disk_with_generated_name(): void
     {
         $document = $this->uploadDocument($this->ownVehicle);
 
-        Storage::disk('local')->assertExists($document->file_path);
+        Storage::disk(config('media.disk'))->assertExists($document->file_path);
         $this->assertStringNotContainsString('public', $document->file_path);
         $this->assertNotSame('stnk.pdf', basename($document->file_path));
         $this->assertSame('stnk.pdf', $document->original_filename);
@@ -198,7 +227,7 @@ class VehicleDocumentTest extends TestCase
 
         app(VehicleDocumentService::class)->delete($document);
 
-        Storage::disk('local')->assertMissing($path);
+        Storage::disk(config('media.disk'))->assertMissing($path);
         $this->assertDatabaseMissing('vehicle_documents', ['id' => $document->id]);
     }
 
