@@ -23,11 +23,11 @@
     @endif
 
     @if ($transporter)
-        <div class="mt-6 overflow-hidden rounded-xl border border-ocean-100 bg-white">
-            <div class="border-b border-ocean-100 bg-ocean-50/60 px-5 py-3">
-                <h2 class="text-sm font-bold text-ocean-900">Data perusahaan yang dikirim</h2>
+        <div class="mt-6 overflow-hidden rounded-xl border border-auth-100 bg-white">
+            <div class="border-b border-auth-100 bg-auth-50/60 px-5 py-3">
+                <h2 class="text-sm font-bold text-auth-900">Data perusahaan yang dikirim</h2>
             </div>
-            <dl class="divide-y divide-ocean-50 text-sm">
+            <dl class="divide-y divide-auth-50 text-sm">
                 @foreach ([
                     'Nama PIC' => auth()->user()->name,
                     'Perusahaan' => $transporter->company_name,
@@ -47,9 +47,9 @@
         </p>
     @endif
 
-    <div class="mt-6 rounded-xl border border-ocean-100 bg-white p-5">
-        <h2 class="flex items-center gap-2 text-sm font-bold text-ocean-900">
-            <x-heroicon-o-clipboard-document-list class="h-5 w-5 text-ocean-500" />
+    <div class="mt-6 rounded-xl border border-auth-100 bg-white p-5">
+        <h2 class="flex items-center gap-2 text-sm font-bold text-auth-900">
+            <x-heroicon-o-clipboard-document-list class="h-5 w-5 text-auth-500" />
             Langkah selanjutnya
         </h2>
         <ol class="mt-4 space-y-3 text-sm text-slate-600">
@@ -59,7 +59,7 @@
                 'Tambahkan kendaraan, unggah dokumen, lalu ajukan KIM.',
             ] as $index => $step)
                 <li class="flex gap-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ocean-50 text-xs font-bold text-ocean-600">{{ $index + 1 }}</span>
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-auth-50 text-xs font-bold text-auth-600">{{ $index + 1 }}</span>
                     {{ $step }}
                 </li>
             @endforeach
@@ -68,10 +68,10 @@
 
     <x-slot:footer>
         <div class="mt-8 flex items-center justify-between text-sm">
-            <a href="{{ route('landing') }}" class="text-slate-400 transition hover:text-ocean-600">&larr; Beranda</a>
+            <a href="{{ route('landing') }}" class="text-slate-400 transition hover:text-auth-600">&larr; Beranda</a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="font-medium text-slate-600 transition hover:text-ocean-700">Keluar</button>
+                <button type="submit" class="font-medium text-slate-600 transition hover:text-auth-600">Keluar</button>
             </form>
         </div>
     </x-slot:footer>
