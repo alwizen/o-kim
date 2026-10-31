@@ -50,7 +50,7 @@
 
         /* Variabel Panel dipaksa ke nilai terang agar komponen Filament tidak
            memakai pasangan warna dark miliknya. */
-        .fi-simple-layout {
+        .auth-split {
             color-scheme: light !important;
 
             --gray-50: #f9fafb;
@@ -66,87 +66,89 @@
             --gray-950: #030712;
         }
 
-        .fi-simple-layout,
-        .fi-simple-layout .fi-simple-main {
+        .auth-split,
+        .auth-split .fi-simple-main {
             background-color: #ffffff !important;
             color: #1f2937 !important;
         }
 
         /* Judul dan subjudul. */
-        .fi-simple-layout .fi-simple-header-heading,
-        .fi-simple-layout .fi-simple-header-heading * {
+        .auth-split .fi-simple-header-heading,
+        .auth-split .fi-simple-header-heading * {
             color: #0f2854 !important;
         }
 
-        .fi-simple-layout .fi-simple-header-subheading {
+        .auth-split .fi-simple-header-subheading {
             color: #4b5563 !important;
         }
 
         /* Label field form (class sebenarnya pada markup Filament). */
-        .fi-simple-layout .fi-fo-field-label,
-        .fi-simple-layout .fi-fo-field-label-content,
-        .fi-simple-layout .fi-fo-field-label-content span,
-        .fi-simple-layout .fi-fo-field-label-ctn,
-        .fi-simple-layout .fi-fo-field-wrp-label,
-        .fi-simple-layout label {
+        .auth-split .fi-fo-field-label,
+        .auth-split .fi-fo-field-label-content,
+        .auth-split .fi-fo-field-label-content span,
+        .auth-split .fi-fo-field-label-ctn,
+        .auth-split .fi-fo-field-wrp-label,
+        .auth-split label {
             color: #1f2937 !important;
         }
 
         /* Penanda wajib tetap berwarna merah tua agar terbaca. */
-        .fi-simple-layout .fi-fo-field-label-content .fi-fo-field-label-required-mark,
-        .fi-simple-layout .fi-required-mark {
+        .auth-split .fi-fo-field-label-content .fi-fo-field-label-required-mark,
+        .auth-split .fi-required-mark {
             color: #b03626 !important;
         }
 
         /* Kotak input dan teks di dalamnya. */
-        .fi-simple-layout .fi-input-wrp {
+        .auth-split .fi-input-wrp {
             background-color: #ffffff !important;
             box-shadow: inset 0 0 0 1px #d1d5db !important;
         }
 
-        .fi-simple-layout .fi-input,
-        .fi-simple-layout input,
-        .fi-simple-layout textarea {
+        .auth-split .fi-input,
+        .auth-split input,
+        .auth-split textarea {
             background-color: transparent !important;
             color: #1f2937 !important;
         }
 
-        .fi-simple-layout input::placeholder,
-        .fi-simple-layout .fi-input::placeholder {
+        .auth-split input::placeholder,
+        .auth-split .fi-input::placeholder {
             color: #9ca3af !important;
         }
 
         /* Ikon di dalam input (mis. tombol lihat kata sandi). */
-        .fi-simple-layout .fi-input-wrp .fi-icon,
-        .fi-simple-layout .fi-input-wrp button {
+        .auth-split .fi-input-wrp .fi-icon,
+        .auth-split .fi-input-wrp button {
             color: #6b7280 !important;
         }
 
         /* Teks "Ingat saya". */
-        .fi-simple-layout .fi-fo-checkbox-list-option-label,
-        .fi-simple-layout .fi-checkbox-label,
-        .fi-simple-layout .fi-fo-checkbox-list label {
+        .auth-split .fi-fo-checkbox-list-option-label,
+        .auth-split .fi-checkbox-label,
+        .auth-split .fi-fo-checkbox-list label {
             color: #1f2937 !important;
         }
 
         /* Tautan bantuan (lupa kata sandi, kembali ke beranda). */
-        .fi-simple-layout .fi-link,
-        .fi-simple-layout .fi-link *,
-        .fi-simple-layout a,
-        .fi-simple-layout a * {
+        .auth-split .fi-link,
+        .auth-split .fi-link *,
+        .auth-split a,
+        .auth-split a * {
             color: #1c4d8d !important;
         }
 
         /* Panel brand kiri selalu memakai palet terang. */
-        .fi-simple-layout aside,
-        .fi-simple-layout aside * {
+        .auth-split aside,
+        .auth-split aside * {
             color: #0f2854 !important;
         }
     </style>
 @endpush
 
 <x-filament-panels::layout.base :livewire="$livewire">
-    <div class="grid min-h-screen bg-white font-sans text-slate-800 antialiased lg:grid-cols-2">
+    {{-- auth-split dipakai sebagai pembungkus agar override warna di atas berlaku tanpa
+         membawa gaya .auth-split milik Filament yang akan merusak grid dua kolom. --}}
+    <div class="auth-split grid min-h-screen bg-white font-sans text-slate-800 antialiased lg:grid-cols-2">
 
         {{-- Brand panel — teks disamakan dengan halaman /masuk --}}
         <aside class="relative hidden overflow-hidden bg-pastel-auth p-12 text-auth-900 lg:flex lg:flex-col lg:justify-between">

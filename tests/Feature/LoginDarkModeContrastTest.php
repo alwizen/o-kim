@@ -32,7 +32,7 @@ class LoginDarkModeContrastTest extends TestCase
         $html = $this->loginHtml();
 
         $this->assertStringContainsString(
-            '.fi-simple-layout .fi-simple-header-heading',
+            '.auth-split .fi-simple-header-heading',
             $html,
         );
         $this->assertStringContainsString('color: #0f2854 !important', $html);
@@ -43,7 +43,7 @@ class LoginDarkModeContrastTest extends TestCase
         $html = $this->loginHtml();
 
         // Class label yang benar-benar dipakai markup Filament.
-        $this->assertStringContainsString('.fi-simple-layout .fi-fo-field-label-content', $html);
+        $this->assertStringContainsString('.auth-split .fi-fo-field-label-content', $html);
         $this->assertStringContainsString('color: #1f2937 !important', $html);
     }
 
@@ -51,16 +51,16 @@ class LoginDarkModeContrastTest extends TestCase
     {
         $html = $this->loginHtml();
 
-        $this->assertStringContainsString('.fi-simple-layout .fi-input-wrp', $html);
+        $this->assertStringContainsString('.auth-split .fi-input-wrp', $html);
         $this->assertStringContainsString('background-color: #ffffff !important', $html);
-        $this->assertStringContainsString('.fi-simple-layout .fi-input', $html);
+        $this->assertStringContainsString('.auth-split .fi-input', $html);
     }
 
     public function test_links_remain_readable_blue(): void
     {
         $html = $this->loginHtml();
 
-        $this->assertStringContainsString('.fi-simple-layout .fi-link', $html);
+        $this->assertStringContainsString('.auth-split .fi-link', $html);
         $this->assertStringContainsString('color: #1c4d8d !important', $html);
     }
 
@@ -68,6 +68,6 @@ class LoginDarkModeContrastTest extends TestCase
     {
         $html = $this->loginHtml();
 
-        $this->assertStringContainsString('.fi-simple-layout aside', $html);
+        $this->assertStringContainsString('.auth-split aside', $html);
     }
 }
