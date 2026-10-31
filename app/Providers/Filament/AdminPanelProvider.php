@@ -19,6 +19,7 @@ use App\Filament\Widgets\TadInspectionQueue;
 use App\Filament\Widgets\TadStatsOverview;
 use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
+use Filament\FontProviders\BunnyFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -95,10 +96,42 @@ class AdminPanelProvider extends PanelProvider
             ->plugin(
                 PressFilamentTheme::make()->runtimeSwitch([PressVariant::Broadsheet, PressVariant::Vellum, PressVariant::Telex])->rail(false)
             )
-            ->font(
-                'Inter',
-                url: asset('fonts/filament/filament/inter/index.css')
-            )
+            /**
+             * Font sans ditentukan setelah plugin di-boot.
+             *
+             * PressFilamentTheme::boot() memanggil registerFonts() yang menimpa apa pun
+             * yang di-set lewat ->font() pada rantai panel(), karena Panel::boot()
+             * menjalankan plugin setelah rantai itu selesai. bootUsing() dieksekusi
+             * paling akhir, sehingga nilai di sini yang berlaku.
+             *
+             * Wajib berupa Closure: plugin memakai runtimeSwitch, jadi varian baru
+             * diketahui saat render (dari cookie), bukan saat panel dikonfigurasi.
+             */
+            ->bootUsing(function (Panel $panel): void {
+                $plugin = $panel->getPlugin('press-filament-theme');
+
+                $isBroadsheet = fn (): bool => $plugin->resolveVariant() === PressVariant::Broadsheet;
+
+                $panel->font(
+                    fn (): string => $isBroadsheet()
+                        ? 'Figtree'
+                        : $plugin->resolveVariant()->getSansFont(),
+                    provider: BunnyFontProvider::class,
+                );
+
+                // Broadsheet memakai Inter untuk heading (pengganti Instrument Serif).
+                // Varian lain memakai serif yang ditetapkan plugin; 'ui-serif' dipakai
+                // sebagai cadangan karena BunnyFontProvider menolak family null.
+                $panel->serifFont(
+                    fn (): string => $isBroadsheet()
+                        ? 'Inter'
+                        : ($plugin->resolveVariant()->getSerifFont() ?? 'ui-serif'),
+                    url: fn (): ?string => $isBroadsheet()
+                        ? null
+                        : $plugin->resolveVariant()->getSerifFontUrl(),
+                    provider: BunnyFontProvider::class,
+                );
+            })
             ->authMiddleware([
                 Authenticate::class,
             ]);

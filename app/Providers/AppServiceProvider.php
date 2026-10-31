@@ -7,6 +7,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->enforceApprovedAccountStatus();
+        $this->applyBroadsheetHeadingFont();
 
         // Tautan "Lupa kata sandi?" pada halaman login panel admin.
         FilamentView::registerRenderHook(
@@ -68,6 +70,37 @@ class AppServiceProvider extends ServiceProvider
 
             return false;
         });
+    }
+
+    /**
+     * Ganti serif Broadsheet (Instrument Serif) menjadi Inter.
+     *
+     * Preset Broadsheet mengunci nama face-nya di CSS, bukan di panel provider:
+     *
+     *   --press-font-serif: 'Instrument Serif', ui-serif, Georgia, serif;  /* :57 *\/
+     *   --press-font-heading: var(--press-font-serif);                     /* :59 *\/
+     *
+     * Heading memakai `var(--press-font-serif)` langsung, sehingga `->serifFont()`
+     * pada panel provider tidak berpengaruh. Nilai variabelnya harus ditimpa di CSS.
+     *
+     * Hook didaftarkan lewat FilamentView (bukan `Panel::renderHook()`): Panel::boot()
+     * menyalin render hook ke FilamentView sebelum plugin di-boot, jadi hook yang
+     * didaftarkan dari dalam plugin/bootUsing() tidak akan pernah ter-render.
+     * FilamentView::registerRenderHook() meng-append, sehingga aturan ini tampil
+     * paling akhir dan menang atas stylesheet preset.
+     */
+    private function applyBroadsheetHeadingFont(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            fn (): HtmlString => new HtmlString(<<<'HTML'
+                <style>
+                    :root {
+                        --press-font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
+                    }
+                </style>
+            HTML),
+        );
     }
 
     /**
