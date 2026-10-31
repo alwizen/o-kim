@@ -4,7 +4,7 @@
 
 # O-KIM — Online Kartu Izin Masuk
 
-**Sistem digital pengelolaan Kartu Izin Masuk (KIM) kendaraan tangki — Fuel Terminal Tegal**
+**Sistem digital pengelolaan Kartu Izin Masuk (KIM) Mobil Tangki — Fuel Terminal Tegal**
 
 Dokumentasi & Panduan Penggunaan
 
@@ -35,7 +35,7 @@ Dokumentasi & Panduan Penggunaan
 ## 1. Tentang Aplikasi
 
 **O-KIM** (Online Kartu Izin Masuk) adalah aplikasi web internal untuk mengelola proses pendaftaran
-transportir, pendataan kendaraan tangki, pemeriksaan persyaratan, tindak lanjut temuan, persetujuan
+transportir, pendataan Mobil Tangki, pemeriksaan persyaratan, tindak lanjut temuan, persetujuan
 petugas, hingga penerbitan **Kartu Izin Masuk (KIM)** di Fuel Terminal Tegal.
 
 Sistem menggantikan proses manual dengan workflow digital yang terstruktur, dapat ditelusuri
@@ -60,7 +60,7 @@ Aplikasi terdiri dari tiga area:
 
 ### Transportir
 - Profil perusahaan
-- Manajemen kendaraan tangki (NOPOL dinormalisasi)
+- Manajemen Mobil Tangki (NOPOL dinormalisasi)
 - Unggah dokumen kendaraan (STNK, KEUR, TERA, dll.) dengan **riwayat versi** dan **verifikasi oleh petugas**
 - Pengajuan KIM baru & perpanjangan
 - Melihat hasil pemeriksaan dan temuan
@@ -586,7 +586,7 @@ php artisan migrate --seed
 **B. Setelah Disetujui**
 1. Login di `/masuk`, Anda diarahkan ke panel `/transportir`.
 2. **Profil Perusahaan** — perbarui **nama PIC** (juga mengubah nama akun Anda) dan data perusahaan bila perlu. Berguna bagi pendaftar via Google yang belum sempat mengatur nama akun.
-3. **Kendaraan** — tambah kendaraan tangki (NOPOL, merek, model, tahun, kapasitas, **nomor rangka, nomor mesin, jenis angkutan, bahan tangki**).
+3. **Kendaraan** — tambah Mobil Tangki (NOPOL, merek, model, tahun, kapasitas, **nomor rangka, nomor mesin, jenis angkutan, bahan tangki**).
 4. Buka kendaraan → **Dokumen Kendaraan** → unggah dokumen wajib (PDF/JPG/PNG, maks 5 MB). Dokumen lama otomatis tersimpan sebagai riwayat. Tombol **Pratinjau** membuka berkas di tab baru, **Unduh** menyimpan berkasnya.
 5. **Pengajuan KIM** → *Buat* → pilih kendaraan & jenis (Baru/Perpanjangan) → **Kirim Pengajuan**.
    Dropdown kendaraan **hanya menampilkan NOPOL yang seluruh dokumen wajibnya sudah Terverifikasi**

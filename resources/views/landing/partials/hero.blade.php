@@ -1,5 +1,5 @@
     {{-- Hero — satu layar penuh --}}
-    <section class="relative flex min-h-screen items-center overflow-hidden bg-ocean-600 pb-24 pt-28 text-white sm:pt-32">
+    <section class="relative flex min-h-screen items-center overflow-hidden bg-auth-600 pb-24 pt-28 text-white sm:pt-32">
         {{-- Gambar hero sebagai latar penuh, dibuat sedikit transparan dan melebur ke warna section --}}
         <img
             src="{{ asset('img/hero.webp') }}"
@@ -11,11 +11,11 @@
         >
         {{-- Overlay warna bg di atas gambar agar menyatu dan teks tetap terbaca.
              Kiri hampir tertutup penuh (area teks judul), kanan dibiarkan jernih agar gambar terlihat. --}}
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-ocean-600/82 from-40% via-ocean-600/52 via-65% to-transparent" aria-hidden="true"></div>
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ocean-600/45 via-transparent to-ocean-600/10" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-auth-600/82 from-40% via-auth-600/52 via-65% to-transparent" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-auth-600/45 via-transparent to-auth-600/10" aria-hidden="true"></div>
 
         <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-            <div class="absolute -top-32 -right-24 h-96 w-96 rounded-full bg-ocean-300/30 blur-3xl"></div>
+            <div class="absolute -top-32 -right-24 h-96 w-96 rounded-full bg-auth-300/30 blur-3xl"></div>
             <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(165,201,202,0.35),transparent_55%)]"></div>
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(231,246,242,0.18),transparent_55%)]"></div>
         </div>
@@ -29,10 +29,10 @@
 
                 <h1 class="reveal text-balance-heading mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl" style="--reveal-delay:80ms">
                     O-KIM Lebih Cepat,<br>
-                    <span class="bg-gradient-to-r from-white to-ocean-200 bg-clip-text text-transparent">Rapi & Terkendali.</span>
+                    <span class="bg-gradient-to-r from-white to-auth-200 bg-clip-text text-transparent">Rapi & Terkendali.</span>
                 </h1>
 
-                <p class="reveal mt-6 max-w-xl text-lg leading-relaxed text-ocean-100" style="--reveal-delay:160ms">
+                <p class="reveal mt-6 max-w-xl text-lg leading-relaxed text-auth-100" style="--reveal-delay:160ms">
                      O-KIM adalah digitalisasi proses pembuatan Kartu Izin Masuk mobil tangki di Fuel Terminal Tegal. Mulai dari input data general kendaraan, pengajuan pemeriksaan, checklist per fungsi, tindak lanjut temuan, approval paralel, sampai kartu KIM terbit dengan QR validasi dan masa berlaku mengikuti dokumen yang paling cepat habis.
                 </p>
 
@@ -54,10 +54,10 @@
                     </x-landing.button>
                 </div>
 
-                <div class="reveal mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ocean-100" style="--reveal-delay:320ms">
-                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Daftar via email atau Google</span>
-                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Tanpa berkas fisik</span>
-                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Validasi QR Code</span>
+                <div class="reveal mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-auth-100" style="--reveal-delay:320ms">
+                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-auth-200" /> Daftar via email atau Google</span>
+                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-auth-200" /> Tanpa berkas fisik</span>
+                    <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-auth-200" /> Validasi QR Code</span>
                 </div>
             </div>
         </div>

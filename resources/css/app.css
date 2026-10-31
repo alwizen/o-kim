@@ -8,18 +8,19 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Palet hijau-biru untuk halaman publik (landing & auth). */
-    --color-ocean-50: #f3fbf9;
-    --color-ocean-100: #e7f6f2;
-    --color-ocean-200: #c6dfde;
-    --color-ocean-300: #a5c9ca;
-    --color-ocean-400: #6f929b;
-    --color-ocean-500: #54767f;
-    --color-ocean-600: #395b64;
-    --color-ocean-700: #32474b;
-    --color-ocean-800: #2c3333;
-    --color-ocean-900: #222727;
-    --color-ocean-950: #161b1b;
+    /* Palet biru khusus halaman autentikasi (login, daftar, reset, halaman tunggu). */
+    /* Skala biru: #1C4D8D jadi warna dominan (600), #0F2854 hanya untuk teks tegas & hover. */
+    --color-auth-50: #f2f8fd;
+    --color-auth-100: #e3f1fa;
+    --color-auth-200: #bde8f5;
+    --color-auth-300: #8fcdea;
+    --color-auth-400: #4988c4;
+    --color-auth-500: #2f6bab;
+    --color-auth-600: #1c4d8d;
+    --color-auth-700: #1c4d8d;
+    --color-auth-800: #173e70;
+    --color-auth-900: #0f2854;
+    --color-auth-950: #0a1c3d;
 
     --animate-marquee: marquee 32s linear infinite;
 }
@@ -49,7 +50,7 @@
     }
 
     :focus-visible {
-        outline: 2px solid var(--color-ocean-500);
+        outline: 2px solid var(--color-auth-600);
         outline-offset: 2px;
         border-radius: 4px;
     }
@@ -57,6 +58,11 @@
 
 @utility bg-pastel {
     background-image: linear-gradient(135deg, #e7f6f2 0%, #f8fdfb 50%, #c6dfde 100%);
+}
+
+/* Latar panel brand halaman autentikasi: gradasi biru muda. */
+@utility bg-pastel-auth {
+    background-image: linear-gradient(135deg, #bde8f5 0%, #f2f8fd 50%, #e3f1fa 100%);
 }
 
 @utility bg-pastel-soft {

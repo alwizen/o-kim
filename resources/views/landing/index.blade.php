@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="O-KIM — sistem digital pendaftaran transportir, pemeriksaan kendaraan tangki, dan penerbitan Kartu Izin Masuk Fuel Terminal Tegal.">
+    <meta name="description" content="O-KIM — sistem digital pendaftaran transportir, pemeriksaan Mobil Tangki, dan penerbitan Kartu Izin Masuk Fuel Terminal Tegal.">
     <title>O-KIM — Kartu Izin Masuk Fuel Terminal Tegal</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('img/fav.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-    <body class="bg-[#f6fbfa] font-sans text-slate-800 antialiased selection:bg-ocean-600 selection:text-white">
+    <body class="bg-[#f6fbfa] font-sans text-slate-800 antialiased selection:bg-auth-600 selection:text-white">
 
     @include('landing.partials.scroll-progress')
 

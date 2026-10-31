@@ -6,24 +6,24 @@
         @csrf
 
         <div>
-            <label for="email" class="block text-sm font-semibold text-ocean-800">Email</label>
+            <label for="email" class="block text-sm font-semibold text-auth-800">Email</label>
             <input type="email" id="email" name="email" required autocomplete="email" autofocus
                    value="{{ old('email') }}"
                    placeholder="nama@perusahaan.com"
-                   class="mt-2 block w-full rounded-xl border border-ocean-200 bg-white px-4 py-3 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-ocean-500 focus:outline-none focus:ring-2 focus:ring-ocean-200">
+                   class="mt-2 block w-full rounded-xl border border-auth-200 bg-white px-4 py-3 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-auth-500 focus:outline-none focus:ring-2 focus:ring-auth-200">
             @error('email')
                 <p class="mt-2 flex items-center gap-1.5 text-sm text-red-600"><x-heroicon-o-exclamation-circle class="h-4 w-4" />{{ $message }}</p>
             @enderror
         </div>
 
         <div>
-            <label for="password" class="block text-sm font-semibold text-ocean-800">Kata Sandi</label>
+            <label for="password" class="block text-sm font-semibold text-auth-800">Kata Sandi</label>
             <div class="relative mt-2">
                 <input type="password" id="password" name="password" required autocomplete="current-password"
                        placeholder="••••••••"
-                       class="block w-full rounded-xl border border-ocean-200 bg-white px-4 py-3 pr-12 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-ocean-500 focus:outline-none focus:ring-2 focus:ring-ocean-200">
+                       class="block w-full rounded-xl border border-auth-200 bg-white px-4 py-3 pr-12 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-auth-500 focus:outline-none focus:ring-2 focus:ring-auth-200">
                 <button type="button" data-password-toggle="password" aria-label="Tampilkan kata sandi"
-                        class="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-ocean-50 hover:text-ocean-700">
+                        class="absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-auth-50 hover:text-auth-600">
                     <x-heroicon-o-eye class="h-5 w-5" data-icon-show />
                     <x-heroicon-o-eye-slash class="hidden h-5 w-5" data-icon-hide />
                 </button>
@@ -36,29 +36,29 @@
         <div class="flex items-center justify-between gap-3">
             <label class="flex items-center gap-2.5 text-sm text-slate-600">
                 <input type="checkbox" name="remember" value="1"
-                       class="h-4 w-4 rounded border-ocean-300 text-ocean-700 focus:ring-ocean-300">
+                       class="h-4 w-4 rounded border-auth-300 text-auth-600 focus:ring-auth-300">
                 Ingat saya
             </label>
-            <a href="{{ route('password.request') }}" class="text-sm font-medium text-ocean-700 underline-offset-4 hover:underline">
+            <a href="{{ route('password.request') }}" class="text-sm font-medium text-auth-600 underline-offset-4 hover:underline">
                 Lupa kata sandi?
             </a>
         </div>
 
         <button type="submit"
-                class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ocean-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-ocean-900/15 transition hover:-translate-y-0.5 hover:bg-ocean-800 hover:shadow-xl">
+                class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-auth-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-auth-900/15 transition hover:-translate-y-0.5 hover:bg-auth-700 hover:shadow-xl">
             <x-heroicon-o-arrow-right-end-on-rectangle class="h-4 w-4" />
             Masuk
         </button>
     </form>
 
     <div class="my-7 flex items-center gap-4">
-        <span class="h-px flex-1 bg-ocean-100"></span>
+        <span class="h-px flex-1 bg-auth-100"></span>
         <span class="text-xs font-medium uppercase tracking-widest text-slate-400">atau</span>
-        <span class="h-px flex-1 bg-ocean-100"></span>
+        <span class="h-px flex-1 bg-auth-100"></span>
     </div>
 
     <a href="{{ route('auth.google') }}"
-       class="inline-flex w-full items-center justify-center gap-3 rounded-full border border-ocean-200 bg-white px-6 py-3 text-sm font-semibold text-ocean-800 transition hover:-translate-y-0.5 hover:border-ocean-400 hover:bg-ocean-50">
+       class="inline-flex w-full items-center justify-center gap-3 rounded-full border border-auth-200 bg-white px-6 py-3 text-sm font-semibold text-auth-800 transition hover:-translate-y-0.5 hover:border-auth-400 hover:bg-auth-50">
         <svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.65l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
@@ -84,14 +84,14 @@
     <x-slot:footer>
         <p class="mt-8 text-center text-sm text-slate-600">
             Belum punya akun?
-            <a href="{{ route('register') }}" class="font-semibold text-ocean-700 underline-offset-4 hover:underline">Daftar di sini</a>
+            <a href="{{ route('register') }}" class="font-semibold text-auth-600 underline-offset-4 hover:underline">Daftar di sini</a>
         </p>
         <p class="mt-2 text-center text-xs text-slate-500">
             Petugas internal (HSE/Distribusi/QQ/FTM)?
-            <a href="{{ route('register.internal') }}" class="font-semibold text-ocean-700 underline-offset-4 hover:underline">Daftar internal</a>
+            <a href="{{ route('register.internal') }}" class="font-semibold text-auth-600 underline-offset-4 hover:underline">Daftar internal</a>
         </p>
         <p class="mt-4 text-center text-xs text-slate-400">
-            <a href="{{ route('landing') }}" class="transition hover:text-ocean-600">&larr; Kembali ke beranda</a>
+            <a href="{{ route('landing') }}" class="transition hover:text-auth-600">&larr; Kembali ke Halaman utama</a>
         </p>
     </x-slot:footer>
 </x-landing.auth-layout>

@@ -10,10 +10,10 @@
     ];
 
     $variants = [
-        'primary' => 'bg-ocean-600 text-white shadow-lg shadow-ocean-900/20 hover:bg-ocean-700 hover:shadow-xl hover:shadow-ocean-900/25 hover:-translate-y-0.5',
-        'secondary' => 'bg-white/80 text-ocean-800 border border-ocean-200 backdrop-blur hover:border-ocean-400 hover:bg-white hover:-translate-y-0.5',
-        'ghost' => 'text-ocean-700 hover:bg-ocean-50',
-        'light' => 'bg-white text-ocean-800 shadow-lg shadow-ocean-900/10 hover:bg-ocean-50 hover:-translate-y-0.5',
+        'primary' => 'bg-auth-600 text-white shadow-lg shadow-auth-900/20 hover:bg-auth-700 hover:shadow-xl hover:shadow-auth-900/25 hover:-translate-y-0.5',
+        'secondary' => 'bg-white/80 text-auth-800 border border-auth-200 backdrop-blur hover:border-auth-400 hover:bg-white hover:-translate-y-0.5',
+        'ghost' => 'text-auth-700 hover:bg-auth-50',
+        'light' => 'bg-white text-auth-800 shadow-lg shadow-auth-900/10 hover:bg-auth-50 hover:-translate-y-0.5',
         'outline-light' => 'border border-white/40 text-white hover:bg-white/10 hover:border-white/60 hover:-translate-y-0.5',
     ];
 @endphp

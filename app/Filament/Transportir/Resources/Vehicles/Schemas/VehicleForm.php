@@ -13,7 +13,7 @@ class VehicleForm
     {
         return $schema->components([
             Section::make('Identitas Kendaraan')
-                ->description('Nomor polisi dan spesifikasi dasar kendaraan tangki.')
+                ->description('Nomor polisi dan spesifikasi dasar Mobil Tangki.')
                 ->columns(2)
                 ->schema([
                     TextInput::make('registration_number')
