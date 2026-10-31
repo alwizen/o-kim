@@ -111,6 +111,7 @@
                         @error('phone') <p class="mt-2 flex items-center gap-1.5 text-sm text-red-600"><x-heroicon-o-exclamation-circle class="h-4 w-4" />{{ $message }}</p> @enderror
                     </div>
 
+                    {{-- Nomor Identitas disembunyikan sementara.
                     <div>
                         <label for="legal_identifier" class="block text-sm font-semibold text-ocean-800">
                             Nomor Identitas <span class="font-normal text-slate-400">(opsional)</span>
@@ -121,6 +122,7 @@
                                class="mt-2 block w-full rounded-xl border border-ocean-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-ocean-500 focus:outline-none focus:ring-2 focus:ring-ocean-200">
                         @error('legal_identifier') <p class="mt-2 flex items-center gap-1.5 text-sm text-red-600"><x-heroicon-o-exclamation-circle class="h-4 w-4" />{{ $message }}</p> @enderror
                     </div>
+                    --}}
                 </div>
             </div>
 

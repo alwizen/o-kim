@@ -8,6 +8,7 @@ use App\Enums\AccountStatus;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Models\Transporter;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -385,6 +386,10 @@ class UserManagementTest extends TestCase
 
         $transportir = User::factory()->create(['account_status' => AccountStatus::Pending]);
         $transportir->assignRole('transportir');
+
+        // Pendaftaran baru muncul di Verifikasi Transportir setelah profil dikirim.
+        $transporter = Transporter::factory()->create(['profile_submitted_at' => now()]);
+        $transportir->transporters()->attach($transporter);
 
         $this->actingAs($admin)
             ->get('/admin/transporters')

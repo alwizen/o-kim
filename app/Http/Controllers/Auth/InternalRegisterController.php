@@ -42,7 +42,7 @@ class InternalRegisterController extends Controller
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
-        return redirect('/')
+        return redirect()->to($user->homeUrl())
             ->with('success', 'Pendaftaran berhasil. Akun Anda menunggu verifikasi super admin sebelum dapat digunakan.');
     }
 }

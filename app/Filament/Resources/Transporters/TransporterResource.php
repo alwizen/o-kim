@@ -82,7 +82,11 @@ class TransporterResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->role('transportir');
+        // Hanya transportir yang sudah mengirim profil perusahaan yang masuk antrean
+        // verifikasi. Akun hasil daftar Google yang belum mengisi form tidak ditampilkan.
+        return parent::getEloquentQuery()
+            ->role('transportir')
+            ->whereHas('transporters', fn (Builder $query) => $query->whereNotNull('profile_submitted_at'));
     }
 
     public static function infolist(Schema $schema): Schema

@@ -7,7 +7,7 @@
                         <img src="{{ asset('img/v3.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
                         <div class="flex flex-col leading-none">
                             <span class="text-base font-bold text-ocean-800">O-KIM</span>
-                            <span class="text-xs text-slate-500">Online Kartu Izin Masuk</span>
+                            <span class="text-xs text-slate-500">Fuel Terminal Tegal</span>
                         </div>
                     </div>
                     <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
