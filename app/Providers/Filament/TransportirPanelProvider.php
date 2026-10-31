@@ -11,6 +11,7 @@ use App\Filament\Widgets\RecentActivity;
 use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\FontProviders\BunnyFontProvider;
+use Filament\Navigation\NavigationGroup;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -40,6 +41,10 @@ class TransportirPanelProvider extends PanelProvider
             ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
             ->globalSearch()
+            ->navigationGroups([
+                NavigationGroup::make('Operasional KIM'),
+                NavigationGroup::make('Data & Profil'),
+            ])
             ->colors([
                 'primary' => Color::Green,
             ])

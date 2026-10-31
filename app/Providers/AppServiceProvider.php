@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Enums\AccountStatus;
+use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
+use Filament\Support\Icons\Heroicon;
+use Filament\View\PanelsIconAlias;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->enforceApprovedAccountStatus();
         $this->applyBroadsheetHeadingFont();
+        $this->customizeSidebarToggleIcons();
 
         // Tautan "Lupa kata sandi?" pada halaman login panel admin.
         FilamentView::registerRenderHook(
@@ -101,6 +105,27 @@ class AppServiceProvider extends ServiceProvider
                 </style>
             HTML),
         );
+    }
+
+    /**
+     * Ganti ikon tombol buka/tutup sidebar (di samping logo) dari chevron ke bars-3.
+     *
+     * Chevron kiri/kanan mudah disalahartikan sebagai tombol "kembali" / "maju",
+     * padahal fungsinya membuka dan menutup sidebar. Ikon bars-3 tidak
+     * menyiratkan navigasi sehingga maksudnya lebih jelas.
+     *
+     * Alias diambil dari Filament\View\PanelsIconAlias agar tidak bergantung pada
+     * string mentah; view asalnya:
+     * vendor/filament/filament/resources/views/livewire/sidebar.blade.php.
+     */
+    private function customizeSidebarToggleIcons(): void
+    {
+        FilamentIcon::register([
+            // Sidebar tertutup — tombol membuka sidebar.
+            PanelsIconAlias::SIDEBAR_EXPAND_BUTTON => Heroicon::OutlinedBars3BottomRight,
+            // Sidebar terbuka — tombol menutup sidebar.
+            PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedBars3BottomLeft,
+        ]);
     }
 
     /**

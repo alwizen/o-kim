@@ -14,7 +14,8 @@ use Illuminate\Notifications\DatabaseNotification;
  */
 class RecentActivity extends TableWidget
 {
-    protected static ?int $sort = 5;
+    /** Selalu tampil paling bawah pada dashboard. */
+    protected static ?int $sort = 99;
 
     protected int|string|array $columnSpan = 'full';
 

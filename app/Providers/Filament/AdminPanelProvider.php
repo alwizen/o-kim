@@ -20,6 +20,7 @@ use App\Filament\Widgets\TadStatsOverview;
 use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\FontProviders\BunnyFontProvider;
+use Filament\Navigation\NavigationGroup;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -56,6 +57,13 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Blue,
+            ])
+            // Urutan grup menu; grup di luar daftar ini tampil setelahnya.
+            ->navigationGroups([
+                NavigationGroup::make('Operasional'),
+                NavigationGroup::make('Master Data'),
+                NavigationGroup::make('User Manajemen'),
+                NavigationGroup::make('Data & Profil'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
