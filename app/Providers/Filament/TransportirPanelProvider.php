@@ -20,6 +20,7 @@ use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -40,6 +41,9 @@ class TransportirPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
+            ->sidebarCollapsibleOnDesktop()
+            ->unsavedChangesAlerts()
+            ->maxContentWidth(Width::Full)
             ->globalSearch()
             ->navigationGroups([
                 NavigationGroup::make('Operasional KIM'),
@@ -64,10 +68,10 @@ class TransportirPanelProvider extends PanelProvider
             ->bootUsing(function (Panel $panel): void {
                 $plugin = $panel->getPlugin('press-filament-theme');
 
-                $isBroadsheet = fn (): bool => $plugin->resolveVariant() === PressVariant::Broadsheet;
+                $isBroadsheet = fn(): bool => $plugin->resolveVariant() === PressVariant::Broadsheet;
 
                 $panel->font(
-                    fn (): string => $isBroadsheet()
+                    fn(): string => $isBroadsheet()
                         ? 'Figtree'
                         : $plugin->resolveVariant()->getSansFont(),
                     provider: BunnyFontProvider::class,
@@ -78,10 +82,10 @@ class TransportirPanelProvider extends PanelProvider
                 // Nilai harus berupa Closure agar mengikuti varian saat render;
                 // varian non-Broadsheet memakai serif yang ditetapkan plugin.
                 $panel->serifFont(
-                    fn (): string => $isBroadsheet()
+                    fn(): string => $isBroadsheet()
                         ? 'Inter'
                         : ($plugin->resolveVariant()->getSerifFont() ?? 'ui-serif'),
-                    url: fn (): ?string => $isBroadsheet()
+                    url: fn(): ?string => $isBroadsheet()
                         ? null
                         : $plugin->resolveVariant()->getSerifFontUrl(),
                     provider: BunnyFontProvider::class,
