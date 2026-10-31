@@ -36,7 +36,7 @@ class MyProfile extends Page implements HasForms
 
     protected static string|UnitEnum|null $navigationGroup = 'Data & Profil';
 
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 99;
 
     protected string $view = 'filament.pages.my-profile';
 
@@ -98,7 +98,7 @@ class MyProfile extends Page implements HasForms
                 Section::make('Ubah Kata Sandi')
                     ->description('Biarkan kosong bila tidak ingin mengubah kata sandi.')
                     ->icon(Heroicon::OutlinedKey)
-                    ->columns(2)
+                    ->columns(3)
                     ->schema([
                         TextInput::make('current_password')
                             ->label('Kata Sandi Saat Ini')

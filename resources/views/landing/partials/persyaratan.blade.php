@@ -26,7 +26,7 @@
                         <h3 class="font-bold text-ocean-900">Data Kendaraan</h3>
                     </div>
                     <ul class="mt-5 space-y-3 text-sm text-slate-600">
-                        @foreach (['Nomor polisi (NOPOL) kendaraan tangki', 'Merek, model, dan tahun pembuatan', 'Kapasitas tangki', 'Data kendaraan tercatat rapi'] as $item)
+                        @foreach (['Nomor polisi (NOPOL) Mobil Tangki', 'Merek, model, dan tahun pembuatan', 'Kapasitas tangki', 'Data kendaraan tercatat rapi'] as $item)
                             <li class="flex gap-3"><x-heroicon-o-check class="mt-0.5 h-5 w-5 shrink-0 text-ocean-500" /> {{ $item }}</li>
                         @endforeach
                     </ul>

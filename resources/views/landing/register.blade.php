@@ -123,7 +123,7 @@
             <a href="{{ route('register.internal') }}" class="font-semibold text-ocean-700 underline-offset-4 hover:underline">Daftar internal</a>
         </p>
         <p class="mt-4 text-center text-xs text-slate-400">
-            <a href="{{ route('landing') }}" class="transition hover:text-ocean-600">&larr; Kembali ke beranda</a>
+            <a href="{{ route('landing') }}" class="transition hover:text-ocean-600">&larr; Kembali ke Halaman utama</a>
         </p>
     </x-slot:footer>
 </x-landing.auth-layout>

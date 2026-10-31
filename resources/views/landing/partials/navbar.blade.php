@@ -3,9 +3,9 @@
             class="group fixed inset-x-0 top-0 z-40 border-b border-transparent bg-transparent transition-all duration-300 data-[scrolled]:border-ocean-100 data-[scrolled]:bg-white/85 data-[scrolled]:shadow-sm data-[scrolled]:backdrop-blur">
         <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8" aria-label="Navigasi utama">
             <a href="{{ route('landing') }}" class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
+                {{-- <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
                     <img src="{{ asset('img/v2.png') }}" alt="Logo O-KIM" class="h-full w-full object-contain" width="40" height="40">
-                </span>
+                </span> --}}
                 <span class="flex flex-col leading-none">
                     <span class="text-base font-bold tracking-tight text-white transition-colors group-data-[scrolled]:text-ocean-900">O-KIM</span>
                     <span class="text-[11px] font-medium text-white/70 transition-colors group-data-[scrolled]:text-ocean-600">Fuel Terminal Tegal</span>
@@ -136,10 +136,10 @@
                         </button>
                         <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
                             <a href="{{ route('login.form') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
-                                🚛 Masuk sebagai Transportir
+                                Masuk sebagai Transportir
                             </a>
                             <a href="/admin/login" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
-                                🪪 Masuk sebagai Petugas Internal
+                                Masuk sebagai Petugas Internal
                             </a>
                         </div>
                     </div>
@@ -153,10 +153,10 @@
                         </button>
                         <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
                             <a href="{{ route('register') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
-                                🚛 Daftar sebagai Transportir
+                                Daftar sebagai Transportir
                             </a>
                             <a href="{{ route('register.internal') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-ocean-50">
-                                🪪 Daftar sebagai Petugas Internal
+                                Daftar sebagai Petugas Internal
                             </a>
                         </div>
                     </div>

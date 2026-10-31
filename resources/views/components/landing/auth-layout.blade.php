@@ -28,12 +28,12 @@
             </div>
 
             <a href="{{ route('landing') }}" class="relative flex items-center gap-3">
-                <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-11 w-auto">
+                <img src="{{ asset('img/ppn.png') }}" alt="Logo O-KIM" class="h-11 w-auto">
             </a>
 
             <div class="relative">
                 <h2 class="text-balance-heading text-3xl font-bold leading-tight">
-                    Kartu Izin Masuk kendaraan tangki, kini serba digital.
+                    Kartu Izin Masuk Mobil Tangki, kini serba digital.
                 </h2>
                 <p class="mt-4 max-w-md text-ocean-700">
                     Kelola profil perusahaan, data kendaraan, dokumen, hingga pengajuan KIM dalam satu sistem
@@ -64,11 +64,11 @@
             <div class="mx-auto w-full max-w-md">
 
                 <a href="{{ route('landing') }}" class="mb-8 flex items-center gap-3 lg:hidden">
-                    <img src="{{ asset('img/logo.svg') }}" alt="Logo O-KIM" class="h-10 w-auto">
-                    <div class="flex flex-col leading-none">
+                    <img src="{{ asset('img/ppn.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
+                    {{-- <div class="flex flex-col leading-none">
                         <span class="text-base font-bold text-ocean-800">O-KIM</span>
                         <span class="text-[11px] text-slate-500">Fuel Terminal Tegal</span>
-                    </div>
+                    </div> --}}
                 </a>
 
                 <h1 class="text-2xl font-bold tracking-tight text-ocean-900 sm:text-3xl">{{ $title }}</h1>

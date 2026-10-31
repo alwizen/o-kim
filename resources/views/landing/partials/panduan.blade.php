@@ -10,7 +10,7 @@
                             $steps = [
                                 ['title' => 'Daftar akun', 'desc' => 'Gunakan email & kata sandi atau akun Google perusahaan. Akun baru berstatus menunggu verifikasi.'],
                                 ['title' => 'Lengkapi profil perusahaan', 'desc' => 'Isi data perusahaan transportir Anda. Admin akan memeriksa dan menyetujui pendaftaran.'],
-                                ['title' => 'Ajukan kendaraan & dokumen', 'desc' => 'Tambahkan kendaraan tangki, unggah dokumen wajib, lalu kirim pengajuan untuk diperiksa.'],
+                                ['title' => 'Ajukan kendaraan & dokumen', 'desc' => 'Tambahkan Mobil Tangki, unggah dokumen wajib, lalu kirim pengajuan untuk diperiksa.'],
                                 ['title' => 'Terima KIM digital', 'desc' => 'Setelah seluruh pemeriksaan dan approval selesai, KIM terbit dan dapat diunduh beserta QR validasi.'],
                             ];
                         @endphp

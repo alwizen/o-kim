@@ -4,14 +4,14 @@
             <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="sm:col-span-2 lg:col-span-2">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('img/v3.png') }}" alt="Logo O-KIM" class="h-10 w-auto">
+                        {{-- <img src="{{ asset('img/v3.png') }}" alt="Logo O-KIM" class="h-10 w-auto"> --}}
                         <div class="flex flex-col leading-none">
                             <span class="text-base font-bold text-ocean-800">O-KIM</span>
                             <span class="text-xs text-slate-500">Fuel Terminal Tegal</span>
                         </div>
                     </div>
                     <p class="mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
-                        Sistem internal operasional untuk pengelolaan Kartu Izin Masuk kendaraan tangki
+                        Sistem internal operasional untuk pengelolaan Kartu Izin Masuk Mobil Tangki
                         di Fuel Terminal Tegal.
                     </p>
                 </div>

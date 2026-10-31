@@ -6,7 +6,7 @@
             <div class="mt-12 space-y-3">
                 @php
                     $faqs = [
-                        ['q' => 'Siapa yang dapat mendaftar O-KIM?', 'a' => 'Perusahaan transportir yang akan mengoperasikan kendaraan tangki di Fuel Terminal Tegal. Pendaftaran dilakukan oleh PIC menggunakan email & kata sandi atau akun Google perusahaan.'],
+                        ['q' => 'Siapa yang dapat mendaftar O-KIM?', 'a' => 'Perusahaan transportir yang akan mengoperasikan Mobil Tangki di Fuel Terminal Tegal. Pendaftaran dilakukan oleh PIC menggunakan email & kata sandi atau akun Google perusahaan.'],
                         ['q' => 'Berapa lama proses verifikasi akun?', 'a' => 'Setelah profil perusahaan dilengkapi, admin akan memeriksa data Anda. Anda akan menerima notifikasi setelah pendaftaran disetujui atau ditolak.'],
                         ['q' => 'Apakah KIM masih berbentuk kartu fisik?', 'a' => 'KIM diterbitkan secara digital dalam bentuk PDF dengan nomor unik dan QR Code. Kartu dapat diunduh dan dicetak bila diperlukan.'],
                         ['q' => 'Bagaimana cara memverifikasi keaslian KIM?', 'a' => 'Pindai QR Code pada KIM. Anda akan diarahkan ke halaman validasi resmi yang menampilkan status terkini: aktif, kedaluwarsa, atau dicabut.'],
