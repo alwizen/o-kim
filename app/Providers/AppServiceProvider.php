@@ -31,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         $this->enforceApprovedAccountStatus();
         $this->applyBroadsheetHeadingFont();
         $this->customizeSidebarToggleIcons();
+        $this->opaqueMobileChrome();
 
         // Tautan "Lupa kata sandi?" pada halaman login panel admin.
         FilamentView::registerRenderHook(
@@ -38,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
             fn (): string => Blade::render(<<<'BLADE'
                 <div class="text-center">
                     <a href="{{ route('password.request') }}"
-                       class="text-sm font-medium text-primary-600 underline-offset-4 hover:underline">
+                       class="text-sm font-medium text-ocean-700 underline-offset-4 hover:underline">
                         Lupa kata sandi?
                     </a>
                 </div>
@@ -126,6 +127,45 @@ class AppServiceProvider extends ServiceProvider
             // Sidebar terbuka — tombol menutup sidebar.
             PanelsIconAlias::SIDEBAR_COLLAPSE_BUTTON => Heroicon::OutlinedBars3BottomLeft,
         ]);
+    }
+
+    /**
+     * Kurangi transparansi sidebar dan topbar pada layar kecil.
+     *
+     * Tema Press (terutama Vellum) memang berniat menampilkan permukaan kaca
+     * tembus pandang. Di layar kecil, konten yang lewat di belakang topbar dan
+     * sidebar membuat label navigasi sulit dibaca, jadi di bawah breakpoint lg
+     * permukaannya dibuat hampir pekat. Di desktop efek kacanya tetap utuh.
+     */
+    private function opaqueMobileChrome(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            fn (): HtmlString => new HtmlString(<<<'HTML'
+                <style>
+                    @media (max-width: 1023.98px) {
+                        .fi-topbar {
+                            background-color: color-mix(in oklab, var(--press-bg-app) 92%, oklch(1 0 0)) !important;
+                            backdrop-filter: none !important;
+                            -webkit-backdrop-filter: none !important;
+                        }
+
+                        .fi-sidebar {
+                            background-color: color-mix(in oklab, var(--press-bg-app) 94%, oklch(1 0 0)) !important;
+                            backdrop-filter: none !important;
+                            -webkit-backdrop-filter: none !important;
+                        }
+
+                        /* Panel dropdown/modal ikut dibuat pekat agar teks tidak bertumpuk. */
+                        .fi-dropdown-panel,
+                        .fi-modal-window {
+                            backdrop-filter: none !important;
+                            -webkit-backdrop-filter: none !important;
+                        }
+                    }
+                </style>
+            HTML),
+        );
     }
 
     /**
