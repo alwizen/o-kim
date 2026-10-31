@@ -17,7 +17,7 @@
 
     <x-slot:footer>
         <div class="mt-8 flex items-center justify-between text-sm">
-            <a href="{{ route('landing') }}" class="text-slate-400 transition hover:text-auth-600">&larr; Beranda</a>
+            <a href="{{ route('landing') }}" class="text-slate-400 transition hover:text-auth-600">&larr; Halaman Utama</a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="font-medium text-slate-600 transition hover:text-auth-600">Keluar</button>

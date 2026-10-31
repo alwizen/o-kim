@@ -40,6 +40,108 @@
             --press-primary-800: #0f2854;
             --press-primary-900: #0a1c3d;
         }
+
+        /* Halaman login selalu tampil terang.
+           Desainnya memakai palet auth-* yang hanya punya varian terang. Saat mode
+           gelap panel aktif, Filament menambahkan class `dark` pada <html> dan
+           mewarnai teks menjadi putih di atas latar putih, sehingga tidak terbaca.
+           Aturan di bawah mengunci halaman ini ke tampilan terang; panel admin
+           sendiri tetap mendukung mode gelap. */
+
+        /* Variabel Panel dipaksa ke nilai terang agar komponen Filament tidak
+           memakai pasangan warna dark miliknya. */
+        .fi-simple-layout {
+            color-scheme: light !important;
+
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --gray-950: #030712;
+        }
+
+        .fi-simple-layout,
+        .fi-simple-layout .fi-simple-main {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+
+        /* Judul dan subjudul. */
+        .fi-simple-layout .fi-simple-header-heading,
+        .fi-simple-layout .fi-simple-header-heading * {
+            color: #0f2854 !important;
+        }
+
+        .fi-simple-layout .fi-simple-header-subheading {
+            color: #4b5563 !important;
+        }
+
+        /* Label field form (class sebenarnya pada markup Filament). */
+        .fi-simple-layout .fi-fo-field-label,
+        .fi-simple-layout .fi-fo-field-label-content,
+        .fi-simple-layout .fi-fo-field-label-content span,
+        .fi-simple-layout .fi-fo-field-label-ctn,
+        .fi-simple-layout .fi-fo-field-wrp-label,
+        .fi-simple-layout label {
+            color: #1f2937 !important;
+        }
+
+        /* Penanda wajib tetap berwarna merah tua agar terbaca. */
+        .fi-simple-layout .fi-fo-field-label-content .fi-fo-field-label-required-mark,
+        .fi-simple-layout .fi-required-mark {
+            color: #b03626 !important;
+        }
+
+        /* Kotak input dan teks di dalamnya. */
+        .fi-simple-layout .fi-input-wrp {
+            background-color: #ffffff !important;
+            box-shadow: inset 0 0 0 1px #d1d5db !important;
+        }
+
+        .fi-simple-layout .fi-input,
+        .fi-simple-layout input,
+        .fi-simple-layout textarea {
+            background-color: transparent !important;
+            color: #1f2937 !important;
+        }
+
+        .fi-simple-layout input::placeholder,
+        .fi-simple-layout .fi-input::placeholder {
+            color: #9ca3af !important;
+        }
+
+        /* Ikon di dalam input (mis. tombol lihat kata sandi). */
+        .fi-simple-layout .fi-input-wrp .fi-icon,
+        .fi-simple-layout .fi-input-wrp button {
+            color: #6b7280 !important;
+        }
+
+        /* Teks "Ingat saya". */
+        .fi-simple-layout .fi-fo-checkbox-list-option-label,
+        .fi-simple-layout .fi-checkbox-label,
+        .fi-simple-layout .fi-fo-checkbox-list label {
+            color: #1f2937 !important;
+        }
+
+        /* Tautan bantuan (lupa kata sandi, kembali ke beranda). */
+        .fi-simple-layout .fi-link,
+        .fi-simple-layout .fi-link *,
+        .fi-simple-layout a,
+        .fi-simple-layout a * {
+            color: #1c4d8d !important;
+        }
+
+        /* Panel brand kiri selalu memakai palet terang. */
+        .fi-simple-layout aside,
+        .fi-simple-layout aside * {
+            color: #0f2854 !important;
+        }
     </style>
 @endpush
 

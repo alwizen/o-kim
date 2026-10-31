@@ -54,6 +54,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications()
             ->unsavedChangesAlerts()
+            // ->darkMode(false)
             ->maxContentWidth(Width::Full)
             ->login(Login::class)
             ->colors([
