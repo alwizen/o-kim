@@ -34,8 +34,8 @@ class TransportirPanelProvider extends PanelProvider
         return $panel
             ->id('transportir')
             ->path('transportir')
-            ->brandlogo(asset('img/logo.png'))
-            ->brandLogoHeight('3rem')
+            ->brandlogo(asset('img/ppn.png'))
+            ->brandLogoHeight('2.5rem')
             ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
             ->globalSearch()

@@ -82,10 +82,11 @@ class CompanyProfile extends Page implements HasForms
                             ->label('Nomor Telepon')
                             ->required()
                             ->maxLength(30),
-                        TextInput::make('legal_identifier')
-                            ->label('Nomor Identitas Perusahaan')
-                            ->helperText('NIB / SIUP (opsional)')
-                            ->maxLength(255),
+                        // Nomor Identitas disembunyikan sementara.
+                        // TextInput::make('legal_identifier')
+                        //     ->label('Nomor Identitas Perusahaan')
+                        //     ->helperText('NIB / SIUP (opsional)')
+                        //     ->maxLength(255),
                     ]),
             ]);
     }

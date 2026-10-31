@@ -133,7 +133,10 @@ class GlobalSearchTest extends TestCase
     public function test_transporter_resource_is_searchable_by_company_name(): void
     {
         $admin = $this->admin();
-        $transporter = Transporter::factory()->create(['company_name' => 'PT Angkutan Cari']);
+        $transporter = Transporter::factory()->create([
+            'company_name' => 'PT Angkutan Cari',
+            'profile_submitted_at' => now(),
+        ]);
         $user = User::factory()->create(['account_status' => AccountStatus::Pending]);
         $user->assignRole('transportir');
         $user->transporters()->attach($transporter);

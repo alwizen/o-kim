@@ -82,9 +82,18 @@ class User extends Authenticatable implements FilamentUser
         }
 
         if ($this->account_status === AccountStatus::Pending) {
-            return $this->hasRole('transportir')
-                ? route('registration.profile.edit')
-                : route('registration.pending.internal');
+            if (! $this->hasRole('transportir')) {
+                return route('registration.pending.internal');
+            }
+
+            // Transportir yang sudah mengirim profil masuk antrean verifikasi.
+            $hasSubmittedProfile = $this->transporters()
+                ->whereNotNull('profile_submitted_at')
+                ->exists();
+
+            return $hasSubmittedProfile
+                ? route('registration.pending.transporter')
+                : route('registration.profile.edit');
         }
 
         return '/';

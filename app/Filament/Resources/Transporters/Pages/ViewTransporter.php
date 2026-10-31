@@ -17,14 +17,19 @@ class ViewTransporter extends ViewRecord
 
     protected function getHeaderActions(): array
     {
+        // Tombol verifikasi hanya untuk pendaftaran yang sudah mengirim profil perusahaan.
+        // Daftar sudah disaring di resource; ini menjaga akses langsung via URL record.
+        $isReviewable = fn (): bool => $this->record->account_status === AccountStatus::Pending
+            && $this->record->transporters()->whereNotNull('profile_submitted_at')->exists()
+            && auth()->user()->can('review_transporter_registrations');
+
         return [
             Action::make('approve')
                 ->label('Setujui Pendaftaran')
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => $this->record->account_status === AccountStatus::Pending
-                    && auth()->user()->can('review_transporter_registrations'))
+                ->visible($isReviewable)
                 ->action(function (): void {
                     app(ApproveTransporterRegistration::class)->execute($this->record, auth()->user());
 
@@ -37,8 +42,7 @@ class ViewTransporter extends ViewRecord
                 ->label('Tolak Pendaftaran')
                 ->color('danger')
                 ->icon('heroicon-o-x-circle')
-                ->visible(fn (): bool => $this->record->account_status === AccountStatus::Pending
-                    && auth()->user()->can('review_transporter_registrations'))
+                ->visible($isReviewable)
                 ->schema([
                     Textarea::make('reason')
                         ->label('Alasan Penolakan')

@@ -57,12 +57,17 @@ Route::get('/menunggu-verifikasi', [PendingInternalController::class, 'show'])
     ->middleware('auth')
     ->name('registration.pending.internal');
 
+// Halaman tunggu transportir yang sudah mengirim profil perusahaan
+Route::get('/menunggu-verifikasi-transportir', [TransporterRegistrationController::class, 'pending'])
+    ->middleware('auth')
+    ->name('registration.pending.transporter');
+
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('/validasi-kim/{token}', [KimValidationController::class, 'show'])
         ->name('kim.validate');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'account.approved'])->group(function () {
     Route::get('/pendaftaran/profil', [TransporterRegistrationController::class, 'edit'])
         ->name('registration.profile.edit');
     Route::post('/pendaftaran/profil', [TransporterRegistrationController::class, 'update'])

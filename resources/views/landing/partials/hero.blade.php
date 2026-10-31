@@ -1,28 +1,30 @@
     {{-- Hero — satu layar penuh --}}
-    <section class="relative flex min-h-screen items-center overflow-hidden bg-gradient-to-br from-ocean-600 via-ocean-600 to-ocean-300 pb-24 pt-28 text-white sm:pt-32">
+    <section class="relative flex min-h-screen items-center overflow-hidden bg-ocean-600 pb-24 pt-28 text-white sm:pt-32">
+        {{-- Gambar hero sebagai latar penuh, dibuat sedikit transparan dan melebur ke warna section --}}
+        <img
+            src="{{ asset('img/hero.webp') }}"
+            alt=""
+            aria-hidden="true"
+            width="1536" height="1024"
+            loading="eager" fetchpriority="high" decoding="async"
+            class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover opacity-60"
+        >
+        {{-- Overlay warna bg di atas gambar agar menyatu dan teks tetap terbaca.
+             Kiri hampir tertutup penuh (area teks judul), kanan dibiarkan jernih agar gambar terlihat. --}}
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-ocean-600/82 from-40% via-ocean-600/52 via-65% to-transparent" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ocean-600/45 via-transparent to-ocean-600/10" aria-hidden="true"></div>
+
         <div class="pointer-events-none absolute inset-0" aria-hidden="true">
             <div class="absolute -top-32 -right-24 h-96 w-96 rounded-full bg-ocean-300/30 blur-3xl"></div>
-            {{-- <div class="absolute bottom-0 -left-24 h-80 w-80 rounded-full bg-ocean-300/50 blur-3xl"></div> --}}
-            <div
-    class="pointer-events-none absolute inset-0
-           bg-[radial-gradient(ellipse_at_bottom_left,rgba(165,201,202,0.35),transparent_55%)]"
-></div>
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(165,201,202,0.35),transparent_55%)]"></div>
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(231,246,242,0.18),transparent_55%)]"></div>
-            <svg class="absolute inset-0 h-full w-full opacity-20" aria-hidden="true">
-                <defs>
-                    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-                        <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#e7f6f2" stroke-width="1"/>
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)"/>
-            </svg>
         </div>
 
-        <div class="relative mx-auto grid w-full max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
-            <div>
+        <div class="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl">
                 <span class="reveal inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-white backdrop-blur">
                     <x-heroicon-o-shield-check class="h-4 w-4" />
-                    Online - Kartu Izin Masuk
+                    Kartu Izin Masuk Digital 
                 </span>
 
                 <h1 class="reveal text-balance-heading mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl" style="--reveal-delay:80ms">
@@ -56,48 +58,6 @@
                     <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Daftar via email atau Google</span>
                     <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Tanpa berkas fisik</span>
                     <span class="inline-flex items-center gap-2"><x-heroicon-o-check-circle class="h-5 w-5 text-ocean-200" /> Validasi QR Code</span>
-                </div>
-            </div>
-
-            {{-- Hero card mock --}}
-            <div class="reveal relative" style="--reveal-delay:200ms">
-                <div class="relative mx-auto max-w-sm">
-                    <div class="absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-ocean-300/50 to-ocean-100/30 blur-2xl"></div>
-                    <div class="relative overflow-hidden rounded-2xl border border-ocean-200 bg-white/95 p-6 shadow-2xl shadow-ocean-900/15 backdrop-blur">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                {{-- <img src="{{ asset('img/logo.svg') }}" alt="" class="h-8 w-auto"> --}}
-                            </div>
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Aktif
-                            </span>
-                        </div>
-
-                        <p class="mt-5 text-xs font-semibold uppercase tracking-widest text-slate-400">Nomor KIM</p>
-                        <p class="mt-1 font-mono text-lg font-bold text-ocean-900">KIM/FT-TGL/2026/XI/0001</p>
-
-                        <div class="mt-5 grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <p class="text-xs text-slate-400">NOPOL</p>
-                                <p class="font-semibold text-ocean-800">G 8798 TGL</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-400">Berlaku Hingga</p>
-                                <p class="font-semibold text-ocean-800">14 Jun 2027</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 flex items-center justify-center gap-4 rounded-xl bg-ocean-50 p-4">
-                            {{-- <x-ionicon-qr-code-sharp class="text-gray-800" /> --}}
-                            <img src="{{ asset('img/qr.svg') }}" alt="QR Code KIM" >
-                            {{-- <p class="text-xs leading-relaxed text-slate-500">Pindai QR pada kartu untuk memverifikasi keaslian dan masa berlaku KIM.</p> --}}
-                        </div>
-                    </div>
-
-                    {{-- <div class="absolute -bottom-5 -left-5 hidden rounded-xl border border-ocean-100 bg-white px-4 py-3 shadow-xl sm:block">
-                        <p class="text-xs text-slate-400">Pengajuan diproses</p>
-                        <p class="text-lg font-bold text-ocean-800">3 fungsi &middot; 1 alur</p>
-                    </div> --}}
                 </div>
             </div>
         </div>

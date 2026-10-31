@@ -80,7 +80,7 @@ class InternalRegistrationTest extends TestCase
         $this->assertFalse($user->hasRole('transportir'));
         $this->assertNull($user->email_verified_at);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('registration.pending.internal'));
 
         Notification::assertSentTo(
             User::where('email', $this->superAdmin->email)->first(),
@@ -94,7 +94,7 @@ class InternalRegistrationTest extends TestCase
 
         $this->post(route('register.internal'), $this->validPayload([
             'jabatan' => 'Safety Officer',
-        ]))->assertRedirect('/');
+        ]))->assertRedirect(route('registration.pending.internal'));
 
         $user = User::where('email', 'petugas@okim.test')->firstOrFail();
 
@@ -107,7 +107,8 @@ class InternalRegistrationTest extends TestCase
     {
         Notification::fake();
 
-        $this->post(route('register.internal'), $this->validPayload())->assertRedirect('/');
+        $this->post(route('register.internal'), $this->validPayload())
+            ->assertRedirect(route('registration.pending.internal'));
 
         $this->assertNull(User::where('email', 'petugas@okim.test')->firstOrFail()->jabatan);
     }

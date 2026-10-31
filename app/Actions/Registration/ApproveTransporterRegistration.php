@@ -19,6 +19,13 @@ class ApproveTransporterRegistration
             ]);
         }
 
+        // Pendaftaran tanpa profil perusahaan belum boleh disetujui.
+        if ($target->transporters()->whereNotNull('profile_submitted_at')->doesntExist()) {
+            throw ValidationException::withMessages([
+                'account_status' => 'Pendaftaran belum mengirim profil perusahaan sehingga belum dapat disetujui.',
+            ]);
+        }
+
         DB::transaction(function () use ($target, $reviewer) {
             $target->update([
                 'account_status' => AccountStatus::Approved,

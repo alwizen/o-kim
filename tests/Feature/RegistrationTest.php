@@ -94,7 +94,8 @@ class RegistrationTest extends TestCase
             ->get(route('registration.profile.edit'))
             ->assertSuccessful()
             ->assertSee('Profil Perusahaan Transportir')
-            ->assertSee('Nama Perusahaan');
+            ->assertSee('Nama Perusahaan')
+            ->assertDontSee('legal_identifier');
     }
 
     public function test_pending_user_can_fill_company_profile(): void
@@ -112,7 +113,7 @@ class RegistrationTest extends TestCase
             'legal_identifier' => 'NIB-123',
         ]);
 
-        $response->assertRedirect(route('registration.profile.edit'));
+        $response->assertRedirect(route('registration.pending.transporter'));
 
         $transporter = Transporter::where('company_name', 'PT Angkutan Tegal')->first();
         $this->assertNotNull($transporter);
@@ -196,6 +197,7 @@ class RegistrationTest extends TestCase
             'phone' => '081234',
         ]);
         $target->transporters()->attach($transporter);
+        $transporter->update(['profile_submitted_at' => now()]);
 
         app(ApproveTransporterRegistration::class)->execute($target, $admin);
 

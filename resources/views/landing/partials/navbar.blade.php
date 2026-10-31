@@ -53,7 +53,7 @@
                                 </span>
                                 <span>
                                     <span class="block text-sm font-semibold text-slate-800">Transportir</span>
-                                    <span class="block text-xs text-slate-500">Pengajuan & kelola KIM armada</span>
+                                    {{-- <span class="block text-xs text-slate-500">Pengajuan & kelola KIM armada</span> --}}
                                 </span>
                             </a>
                             <a href="/admin/login"
@@ -63,7 +63,7 @@
                                 </span>
                                 <span>
                                     <span class="block text-sm font-semibold text-slate-800">Petugas Internal</span>
-                                    <span class="block text-xs text-slate-500">Pemeriksaan, approval & admin</span>
+                                    {{-- <span class="block text-xs text-slate-500">Pemeriksaan, approval & admin</span> --}}
                                 </span>
                             </a>
                         </div>
@@ -86,7 +86,7 @@
                                 </span>
                                 <span>
                                     <span class="block text-sm font-semibold text-slate-800">Transportir</span>
-                                    <span class="block text-xs text-slate-500">Perusahaan angkutan / mobil tangki</span>
+                                    {{-- <span class="block text-xs text-slate-500">Perusahaan angkutan / mobil tangki</span> --}}
                                 </span>
                             </a>
                             <a href="{{ route('register.internal') }}"
@@ -96,7 +96,7 @@
                                 </span>
                                 <span>
                                     <span class="block text-sm font-semibold text-slate-800">Petugas Internal</span>
-                                    <span class="block text-xs text-slate-500">HSSE, QQ, Distribusi, FTM, dll.</span>
+                                    {{-- <span class="block text-xs text-slate-500">HSSE, QQ, Distribusi, FTM, dll.</span> --}}
                                 </span>
                             </a>
                         </div>
