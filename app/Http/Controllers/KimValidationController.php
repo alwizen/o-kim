@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\KimCard;
+use App\Services\Kim\KimValidityService;
 
 class KimValidationController extends Controller
 {
@@ -23,6 +24,7 @@ class KimValidationController extends Controller
         return view('kim.validate', [
             'card' => $card,
             'currentStatus' => $card->currentStatus(),
+            'validityLabel' => app(KimValidityService::class)->validityLabel($card->application),
         ]);
     }
 }

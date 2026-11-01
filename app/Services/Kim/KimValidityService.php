@@ -31,6 +31,42 @@ class KimValidityService
      */
     public function calculateExpiresAt(KimApplication $application, Carbon $issuedAt, ?Carbon $dispensationDueDate = null): Carbon
     {
+        return $this->resolveValidity($application, $issuedAt, $dispensationDueDate)['expires_at'];
+    }
+
+    /**
+     * Label sumber masa berlaku, siap ditempel di samping tanggal pada dokumen.
+     *
+     * Contoh: " (Dokumen TERA)" bila dibatasi dokumen wajib paling awal,
+     * atau " (Batas Maksimum 6 Bulan)" bila batas pengaturan lebih dulu.
+     */
+    public function validityLabel(KimApplication $application): string
+    {
+        $source = $this->resolveValidity($application, $application->kimCard?->issued_at ?? now());
+
+        return match ($source['basis']) {
+            'document' => $source['document_type'] !== null
+                ? ' (Dokumen '.$source['document_type'].')'
+                : '',
+            'dispensation' => ' (Batas Dispensasi)',
+            default => ' (Batas Maksimum '.$this->settings->kimValidityMonths().' Bulan)',
+        };
+    }
+
+    /**
+     * Hitung tanggal kedaluwarsa beserta sumber yang menentukannya.
+     *
+     * `basis` bernilai:
+     * - `document`     — dokumen wajib dengan masa berlaku paling awal
+     * - `max_months`   — batas maksimum masa berlaku dari pengaturan
+     * - `dispensation` — batas dispensasi FTM (KIM sementara)
+     *
+     * @return array{basis: string, document_type: string|null, expires_at: Carbon}
+     *
+     * @throws ValidationException jika dokumen wajib tidak valid pada saat penerbitan
+     */
+    public function resolveValidity(KimApplication $application, Carbon $issuedAt, ?Carbon $dispensationDueDate = null): array
+    {
         $requiredDocs = $application->vehicle->documents()
             ->whereNull('replaced_by_id')
             ->where('verification_status', DocumentVerificationStatus::Verified)
@@ -39,6 +75,7 @@ class KimValidityService
             ->get();
 
         $earliestExpiry = null;
+        $earliestType = null;
 
         foreach ($requiredDocs as $document) {
             if (! $document->documentType->has_expiry_date) {
@@ -59,18 +96,29 @@ class KimValidityService
 
             if (! $earliestExpiry || $document->expires_at->lt($earliestExpiry)) {
                 $earliestExpiry = $document->expires_at->copy();
+                $earliestType = $document->documentType->name;
             }
         }
 
         $maxExpiry = $issuedAt->copy()->addMonths($this->settings->kimValidityMonths());
 
-        $expiry = $earliestExpiry && $earliestExpiry->lt($maxExpiry) ? $earliestExpiry : $maxExpiry;
+        $usesDocument = $earliestExpiry !== null && $earliestExpiry->lt($maxExpiry);
+
+        $basis = $usesDocument ? 'document' : 'max_months';
+        $expiry = $usesDocument ? $earliestExpiry : $maxExpiry;
+        $documentType = $usesDocument ? $earliestType : null;
 
         // KIM dispensasi tidak boleh melewati batas dispensasi terawal.
         if ($dispensationDueDate !== null && $dispensationDueDate->lt($expiry)) {
             $expiry = $dispensationDueDate->copy();
+            $basis = 'dispensation';
+            $documentType = null;
         }
 
-        return $expiry;
+        return [
+            'basis' => $basis,
+            'document_type' => $documentType,
+            'expires_at' => $expiry,
+        ];
     }
 }

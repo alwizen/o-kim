@@ -36,7 +36,7 @@
             </div>
 
             @if (! empty($steps))
-                <ol class="vps-stepper">
+                <ol class="vps-stepper" style="--vps-count: {{ count($steps) }}">
                     @foreach ($steps as $index => $step)
                         <li @class([
                             'vps-step',
@@ -87,7 +87,7 @@
         .vps-select:focus { outline: 2px solid var(--primary-600, #2563eb); outline-offset: 1px; }
 
         .vps-stepper {
-            display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+            display: grid; grid-template-columns: repeat(var(--vps-count, 8), minmax(0, 1fr));
             gap: .75rem; list-style: none; margin: 0; padding: 0;
         }
         .vps-step { position: relative; }
@@ -131,6 +131,9 @@
         .vps-empty-title { font-size: .9375rem; font-weight: 600; color: var(--gray-950, #111827); margin: 0; }
         .vps-empty-text { font-size: .875rem; color: var(--gray-500, #6b7280); margin: 0 0 .75rem; max-width: 28rem; }
 
+        @media (max-width: 1280px) {
+            .vps-stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
         @media (max-width: 768px) {
             .vps-stepper { grid-template-columns: 1fr; gap: 1rem; }
             .vps-step:not(:last-child)::after {

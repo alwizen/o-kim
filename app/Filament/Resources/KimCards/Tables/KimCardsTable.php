@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\KimCards\Tables;
 
 use App\Enums\KimCardStatus;
+use App\Services\Kim\KimValidityService;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -41,7 +42,8 @@ class KimCardsTable
                     ->sortable(),
                 TextColumn::make('expires_at')
                     ->label('Berlaku Hingga')
-                    ->date('d M Y')
+                    ->formatStateUsing(fn ($state, $record): string => $state->format('d M Y')
+                        .app(KimValidityService::class)->validityLabel($record->application))
                     ->sortable(),
                 TextColumn::make('is_dispensation')
                     ->label('Jenis KIM')

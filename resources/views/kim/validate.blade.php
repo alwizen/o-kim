@@ -30,7 +30,7 @@
                     <div class="flex justify-between"><dt class="text-gray-500">NOPOL</dt><dd class="font-semibold">{{ $card->application->vehicle->registration_number }}</dd></div>
                     <div class="flex justify-between"><dt class="text-gray-500">Terminal</dt><dd class="font-semibold">Fuel Terminal Tegal</dd></div>
                     <div class="flex justify-between"><dt class="text-gray-500">Tanggal Terbit</dt><dd class="font-semibold">{{ $card->issued_at->format('d M Y') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-500">Berlaku Hingga</dt><dd class="font-semibold">{{ $card->expires_at->format('d M Y') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Berlaku Hingga</dt><dd class="font-semibold">{{ $card->expires_at->format('d M Y') }}{{ $validityLabel ?? '' }}</dd></div>
                     @if ($card->is_dispensation)
                         <div class="flex justify-between"><dt class="text-gray-500">Jenis KIM</dt><dd class="font-semibold text-amber-700">Sementara (Dispensasi)</dd></div>
                         <div class="flex justify-between"><dt class="text-gray-500">Batas Dispensasi</dt><dd class="font-semibold">{{ $card->dispensation_expires_at?->format('d M Y') ?? '—' }}</dd></div>

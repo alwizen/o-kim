@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\KimCards\Schemas;
 
 use App\Enums\KimCardStatus;
+use App\Services\Kim\KimValidityService;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -33,7 +34,8 @@ class KimCardInfolist
                         ->dateTime('d M Y H:i'),
                     TextEntry::make('expires_at')
                         ->label('Berlaku Hingga')
-                        ->date('d M Y'),
+                        ->formatStateUsing(fn ($state, $record): string => $state->format('d M Y')
+                            .app(KimValidityService::class)->validityLabel($record->application)),
                     TextEntry::make('status')
                         ->label('Status Tersimpan')
                         ->badge()

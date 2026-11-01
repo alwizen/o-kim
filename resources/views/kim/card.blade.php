@@ -181,7 +181,7 @@
             </tr>
             <tr>
                 <td class="label">Berlaku Hingga</td>
-                <td class="value">{{ $card->expires_at->format('d M Y') }}</td>
+                <td class="value">{{ $card->expires_at->format('d M Y') }}{{ $validityLabel ?? '' }}</td>
             </tr>
             @if ($card->is_dispensation)
                 <tr>

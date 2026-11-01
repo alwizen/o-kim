@@ -35,7 +35,7 @@ class VehicleProgressService
             $this->vehicleStep($application),
             $this->documentStep($application),
             $this->inspectionStep($application),
-            $this->approvalStep($application),
+            ...$this->departmentApprovalSteps($application),
             $this->kimStep($application),
         ];
     }
@@ -204,15 +204,15 @@ class VehicleProgressService
     }
 
     /**
-     * Tahap approval: HSSE, Distribusi, dan QQ harus menyetujui sebelum FTM.
+     * Tahap persetujuan, dipecah per pengawas: HSSE, Distribusi, QQ, lalu FTM.
      *
-     * @return array{key: string, label: string, state: string, description: string, url: string}
+     * Setiap fungsi punya langkahnya sendiri agar transportir dapat melihat
+     * fungsi mana yang sudah menyetujui dan mana yang masih menunggu.
+     *
+     * @return array<int, array{key: string, label: string, state: string, description: string, url: string}>
      */
-    private function approvalStep(KimApplication $application): array
+    private function departmentApprovalSteps(KimApplication $application): array
     {
-        $departments = Department::inspectingDepartments();
-        $totalFunctions = count($departments);
-
         $approvals = $application->approvals;
 
         $approvedDepartments = $approvals
@@ -225,41 +225,107 @@ class VehicleProgressService
             fn ($approval) => $approval->decision === ApprovalDecision::Rejected
         );
 
-        $ftmApproved = $approvedDepartments->contains(Department::Ftm->value);
+        $functions = Department::inspectingDepartments();
+        $ftm = Department::Ftm;
 
-        $approvedFunctions = collect($departments)
+        $approvedFunctions = collect($functions)
             ->filter(fn (Department $department) => $approvedDepartments->contains($department->value))
             ->count();
 
-        $state = 'pending';
-        $description = 'Menunggu pemeriksaan selesai';
+        $allFunctionsApproved = $approvedFunctions >= count($functions);
+        $ftmApproved = $approvedDepartments->contains($ftm->value);
+        $applicationRejected = $application->status === ApplicationStatus::Rejected;
 
-        if ($rejected !== null || $application->status === ApplicationStatus::Rejected) {
-            $state = 'failed';
-            $description = $rejected !== null
-                ? 'Ditolak oleh '.$rejected->department->label()
-                : 'Pengajuan ditolak';
-        } elseif ($ftmApproved) {
-            $state = 'done';
-            $description = 'Disetujui seluruh fungsi dan FTM';
-        } elseif ($totalFunctions > 0 && $approvedFunctions >= $totalFunctions) {
-            $state = 'active';
-            $description = 'Menunggu approval final FTM';
-        } elseif ($approvedFunctions > 0) {
-            $state = 'active';
-            $description = $approvedFunctions.' dari '.$totalFunctions.' fungsi menyetujui';
-        } elseif ($application->status === ApplicationStatus::PendingApproval) {
-            $state = 'active';
-            $description = 'Menunggu approval fungsi';
+        // Approver tercatat per fungsi, dipakai untuk menampilkan nama pengawas.
+        $approverByDepartment = $approvals
+            ->where('decision', ApprovalDecision::Approved)
+            ->keyBy(fn ($approval) => $approval->department->value);
+
+        $steps = [];
+        $runningMarked = false;
+
+        foreach ([...$functions, $ftm] as $department) {
+            $isFtm = $department === $ftm;
+            $approved = $approvedDepartments->contains($department->value);
+            $rejectedHere = $rejected !== null && $rejected->department === $department;
+
+            [$state, $description] = $this->approvalStateFor(
+                approved: $approved,
+                rejectedHere: $rejectedHere,
+                applicationRejected: $applicationRejected,
+                isFtm: $isFtm,
+                allFunctionsApproved: $allFunctionsApproved,
+                ftmApproved: $ftmApproved,
+                approvedBy: $approverByDepartment->get($department->value)?->approver?->name,
+            );
+
+            // Hanya satu fungsi yang ditandai berjalan agar transportir tahu
+            // fungsi mana yang sedang ditunggu; sisanya tetap pending.
+            if ($state === 'active') {
+                if ($runningMarked) {
+                    $state = 'pending';
+                }
+
+                $runningMarked = true;
+            }
+
+            $steps[] = [
+                'key' => $department->value,
+                'label' => $isFtm ? 'FTM' : 'Pengawas '.$department->label(),
+                'state' => $state,
+                'description' => $description,
+                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+            ];
         }
 
-        return [
-            'key' => 'approval',
-            'label' => 'Persetujuan',
-            'state' => $state,
-            'description' => $description,
-            'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
-        ];
+        return $steps;
+    }
+
+    /**
+     * Tentukan state dan keterangan satu langkah persetujuan fungsi.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function approvalStateFor(
+        bool $approved,
+        bool $rejectedHere,
+        bool $applicationRejected,
+        bool $isFtm,
+        bool $allFunctionsApproved,
+        bool $ftmApproved,
+        ?string $approvedBy,
+    ): array {
+        $approvedText = fn (string $fallback): string => $approvedBy !== null
+            ? 'Disetujui '.$approvedBy
+            : $fallback;
+
+        if ($rejectedHere) {
+            return ['failed', 'Ditolak'];
+        }
+
+        // FTM tidak menyetujui bila pengajuan sudah ditolak fungsi lain.
+        if ($applicationRejected && ! $approved) {
+            return [$isFtm ? 'failed' : 'pending', 'Pengajuan ditolak'];
+        }
+
+        if ($approved) {
+            return ['done', $approvedText('Disetujui')];
+        }
+
+        if ($isFtm) {
+            if ($allFunctionsApproved) {
+                return ['active', 'Menunggu persetujuan FTM'];
+            }
+
+            return ['pending', 'Menunggu persetujuan fungsi'];
+        }
+
+        if ($ftmApproved || $allFunctionsApproved) {
+            // Fungsi ini terlewat tetapi pengajuan sudah lolos; jangan tampak menggantung.
+            return ['done', 'Disetujui'];
+        }
+
+        return ['active', 'Menunggu persetujuan'];
     }
 
     /**

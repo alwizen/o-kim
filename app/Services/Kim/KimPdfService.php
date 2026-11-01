@@ -21,6 +21,7 @@ class KimPdfService
         $pdf = Pdf::loadView('kim.card', [
             'card' => $card->load('application.vehicle', 'application.transporter'),
             'qrSvg' => $qrSvg,
+            'validityLabel' => app(KimValidityService::class)->validityLabel($card->application),
         ])->setPaper('a5', 'landscape');
 
         $path = 'kim-cards/'.$this->safeFilename($card->kim_number);
