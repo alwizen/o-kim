@@ -345,13 +345,13 @@ class VehicleProgressStepperTest extends TestCase
         $this->assertSame('KIM/TEST/2026/01/0001', $step['description']);
     }
 
-    public function test_steps_always_contain_five_entries(): void
+    public function test_steps_contain_every_approval_breaker(): void
     {
         $steps = $this->steps($this->makeApplication());
 
-        $this->assertCount(5, $steps);
+        $this->assertCount(8, $steps);
         $this->assertSame(
-            ['vehicle', 'documents', 'inspection', 'approval', 'kim'],
+            ['vehicle', 'documents', 'inspection', 'hsse', 'distribusi', 'qq', 'ftm', 'kim'],
             array_column($steps, 'key')
         );
     }
@@ -370,41 +370,52 @@ class VehicleProgressStepperTest extends TestCase
         }
     }
 
-    public function test_approval_step_is_pending_before_inspection_finished(): void
+    public function test_department_steps_are_pending_before_inspection_finished(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
 
-        $step = $this->step($this->steps($application), 'approval');
+        $steps = $this->steps($application);
 
-        $this->assertSame('pending', $step['state']);
-        $this->assertSame('Menunggu pemeriksaan selesai', $step['description']);
+        // Fungsi pertama tampil sebagai langkah berjalan, sisanya menunggu.
+        $this->assertSame('active', $this->step($steps, 'hsse')['state']);
+        $this->assertSame('pending', $this->step($steps, 'distribusi')['state']);
+        $this->assertSame('pending', $this->step($steps, 'qq')['state']);
+        $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
     }
 
-    public function test_approval_step_shows_partial_function_approvals(): void
+    public function test_only_approved_department_is_done(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
 
         $this->approveApplication($application, [Department::Hsse]);
 
-        $step = $this->step($this->steps($application), 'approval');
+        $steps = $this->steps($application);
 
-        $this->assertSame('active', $step['state']);
-        $this->assertSame('1 dari 3 fungsi menyetujui', $step['description']);
+        $this->assertSame('done', $this->step($steps, 'hsse')['state']);
+        // Hanya satu fungsi ditandai berjalan: fungsi berikutnya yang menunggu.
+        $this->assertSame('active', $this->step($steps, 'distribusi')['state']);
+        $this->assertSame('pending', $this->step($steps, 'qq')['state']);
+        $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
     }
 
-    public function test_approval_step_waits_for_ftm_after_all_functions_approve(): void
+    public function test_ftm_step_becomes_active_after_all_functions_approve(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
 
         $this->approveApplication($application, Department::inspectingDepartments());
 
-        $step = $this->step($this->steps($application), 'approval');
+        $steps = $this->steps($application);
 
-        $this->assertSame('active', $step['state']);
-        $this->assertSame('Menunggu approval final FTM', $step['description']);
+        foreach (Department::inspectingDepartments() as $department) {
+            $this->assertSame('done', $this->step($steps, $department->value)['state']);
+        }
+
+        $ftm = $this->step($steps, 'ftm');
+        $this->assertSame('active', $ftm['state']);
+        $this->assertSame('Menunggu persetujuan FTM', $ftm['description']);
     }
 
-    public function test_approval_step_is_done_when_ftm_approved(): void
+    public function test_ftm_step_is_done_when_ftm_approved(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Approved);
 
@@ -413,36 +424,35 @@ class VehicleProgressStepperTest extends TestCase
             Department::Ftm,
         ]);
 
-        $step = $this->step($this->steps($application), 'approval');
+        $ftm = $this->step($this->steps($application), 'ftm');
 
-        $this->assertSame('done', $step['state']);
-        $this->assertSame('Disetujui seluruh fungsi dan FTM', $step['description']);
+        $this->assertSame('done', $ftm['state']);
     }
 
-    public function test_approval_step_fails_when_function_rejects(): void
+    public function test_rejecting_department_marks_its_own_step_failed(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
 
         $this->approveApplication($application, [Department::Hsse]);
         $this->approveApplication($application, [Department::Distribusi], ApprovalDecision::Rejected);
 
-        $step = $this->step($this->steps($application), 'approval');
+        $steps = $this->steps($application);
 
-        $this->assertSame('failed', $step['state']);
-        $this->assertSame('Ditolak oleh Distribusi', $step['description']);
+        $this->assertSame('failed', $this->step($steps, 'distribusi')['state']);
+        $this->assertSame('done', $this->step($steps, 'hsse')['state']);
     }
 
-    public function test_approval_step_fails_when_application_rejected_without_record(): void
+    public function test_rejected_application_marks_ftm_step_failed(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Rejected);
 
-        $step = $this->step($this->steps($application), 'approval');
+        $ftm = $this->step($this->steps($application), 'ftm');
 
-        $this->assertSame('failed', $step['state']);
-        $this->assertSame('Pengajuan ditolak', $step['description']);
+        $this->assertSame('failed', $ftm['state']);
+        $this->assertSame('Pengajuan ditolak', $ftm['description']);
     }
 
-    public function test_approval_step_becomes_current_index_when_pending_approval(): void
+    public function test_first_pending_department_is_current_step(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
 
@@ -451,7 +461,7 @@ class VehicleProgressStepperTest extends TestCase
         $steps = $this->steps($application);
 
         $this->assertSame(
-            array_search('approval', array_column($steps, 'key'), true),
+            array_search('distribusi', array_column($steps, 'key'), true),
             app(VehicleProgressService::class)->currentStepIndex($steps)
         );
     }
@@ -482,7 +492,10 @@ class VehicleProgressStepperTest extends TestCase
             ->assertSee('Pendaftaran Kendaraan')
             ->assertSee('Verifikasi Dokumen')
             ->assertSee('Pemeriksaan & Temuan')
-            ->assertSee('Persetujuan')
+            ->assertSee('Pengawas HSSE')
+            ->assertSee('Pengawas Distribusi')
+            ->assertSee('Pengawas QQ')
+            ->assertSee('FTM')
             ->assertSee('KIM Terbit')
             ->assertSee($this->vehicle->registration_number);
     }
