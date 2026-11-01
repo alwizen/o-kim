@@ -9,7 +9,9 @@ use App\Enums\FindingStatus;
 use App\Enums\KimCardStatus;
 use App\Models\KimApplication;
 use App\Models\KimCard;
+use App\Models\User;
 use App\Notifications\KimCardIssued;
+use App\Notifications\KimCardIssuedAsDispensationStaff;
 use App\Services\Approval\ApprovalService;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
@@ -56,17 +58,78 @@ class KimIssuanceService
                 'expires_at' => $expiresAt,
             ]);
 
+            $registrationNumber = $application->vehicle->registration_number;
+            $expiresAtText = $expiresAt->translatedFormat('d M Y');
+            $issuedBy = auth()->user()?->name ?? 'Fuel Terminal Manager';
+            $isDispensation = $dispensationDueDate !== null;
+            $applicationNumber = $application->application_number;
+
             DB::afterCommit(fn () => AppNotifier::notifyTransporter(
                 $application->transporter_id,
                 new KimCardIssued(
                     $card->kim_number,
-                    $application->vehicle->registration_number,
-                    $expiresAt->translatedFormat('d M Y'),
+                    $registrationNumber,
+                    $expiresAtText,
                 ),
             ));
 
+            // KIM sementara tidak melewati approval pengawas, jadi pengawas
+            // diberi tahu bahwa NOPOL tersebut memperoleh dispensasi FTM.
+            if ($isDispensation) {
+                DB::afterCommit(fn () => AppNotifier::notifyRole(
+                    ['pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq'],
+                    new KimCardIssuedAsDispensationStaff(
+                        $applicationNumber,
+                        $registrationNumber,
+                        $card->kim_number,
+                        $expiresAtText,
+                        $issuedBy,
+                    ),
+                ));
+            }
+
             return $card;
         });
+    }
+
+    /**
+     * Terbitkan KIM sementara dalam satu langkah setelah dispensasi disetujui FTM.
+     *
+     * Alur normal mensyaratkan approval FTM final lebih dulu. Untuk KIM sementara,
+     * approval pengawas tidak diperlukan dan FTM sendiri yang memutuskan dispensasi,
+     * sehingga penerbitan dilakukan atas nama FTM pada aksi yang sama.
+     *
+     * Aman dipanggil berulang: bila approval FTM sudah ada, langkah approval dilewati.
+     */
+    public function issueProvisional(KimApplication $application, User $ftm): KimCard
+    {
+        $application = $application->fresh();
+
+        $hasActiveDispensation = $application->hasActiveDispensation();
+
+        if (! $hasActiveDispensation) {
+            throw ValidationException::withMessages([
+                'dispensation' => 'Pengajuan ini tidak memiliki dispensasi aktif.',
+            ]);
+        }
+
+        $ftmApproved = $application->approvals()
+            ->where('department', Department::Ftm->value)
+            ->where('decision', ApprovalDecision::Approved)
+            ->exists();
+
+        if (! $ftmApproved) {
+            // KIM sementara hanya butuh FTM; approval pengawas dilewati.
+            $this->approvalService->decide(
+                $application,
+                Department::Ftm,
+                ApprovalDecision::Approved,
+                $ftm,
+                'Dispensasi FTM disetujui; KIM sementara diterbitkan.',
+            );
+        }
+
+        return $this->issue($application->fresh());
     }
 
     /**
@@ -92,16 +155,22 @@ class KimIssuanceService
             ]);
         }
 
-        foreach (Department::inspectingDepartments() as $department) {
-            $has = $application->approvals()
-                ->where('department', $department->value)
-                ->where('decision', ApprovalDecision::Approved)
-                ->exists();
+        // KIM sementara cukup approval FTM: temuan terkait sudah didispensasi
+        // sehingga pengawas fungsi tidak perlu menyetujui lagi.
+        $requiresFunctionalApprovals = ! $application->hasActiveDispensation();
 
-            if (! $has) {
-                throw ValidationException::withMessages([
-                    'approvals' => 'Approval '.$department->label().' belum tersedia.',
-                ]);
+        if ($requiresFunctionalApprovals) {
+            foreach (Department::inspectingDepartments() as $department) {
+                $has = $application->approvals()
+                    ->where('department', $department->value)
+                    ->where('decision', ApprovalDecision::Approved)
+                    ->exists();
+
+                if (! $has) {
+                    throw ValidationException::withMessages([
+                        'approvals' => 'Approval '.$department->label().' belum tersedia.',
+                    ]);
+                }
             }
         }
 

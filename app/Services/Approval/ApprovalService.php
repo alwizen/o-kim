@@ -68,7 +68,12 @@ class ApprovalService
             }
 
             if ($department === Department::Ftm) {
-                $this->ensureFunctionalApprovalsComplete($application);
+                // KIM sementara (ada temuan dispensasi aktif) cukup disetujui FTM;
+                // approval pengawas tidak diperlukan karena temuan sudah didispensasi.
+                if (! $application->hasActiveDispensation()) {
+                    $this->ensureFunctionalApprovalsComplete($application);
+                }
+
                 $this->ensureInspectionReady($application);
             }
 

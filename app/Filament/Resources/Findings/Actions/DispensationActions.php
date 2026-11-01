@@ -78,7 +78,6 @@ class DispensationActions
                     ->label('Batas Perbaikan Baru')
                     ->required()
                     ->minDate(now()->addDay())
-                    ->native(false)
                     ->default(fn (Finding $record) => $record->dispensation_due_date),
                 Textarea::make('notes')
                     ->label('Catatan (opsional)')

@@ -4,6 +4,9 @@ namespace App\Filament\Transportir\Resources\KimApplications\Tables;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
+use App\Filament\Transportir\Resources\KimApplications\Pages\CreateKimApplication;
+use App\Models\KimApplication;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -53,6 +56,17 @@ class KimApplicationsTable
             ->defaultSort('created_at', 'desc')
             ->recordActions([
                 ViewAction::make(),
+                // KIM sementara yang sudah tidak berlaku perlu diajukan ulang
+                // melalui pengajuan Perpanjangan baru.
+                Action::make('renew')
+                    ->label('Ajukan Ulang')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->visible(fn (KimApplication $record): bool => $record->canBeRenewed())
+                    ->url(fn (KimApplication $record): string => CreateKimApplication::getUrl([
+                        'vehicle_id' => $record->vehicle_id,
+                        'application_type' => ApplicationType::Renewal->value,
+                    ])),
             ]);
     }
 }

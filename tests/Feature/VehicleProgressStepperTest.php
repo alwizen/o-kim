@@ -370,14 +370,39 @@ class VehicleProgressStepperTest extends TestCase
         }
     }
 
+    public function test_supervisor_steps_stay_pending_during_document_verification(): void
+    {
+        // Bug: saat tahap verifikasi dokumen, langkah Pengawas HSSE sudah menyala
+        // padahal pemeriksaan belum berjalan. Reproduksi alurnya secara nyata.
+        $application = $this->makeApplication(ApplicationStatus::Submitted);
+
+        $this->vehicle->documents()->update([
+            'verification_status' => \App\Enums\DocumentVerificationStatus::Pending,
+            'verified_by' => null,
+            'verified_at' => null,
+        ]);
+
+        $steps = $this->steps($application->fresh());
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $this->assertSame(
+                'pending',
+                $this->step($steps, $department->value)['state'],
+                'Langkah pengawas tidak boleh berjalan sebelum pemeriksaan dimulai.',
+            );
+        }
+
+        $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
+    }
+
     public function test_department_steps_are_pending_before_inspection_finished(): void
     {
         $application = $this->makeApplication(ApplicationStatus::Inspection);
 
         $steps = $this->steps($application);
 
-        // Fungsi pertama tampil sebagai langkah berjalan, sisanya menunggu.
-        $this->assertSame('active', $this->step($steps, 'hsse')['state']);
+        // Pemeriksaan belum tuntas: seluruh langkah pengawas masih menunggu.
+        $this->assertSame('pending', $this->step($steps, 'hsse')['state']);
         $this->assertSame('pending', $this->step($steps, 'distribusi')['state']);
         $this->assertSame('pending', $this->step($steps, 'qq')['state']);
         $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
@@ -392,8 +417,8 @@ class VehicleProgressStepperTest extends TestCase
         $steps = $this->steps($application);
 
         $this->assertSame('done', $this->step($steps, 'hsse')['state']);
-        // Hanya satu fungsi ditandai berjalan: fungsi berikutnya yang menunggu.
-        $this->assertSame('active', $this->step($steps, 'distribusi')['state']);
+        // Pemeriksaan belum tuntas, jadi fungsi berikutnya belum berjalan.
+        $this->assertSame('pending', $this->step($steps, 'distribusi')['state']);
         $this->assertSame('pending', $this->step($steps, 'qq')['state']);
         $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
     }
@@ -452,9 +477,24 @@ class VehicleProgressStepperTest extends TestCase
         $this->assertSame('Pengajuan ditolak', $ftm['description']);
     }
 
-    public function test_first_pending_department_is_current_step(): void
+    public function test_approval_steps_stay_pending_until_inspection_finishes(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, [Department::Hsse]);
+
+        $steps = $this->steps($application);
+
+        // Bug: dulu langkah Pengawas langsung menyala saat verifikasi dokumen.
+        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $key) {
+            $this->assertContains($this->step($steps, $key)['state'], ['done', 'pending'], $key.' seharusnya belum berjalan.');
+        }
+    }
+
+    public function test_first_pending_department_becomes_current_when_inspection_ready(): void
+    {
+        $application = $this->applicationWithCompletedInspection(ApplicationStatus::Inspection);
+        $application->update(['status' => ApplicationStatus::PendingApproval]);
 
         $this->approveApplication($application, [Department::Hsse]);
 
@@ -464,6 +504,36 @@ class VehicleProgressStepperTest extends TestCase
             array_search('distribusi', array_column($steps, 'key'), true),
             app(VehicleProgressService::class)->currentStepIndex($steps)
         );
+    }
+
+    /**
+     * Pengajuan dengan seluruh checklist terisi dan tanpa temuan terbuka.
+     */
+    private function applicationWithCompletedInspection(ApplicationStatus $status): KimApplication
+    {
+        $application = $this->makeApplication($status);
+        $application->update(['inspection_scheduled_at' => now()->subDay()]);
+
+        $service = app(\App\Services\Inspection\InspectionService::class);
+        $inspector = $this->makeSuperAdmin();
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $items = \App\Models\InspectionItem::whereHas(
+                'checklist',
+                fn ($q) => $q->where('department', $department->value)
+            )->where('is_active', true)->get();
+
+            foreach ($items as $item) {
+                $service->recordResult(
+                    $application->fresh(),
+                    $item,
+                    \App\Enums\InspectionResultValue::Compliant,
+                    $inspector,
+                );
+            }
+        }
+
+        return $application->fresh();
     }
 
     // ---------- Widget ----------

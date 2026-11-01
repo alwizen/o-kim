@@ -22,7 +22,8 @@ class FindingDispensationExpired extends AppNotification
     protected function body(object $notifiable): string
     {
         return $this->kimNumber.' ('.$this->registrationNumber.') tidak berlaku lagi karena dispensasi '
-            .'berakhir '.$this->dueDate.'. Ajukan pemeriksaan ulang untuk '.$this->openItems.' butir.';
+            .'berakhir '.$this->dueDate.'. Buat pengajuan Perpanjangan untuk '.$this->openItems
+            .' butir yang belum tuntas.';
     }
 
     protected function icon(): string
@@ -50,8 +51,9 @@ class FindingDispensationExpired extends AppNotification
             ->line('NOPOL: '.$this->registrationNumber)
             ->line('Nomor pengajuan: '.$this->applicationNumber)
             ->line('Batas dispensasi: '.$this->dueDate)
-            ->line('Jumlah butir yang perlu diperiksa ulang: '.$this->openItems)
-            ->line('Silakan ajukan pemeriksaan ulang agar KIM dapat diterbitkan kembali.')
-            ->action('Buka Pengajuan', url('/transportir/kim-applications'));
+            ->line('Jumlah butir yang belum tuntas: '.$this->openItems)
+            ->line('KIM sementara tidak berlaku lagi. Silakan buat pengajuan Perpanjangan untuk '
+                .'kendaraan ini agar dapat diperiksa ulang dan KIM diterbitkan kembali.')
+            ->action('Buat Pengajuan Perpanjangan', url('/transportir/kim-applications/create'));
     }
 }

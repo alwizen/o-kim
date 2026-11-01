@@ -433,6 +433,36 @@ class ViewKimApplication extends ViewRecord
             ->url(fn (): string => route('berita-acara.download', $this->record))
             ->openUrlInNewTab();
 
+        // KIM sementara: setelah FTM menyetujui dispensasi, penerbitan dapat
+        // dilakukan langsung dari sini tanpa menunggu approval pengawas.
+        $actions[] = Action::make('issue_provisional')
+            ->label('Terbitkan KIM Sementara')
+            ->icon('heroicon-o-clock')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Terbitkan KIM Sementara')
+            ->modalDescription('Approval FTM dicatat dan KIM sementara langsung diterbitkan.')
+            ->visible(fn (): bool => $this->record->canIssueProvisional()
+                && auth()->user()->can('issue_kim'))
+            ->action(function (): void {
+                try {
+                    app(KimIssuanceService::class)->issueProvisional($this->record, auth()->user());
+                } catch (ValidationException $e) {
+                    Notification::make()
+                        ->title('Penerbitan gagal')
+                        ->body(collect($e->errors())->flatten()->first())
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title('KIM sementara diterbitkan')
+                    ->success()
+                    ->send();
+            });
+
         $actions[] = Action::make('issue_kim')
             ->label('Terbitkan KIM')
             ->icon('heroicon-o-identification')

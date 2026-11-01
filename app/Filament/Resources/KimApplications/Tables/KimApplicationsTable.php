@@ -10,9 +10,11 @@ use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -43,19 +45,19 @@ class KimApplicationsTable
                     ->searchable(),
                 TextColumn::make('pending_documents_count')
                     ->label('Dokumen Pending')
-                    ->state(fn (KimApplication $record): int => (int) ($record->vehicle?->pending_documents_count ?? 0))
+                    ->state(fn(KimApplication $record): int => (int) ($record->vehicle?->pending_documents_count ?? 0))
                     ->badge()
                     ->placeholder('0')
-                    ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
-                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} pending" : 'Lengkap'),
+                    ->color(fn($state) => $state > 0 ? 'warning' : 'success')
+                    ->formatStateUsing(fn($state) => $state > 0 ? "{$state} pending" : 'Lengkap'),
                 TextColumn::make('application_type')
                     ->label('Jenis')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label()),
+                    ->formatStateUsing(fn($state) => $state->label()),
                 TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label())
-                    ->color(fn (ApplicationStatus $state) => match ($state) {
+                    ->formatStateUsing(fn($state) => $state->label())
+                    ->color(fn(ApplicationStatus $state) => match ($state) {
                         ApplicationStatus::Draft => 'gray',
                         ApplicationStatus::Submitted, ApplicationStatus::Inspection => 'info',
                         ApplicationStatus::RevisionRequired, ApplicationStatus::PendingApproval => 'warning',
@@ -71,7 +73,7 @@ class KimApplicationsTable
                     ->dateTime('d M Y H:i')
                     ->placeholder('Belum dijadwalkan')
                     ->badge()
-                    ->color(fn ($state) => $state ? 'success' : 'warning')
+                    ->color(fn($state) => $state ? 'success' : 'warning')
                     ->sortable(),
                 TextColumn::make('submitted_at')
                     ->label('Dikirim')
@@ -83,107 +85,110 @@ class KimApplicationsTable
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(collect(ApplicationStatus::cases())->mapWithKeys(
-                        fn (ApplicationStatus $s) => [$s->value => $s->label()]
+                        fn(ApplicationStatus $s) => [$s->value => $s->label()]
                     )),
             ])
             ->defaultSort('submitted_at', 'desc')
             ->recordActions([
-                Action::make('inspection_report')
-                    ->label('Laporan Pemeriksaan')
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->visible(fn (KimApplication $record): bool => (bool) $record->inspection_results_exists)
-                    ->url(fn (KimApplication $record): string => route('inspection-report.download', $record))
-                    ->openUrlInNewTab(),
-                Action::make('inspect')
-                    ->label('Isi Checklist')
-                    ->icon('heroicon-o-clipboard-document-check')
-                    ->color('info')
-                    ->visible(fn (KimApplication $record): bool => $record->isInspectionDue()
-                        && in_array($record->status, [
+                ActionGroup::make([
+                    Action::make('inspection_report')
+                        ->label('Laporan Pemeriksaan')
+                        ->icon('heroicon-o-printer')
+                        ->color('gray')
+                        ->visible(fn(KimApplication $record): bool => (bool) $record->inspection_results_exists)
+                        ->url(fn(KimApplication $record): string => route('inspection-report.download', $record))
+                        ->openUrlInNewTab(),
+                    Action::make('inspect')
+                        ->label('Isi Checklist')
+                        ->icon('heroicon-o-clipboard-document-check')
+                        ->color('info')
+                        ->visible(fn(KimApplication $record): bool => $record->isInspectionDue()
+                            && in_array($record->status, [
+                                ApplicationStatus::Submitted,
+                                ApplicationStatus::Inspection,
+                                ApplicationStatus::RevisionRequired,
+                            ], true) && (
+                                auth()->user()->can('inspect_hsse')
+                                || auth()->user()->can('inspect_distribusi')
+                                || auth()->user()->can('inspect_qq')
+                            ))
+                        ->url(fn(KimApplication $record): string => KimApplicationResource::getUrl('inspect', ['record' => $record])),
+                    Action::make('schedule')
+                        ->label(fn(KimApplication $record): string => $record->inspection_scheduled_at
+                            ? 'Reschedule'
+                            : 'Tetapkan Tanggal Pemeriksaan')
+                        ->icon('heroicon-o-calendar-days')
+                        ->color('primary')
+                        ->visible(fn(KimApplication $record): bool => in_array($record->status, [
                             ApplicationStatus::Submitted,
                             ApplicationStatus::Inspection,
-                            ApplicationStatus::RevisionRequired,
-                        ], true) && (
-                            auth()->user()->can('inspect_hsse')
-                            || auth()->user()->can('inspect_distribusi')
-                            || auth()->user()->can('inspect_qq')
-                        ))
-                    ->url(fn (KimApplication $record): string => KimApplicationResource::getUrl('inspect', ['record' => $record])),
-                Action::make('schedule')
-                    ->label(fn (KimApplication $record): string => $record->inspection_scheduled_at
-                        ? 'Reschedule'
-                        : 'Tetapkan Tanggal Pemeriksaan')
-                    ->icon('heroicon-o-calendar-days')
-                    ->color('primary')
-                    ->visible(fn (KimApplication $record): bool => in_array($record->status, [
-                        ApplicationStatus::Submitted,
-                        ApplicationStatus::Inspection,
-                    ], true) && auth()->user()->can('schedule_inspection'))
-                    ->schema([
-                        DateTimePicker::make('inspection_scheduled_at')
-                            ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
-                            ->required()
-                            ->seconds(false)
-                            // ->native(false)
-                            ->default(fn (KimApplication $record) => $record->inspection_scheduled_at),
-                    ])
-                    ->fillForm(fn (KimApplication $record): array => [
-                        'inspection_scheduled_at' => $record->inspection_scheduled_at,
-                    ])
-                    ->action(function (KimApplication $record, array $data): void {
-                        // Dokumen wajib harus terverifikasi sebelum pemeriksaan dijadwalkan.
-                        try {
-                            app(KimApplicationService::class)
-                                ->ensureRequiredDocumentsVerified($record->vehicle);
-                        } catch (ValidationException $e) {
+                        ], true) && auth()->user()->can('schedule_inspection'))
+                        ->schema([
+                            DateTimePicker::make('inspection_scheduled_at')
+                                ->label('Tanggal & Waktu Pelaksanaan Pemeriksaan')
+                                ->required()
+                                ->seconds(false)
+                                // ->native(false)
+                                ->default(fn(KimApplication $record) => $record->inspection_scheduled_at),
+                        ])
+                        ->fillForm(fn(KimApplication $record): array => [
+                            'inspection_scheduled_at' => $record->inspection_scheduled_at,
+                        ])
+                        ->action(function (KimApplication $record, array $data): void {
+                            // Dokumen wajib harus terverifikasi sebelum pemeriksaan dijadwalkan.
+                            try {
+                                app(KimApplicationService::class)
+                                    ->ensureRequiredDocumentsVerified($record->vehicle);
+                            } catch (ValidationException $e) {
+                                Notification::make()
+                                    ->title('Dokumen belum terverifikasi')
+                                    ->body(collect($e->errors())->flatten()->first())
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $isReschedule = $record->inspection_scheduled_at !== null;
+
+                            $record->update([
+                                'inspection_scheduled_at' => $data['inspection_scheduled_at'],
+                                'inspection_scheduled_by' => auth()->id(),
+                            ]);
+
+                            $scheduledAt = Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i');
+
+                            AppNotifier::notifyTransporter(
+                                $record->transporter_id,
+                                new InspectionScheduled(
+                                    $record->application_number,
+                                    $record->vehicle->registration_number,
+                                    $scheduledAt,
+                                ),
+                            );
+
+                            AppNotifier::notifyStaffWithPermission(
+                                'schedule_inspection',
+                                new InspectionScheduledForStaff(
+                                    $record->application_number,
+                                    $record->vehicle->registration_number,
+                                    $scheduledAt,
+                                    $isReschedule,
+                                    (string) $record->getRouteKey(),
+                                ),
+                            );
+
                             Notification::make()
-                                ->title('Dokumen belum terverifikasi')
-                                ->body(collect($e->errors())->flatten()->first())
-                                ->danger()
+                                ->title($isReschedule
+                                    ? 'Jadwal pemeriksaan diperbarui'
+                                    : 'Jadwal pemeriksaan ditetapkan')
+                                ->body('Petugas dapat mulai mengisi checklist.')
+                                ->success()
                                 ->send();
-
-                            return;
-                        }
-
-                        $isReschedule = $record->inspection_scheduled_at !== null;
-
-                        $record->update([
-                            'inspection_scheduled_at' => $data['inspection_scheduled_at'],
-                            'inspection_scheduled_by' => auth()->id(),
-                        ]);
-
-                        $scheduledAt = Carbon::parse($data['inspection_scheduled_at'])->translatedFormat('d M Y H:i');
-
-                        AppNotifier::notifyTransporter(
-                            $record->transporter_id,
-                            new InspectionScheduled(
-                                $record->application_number,
-                                $record->vehicle->registration_number,
-                                $scheduledAt,
-                            ),
-                        );
-
-                        AppNotifier::notifyStaffWithPermission(
-                            'schedule_inspection',
-                            new InspectionScheduledForStaff(
-                                $record->application_number,
-                                $record->vehicle->registration_number,
-                                $scheduledAt,
-                                $isReschedule,
-                                (string) $record->getRouteKey(),
-                            ),
-                        );
-
-                        Notification::make()
-                            ->title($isReschedule
-                                ? 'Jadwal pemeriksaan diperbarui'
-                                : 'Jadwal pemeriksaan ditetapkan')
-                            ->body('Petugas dapat mulai mengisi checklist.')
-                            ->success()
-                            ->send();
-                    }),
-                ViewAction::make(),
+                        }),
+                    ViewAction::make(),
+                ])
+                ->icon(Heroicon::OutlinedBars3),
             ]);
     }
 }
