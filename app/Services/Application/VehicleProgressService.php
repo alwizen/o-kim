@@ -236,6 +236,20 @@ class VehicleProgressService
         $ftmApproved = $approvedDepartments->contains($ftm->value);
         $applicationRejected = $application->status === ApplicationStatus::Rejected;
 
+        // KIM sementara: temuan sudah didispensasi FTM, sehingga approval pengawas
+        // tidak diperlukan dan hanya FTM yang menunggu.
+        $isDispensation = $application->hasActiveDispensation();
+
+        // Approval hanya boleh tampak berjalan setelah pemeriksaan tuntas:
+        // seluruh checklist terisi dan tidak ada temuan penghalang.
+        // KIM sementara dikecualikan karena temuan sudah didispensasi FTM.
+        $completion = $this->departmentCompletionMap($application);
+
+        $approvalOpen = $isDispensation
+            || ($completion !== []
+                && ! in_array(false, $completion, true)
+                && ! $application->hasBlockingFindings());
+
         // Approver tercatat per fungsi, dipakai untuk menampilkan nama pengawas.
         $approverByDepartment = $approvals
             ->where('decision', ApprovalDecision::Approved)
@@ -257,6 +271,8 @@ class VehicleProgressService
                 allFunctionsApproved: $allFunctionsApproved,
                 ftmApproved: $ftmApproved,
                 approvedBy: $approverByDepartment->get($department->value)?->approver?->name,
+                isDispensation: $isDispensation,
+                approvalOpen: $approvalOpen,
             );
 
             // Hanya satu fungsi yang ditandai berjalan agar transportir tahu
@@ -294,6 +310,8 @@ class VehicleProgressService
         bool $allFunctionsApproved,
         bool $ftmApproved,
         ?string $approvedBy,
+        bool $isDispensation = false,
+        bool $approvalOpen = false,
     ): array {
         $approvedText = fn (string $fallback): string => $approvedBy !== null
             ? 'Disetujui '.$approvedBy
@@ -313,11 +331,21 @@ class VehicleProgressService
         }
 
         if ($isFtm) {
-            if ($allFunctionsApproved) {
+            if ($isDispensation || $allFunctionsApproved) {
                 return ['active', 'Menunggu persetujuan FTM'];
             }
 
             return ['pending', 'Menunggu persetujuan fungsi'];
+        }
+
+        // Pada KIM sementara fungsi pengawas tidak perlu menyetujui.
+        if ($isDispensation) {
+            return ['pending', 'Tidak diperlukan — dispensasi FTM'];
+        }
+
+        // Pemeriksaan belum tuntas: approval fungsi belum berjalan.
+        if (! $approvalOpen) {
+            return ['pending', 'Menunggu pemeriksaan selesai'];
         }
 
         if ($ftmApproved || $allFunctionsApproved) {

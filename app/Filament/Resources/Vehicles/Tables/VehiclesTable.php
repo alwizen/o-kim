@@ -72,6 +72,7 @@ class VehiclesTable
                 TextColumn::make('pending_documents_count')
                     ->label('Perlu Verifikasi')
                     ->badge()
+                    ->suffix(' dokumen')
                     ->color('warning')
                     ->counts([
                         'documents as pending_documents_count' => fn ($query) => $query

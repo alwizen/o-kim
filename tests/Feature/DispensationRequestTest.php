@@ -8,6 +8,7 @@ use App\Enums\Department;
 use App\Enums\DispensationRequestStatus;
 use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
+use App\Filament\Resources\DispensationRequests\DispensationRequestResource;
 use App\Filament\Resources\DispensationRequests\Pages\ListDispensationRequests;
 use App\Filament\Transportir\Resources\Findings\Pages\ViewFinding;
 use App\Models\Finding;
@@ -304,7 +305,7 @@ class DispensationRequestTest extends TestCase
             ->assertActionHidden('request_dispensation');
     }
 
-    public function test_ftm_queue_only_lists_pending_requests(): void
+    public function test_ftm_queue_lists_pending_requests_by_default(): void
     {
         $finding = $this->finding();
         $pending = $this->service()->request($finding, $this->owner, 'Menunggu suku cadang impor.');
@@ -314,10 +315,23 @@ class DispensationRequestTest extends TestCase
 
         Livewire::test(ListDispensationRequests::class)
             ->assertCanSeeTableRecords([$pending]);
+    }
+
+    public function test_decided_requests_are_kept_for_record_when_filter_cleared(): void
+    {
+        $finding = $this->finding();
+        $pending = $this->service()->request($finding, $this->owner, 'Menunggu suku cadang impor.');
 
         $this->service()->rejectRequest($pending, $this->ftm, 'Perbaikan dapat dilakukan minggu ini.');
 
-        Livewire::test(ListDispensationRequests::class)
-            ->assertCanNotSeeTableRecords([$pending->fresh()]);
+        Filament::setCurrentPanel('admin');
+        $this->actingAs($this->ftm);
+
+        // Riwayat tetap tersimpan dan tersedia untuk laporan: query resource tidak
+        // lagi membatasi ke status pending.
+        $this->assertTrue(
+            DispensationRequestResource::getEloquentQuery()->pluck('id')->contains($pending->id),
+            'Permohonan yang sudah diputuskan harus tetap tersedia sebagai rekaman.',
+        );
     }
 }

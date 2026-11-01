@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\DispensationRequests;
 
-use App\Enums\DispensationRequestStatus;
 use App\Enums\InternalRole;
 use App\Filament\Resources\DispensationRequests\Pages\ListDispensationRequests;
 use App\Filament\Resources\DispensationRequests\Tables\DispensationRequestsTable;
@@ -68,12 +67,13 @@ class DispensationRequestResource extends Resource
     }
 
     /**
-     * Antrean hanya memuat permohonan yang belum diputuskan FTM.
+     * Seluruh permohonan ditampilkan agar riwayat keputusan FTM tetap terekam
+     * dan dapat dipakai sebagai bahan laporan. Antrean yang belum diputuskan
+     * disaring lewat filter status di tabel.
      */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('status', DispensationRequestStatus::Pending->value)
             ->with([
                 'finding.application.vehicle',
                 'finding.application.transporter',
@@ -94,12 +94,12 @@ class DispensationRequestResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = static::getEloquentQuery()->count();
+    // public static function getNavigationBadge(): ?string
+    // {
+    //     $count = static::getEloquentQuery()->count();
 
-        return $count > 0 ? (string) $count : null;
-    }
+    //     return $count > 0 ? (string) $count : null;
+    // }
 
     public static function getNavigationBadgeColor(): ?string
     {

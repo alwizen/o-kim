@@ -103,6 +103,57 @@ class KimApplication extends Model
     }
 
     /**
+     * KIM sementara masih dapat diterbitkan: dispensasi aktif dan belum ada kartu.
+     *
+     * Dipakai tombol "Terbitkan KIM Sementara" setelah FTM menyetujui dispensasi.
+     */
+    public function canIssueProvisional(): bool
+    {
+        if ($this->kimCard !== null) {
+            return false;
+        }
+
+        if (in_array($this->status, [ApplicationStatus::Issued, ApplicationStatus::Cancelled, ApplicationStatus::Rejected], true)) {
+            return false;
+        }
+
+        return $this->hasActiveDispensation();
+    }
+
+    /**
+     * Pengajuan layak diajukan ulang sebagai Perpanjangan.
+     *
+     * Terjadi ketika KIM sementara sudah tidak berlaku: kartu ditandai dispensasi
+     * dan batas waktunya telah lewat. Pengajuan lama tetap berstatus Issued
+     * (terminal), sehingga perbaikan dilakukan lewat pengajuan baru.
+     */
+    public function canBeRenewed(): bool
+    {
+        $card = $this->kimCard;
+
+        if ($card === null || ! $card->is_dispensation) {
+            return false;
+        }
+
+        return $card->dispensation_lapsed_at !== null
+            || ($card->dispensation_expires_at !== null && $card->dispensation_expires_at->isPast());
+    }
+
+    /**
+     * Pengajuan menerbitkan KIM sementara bila memiliki temuan dispensasi aktif
+     * (batas waktunya belum lewat). Kondisi ini sama dengan yang dipakai
+     * KimIssuanceService saat menandai kartu sebagai dispensasi.
+     */
+    public function hasActiveDispensation(): bool
+    {
+        return $this->findings()
+            ->where('status', FindingStatus::Dispensation->value)
+            ->whereNotNull('dispensation_due_date')
+            ->whereDate('dispensation_due_date', '>=', now()->toDateString())
+            ->exists();
+    }
+
+    /**
      * Temuan yang masih menghalangi approval: belum selesai diverifikasi atau
      * dispensasinya sudah melewati batas waktu.
      */

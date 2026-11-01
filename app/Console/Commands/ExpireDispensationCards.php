@@ -70,10 +70,17 @@ class ExpireDispensationCards extends Command
             ->where('status', FindingStatus::Dispensation->value)
             ->count() ?? 0;
 
-        DB::transaction(function () use ($card) {
+        DB::transaction(function () use ($card, $application) {
             KimCard::whereKey($card->id)
                 ->whereNull('dispensation_lapsed_at')
                 ->update(['dispensation_lapsed_at' => now()]);
+
+            // Tutup temuan yang dispensasinya berakhir agar tidak menggantung
+            // selamanya. Pengajuan lama sudah berstatus Issued (terminal); tindak
+            // lanjut dilakukan lewat pengajuan Perpanjangan yang baru.
+            $application?->findings()
+                ->where('status', FindingStatus::Dispensation->value)
+                ->update(['status' => FindingStatus::Expired->value]);
         });
 
         if ($application === null) {

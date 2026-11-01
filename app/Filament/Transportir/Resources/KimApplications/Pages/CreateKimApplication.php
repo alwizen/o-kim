@@ -17,6 +17,29 @@ class CreateKimApplication extends CreateRecord
 {
     protected static string $resource = KimApplicationResource::class;
 
+    /**
+     * Isi awal form dari query string, dipakai tombol "Ajukan Ulang" pada
+     * pengajuan yang KIM sementaranya sudah tidak berlaku.
+     */
+    public function mount(): void
+    {
+        parent::mount();
+
+        $vehicleId = request()->integer('vehicle_id') ?: null;
+        $type = ApplicationType::tryFrom((string) request()->query('application_type'));
+
+        if ($vehicleId === null && $type === null) {
+            return;
+        }
+
+        $this->form->fill(array_filter([
+            'vehicle_id' => $vehicleId !== null && array_key_exists($vehicleId, $this->availableVehicles())
+                ? $vehicleId
+                : null,
+            'application_type' => $type?->value,
+        ], fn ($value): bool => $value !== null));
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -9,6 +9,7 @@ enum FindingStatus: string
     case Verified = 'verified';
     case Rejected = 'rejected';
     case Dispensation = 'dispensation';
+    case Expired = 'expired';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum FindingStatus: string
             self::Verified => 'Terverifikasi',
             self::Rejected => 'Tindak Lanjut Ditolak',
             self::Dispensation => 'Dispensasi FTM',
+            self::Expired => 'Dispensasi Kedaluwarsa',
         };
     }
 
@@ -29,11 +31,13 @@ enum FindingStatus: string
             self::Verified => 'success',
             self::Rejected => 'danger',
             self::Dispensation => 'info',
+            self::Expired => 'danger',
         };
     }
 
     /**
-     * Temuan dianggap selesai bila sudah diverifikasi atau didispensasi FTM.
+     * Temuan dianggap selesai bila sudah diverifikasi atau masih dalam dispensasi
+     * aktif. Dispensasi yang batas waktunya sudah lewat tidak dihitung selesai.
      */
     public function isResolved(): bool
     {

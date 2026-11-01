@@ -14,6 +14,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->paginated([25, 50, 100])
             ->columns([
                 TextColumn::make('no')
                     ->label('No')
@@ -27,7 +28,7 @@ class UsersTable
                     ->sortable(),
                 TextColumn::make('email')
                     ->searchable()
-                    ->sortable(),
+                    ->copyable(),
                 TextColumn::make('jabatan')
                     ->label('Jabatan')
                     ->placeholder('—')
