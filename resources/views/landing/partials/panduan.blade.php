@@ -3,7 +3,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="grid gap-14 lg:grid-cols-2 lg:items-center lg:gap-20">
                 <div>
-                    <x-landing.section-heading align="left" eyebrow="Panduan" title="Empat langkah menuju KIM terbit" />
+                    <x-landing.section-heading align="left" eyebrow="Alur Permohonan" title="Empat langkah menuju KIM terbit" />
 
                     <ol class="mt-10 space-y-8">
                         @php

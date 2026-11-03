@@ -15,9 +15,9 @@
             <div class="hidden items-center gap-1 lg:flex">
                 <a href="#layanan" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Layanan</a>
                 <a href="#persyaratan" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Persyaratan</a>
-                <a href="#panduan" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Panduan</a>
-                <a href="{{ route('panduan.index') }}" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Panduan Penggunaan</a>
+                <a href="#panduan" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Alur Permohonan</a>
                 <a href="#faq" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">FAQ</a>
+                <a href="{{ route('panduan.index') }}" class="rounded-full px-4 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white group-data-[scrolled]:text-auth-700 group-data-[scrolled]:hover:bg-white/70 group-data-[scrolled]:hover:text-auth-900">Panduan Penggunaan</a>
             </div>
 
             <div class="hidden items-center gap-2 lg:flex">
@@ -116,9 +116,9 @@
             <div class="flex flex-col gap-1">
                 <a href="#layanan" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Layanan</a>
                 <a href="#persyaratan" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Persyaratan</a>
-                <a href="#panduan" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Panduan</a>
-                <a href="{{ route('panduan.index') }}" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Panduan Penggunaan</a>
+                <a href="#panduan" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Alur Permohonan</a>
                 <a href="#faq" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">FAQ</a>
+                <a href="{{ route('panduan.index') }}" class="rounded-lg px-4 py-3 text-sm font-medium text-slate-700 hover:bg-auth-50">Panduan Penggunaan</a>
                 @auth
                     <div class="mt-2 rounded-xl bg-auth-50 p-4">
                         <p class="text-xs text-slate-500">Masuk sebagai</p>

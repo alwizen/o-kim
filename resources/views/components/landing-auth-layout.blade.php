@@ -19,8 +19,8 @@
             <a href="{{ route('landing') }}" class="flex shrink-0 items-center gap-3">
                 <img src="{{ asset('img/ppn.png') }}" alt="Logo O-KIM" class="h-9 w-auto">
                 <span class="hidden flex-col leading-none sm:flex">
-                    <span class="text-sm font-bold text-auth-900">O-KIM</span>
-                    <span class="text-[11px] font-medium text-slate-500">Panduan Penggunaan</span>
+                    {{-- <span class="text-sm font-bold text-auth-900">O-KIM</span>
+                    <span class="text-[11px] font-medium text-slate-500">Panduan Penggunaan</span> --}}
                 </span>
             </a>
 

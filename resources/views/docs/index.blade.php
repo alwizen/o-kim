@@ -44,9 +44,5 @@
                 </a>
             @endforeach
         </div>
-
-        <p class="mt-12 text-center text-xs text-slate-400">
-            Sumber dokumen: berkas Markdown pada folder <code class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">dokumentasi</code> di repositori proyek.
-        </p>
     </div>
 </x-landing-auth-layout>
