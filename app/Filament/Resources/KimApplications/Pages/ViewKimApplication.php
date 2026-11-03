@@ -418,11 +418,11 @@ class ViewKimApplication extends ViewRecord
         // agar alur selalu dimulai dari permohonan transportir.
 
         $actions[] = Action::make('inspection_report')
-            ->label('Cetak Laporan Pemeriksaan')
+            ->label('Pratinjau Laporan Pemeriksaan')
             ->icon('heroicon-o-printer')
             ->color('gray')
             ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
-            ->url(fn (): string => route('inspection-report.download', $this->record))
+            ->url(fn (): string => route('inspection-report.preview', $this->record))
             ->openUrlInNewTab();
 
         $actions[] = Action::make('berita_acara')

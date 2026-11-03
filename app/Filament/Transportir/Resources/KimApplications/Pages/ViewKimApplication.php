@@ -4,6 +4,7 @@ namespace App\Filament\Transportir\Resources\KimApplications\Pages;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\FindingStatus;
+use App\Enums\InternalRole;
 use App\Filament\Transportir\Resources\KimApplications\KimApplicationResource;
 use App\Services\Application\KimApplicationService;
 use App\Services\Finding\FindingReportService;
@@ -28,6 +29,8 @@ class ViewKimApplication extends ViewRecord
         return parent::resolveRecord($key)->loadMissing([
             'findings.inspectionResult.item',
             'inspectionResults.attachments',
+            'inspectionResults.item.checklist',
+            'inspectionResults.inspector',
         ]);
     }
 
@@ -94,12 +97,19 @@ class ViewKimApplication extends ViewRecord
                         ->hiddenLabel()
                         ->contained(false)
                         ->table([
+                            TableColumn::make('Fungsi'),
                             TableColumn::make('Pemeriksaan'),
                             TableColumn::make('Hasil'),
                             TableColumn::make('Bukti Pemeriksaan'),
+                            TableColumn::make('Diperiksa Oleh'),
                             TableColumn::make('Diperiksa Pada'),
                         ])
                         ->schema([
+                            TextEntry::make('department_label')
+                                ->label('Fungsi')
+                                ->badge()
+                                ->placeholder('—')
+                                ->state(fn ($record) => $record->department()?->label()),
                             TextEntry::make('item.label')->label('Butir'),
                             TextEntry::make('result')->badge()->formatStateUsing(fn ($state) => $state->label()),
                             RepeatableEntry::make('attachments')
@@ -125,9 +135,18 @@ class ViewKimApplication extends ViewRecord
                                     ]),
                                 ])
                                 ->columns(2),
+                            TextEntry::make('inspector_name')
+                                ->label('Diperiksa Oleh')
+                                ->placeholder('—')
+                                ->state(fn ($record): ?string => $record->inspector
+                                    ? $record->inspector->name
+                                        .' ('.($record->inspector->getRoleNames()
+                                            ->map(fn (string $role): string => InternalRole::tryFrom($role)?->label() ?? $role)
+                                            ->implode(', ') ?: 'Tanpa Role').')'
+                                    : null),
                             TextEntry::make('inspected_at')->label('Waktu')->dateTime('d M Y H:i'),
                         ])
-                        ->columns(4),
+                        ->columns(6),
                 ])
                 ->visible(fn ($record) => $record->inspectionResults()->exists()),
         ]);
@@ -150,11 +169,11 @@ class ViewKimApplication extends ViewRecord
                 ->tooltip('PNG 85,6 × 54 mm — cetak aktual 100%, jangan "fit to page".')
                 ->url(fn (): string => route('kim.download-image', $this->record->kimCard)),
             Action::make('inspection_report')
-                ->label('Cetak Laporan Pemeriksaan')
+                ->label('Pratinjau Laporan Pemeriksaan')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
-                ->url(fn (): string => route('inspection-report.download', $this->record))
+                ->url(fn (): string => route('inspection-report.preview', $this->record))
                 ->openUrlInNewTab(),
             Action::make('berita_acara')
                 ->label('Cetak Berita Acara')

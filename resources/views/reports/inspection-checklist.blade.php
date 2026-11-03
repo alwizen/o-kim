@@ -304,14 +304,14 @@
         <td class="value">{{ $application->status->label() }}</td>
     </tr>
     <tr>
-        <td class="label">Dikirim Pada</td>
+        <td class="label">Diajukan Pada</td>
         <td class="value">{{ $application->submitted_at?->translatedFormat('d M Y H:i') ?? '—' }}</td>
         <td class="label">Jadwal Pemeriksaan</td>
         <td class="value">{{ $application->inspection_scheduled_at?->translatedFormat('d M Y H:i') ?? '—' }}</td>
     </tr>
 </table>
 
-<div class="section-title">Ringkasan Pemeriksaan</div>
+<div class="section-title">Daftar Pemeriksaan</div>
 {{-- <table class="summary">
     <tr>
         <td>
@@ -371,9 +371,9 @@
                             <td class="col-no">{{ $rowIndex + 1 }}</td>
                             <td>
                                 <span class="item-label">{{ $row['item']->label }}</span>
-                                @if ($row['item']->description)
+                                {{-- @if ($row['item']->description)
                                     <div class="item-desc">{{ $row['item']->description }}</div>
-                                @endif
+                                @endif --}}
 
                                 @if ($row['item']->points->isNotEmpty())
                                     <ul class="points">

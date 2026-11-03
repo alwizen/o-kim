@@ -12,12 +12,15 @@ use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -76,7 +79,7 @@ class KimApplicationsTable
                     ->color(fn($state) => $state ? 'success' : 'warning')
                     ->sortable(),
                 TextColumn::make('submitted_at')
-                    ->label('Dikirim')
+                    ->label('Diajukan Pada')
                     ->dateTime('d M Y')
                     ->placeholder('—')
                     ->sortable(),
@@ -87,6 +90,39 @@ class KimApplicationsTable
                     ->options(collect(ApplicationStatus::cases())->mapWithKeys(
                         fn(ApplicationStatus $s) => [$s->value => $s->label()]
                     )),
+                Filter::make('submitted_at')
+                    ->label('Tanggal Pengajuan')
+                    ->schema([
+                        DatePicker::make('submitted_from')
+                            ->label('Dari tanggal'),
+                        DatePicker::make('submitted_until')
+                            ->label('Sampai tanggal'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['submitted_from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query
+                                ->whereDate('submitted_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['submitted_until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query
+                                ->whereDate('submitted_at', '<=', $date),
+                        ))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['submitted_from'] ?? null) {
+                            $indicators[] = 'Diajukan dari '.Carbon::parse($data['submitted_from'])->translatedFormat('d M Y');
+                        }
+
+                        if ($data['submitted_until'] ?? null) {
+                            $indicators[] = 'Diajukan sampai '.Carbon::parse($data['submitted_until'])->translatedFormat('d M Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->defaultSort('submitted_at', 'desc')
             ->recordActions([
@@ -96,7 +132,7 @@ class KimApplicationsTable
                         ->icon('heroicon-o-printer')
                         ->color('gray')
                         ->visible(fn(KimApplication $record): bool => (bool) $record->inspection_results_exists)
-                        ->url(fn(KimApplication $record): string => route('inspection-report.download', $record))
+                        ->url(fn(KimApplication $record): string => route('inspection-report.preview', $record))
                         ->openUrlInNewTab(),
                     Action::make('inspect')
                         ->label('Isi Checklist')

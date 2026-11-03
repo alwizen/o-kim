@@ -11,6 +11,7 @@ use App\Models\InspectionResult;
 use App\Models\KimApplication;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Inspection\InspectionService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
@@ -20,8 +21,11 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Size;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
@@ -93,8 +97,15 @@ class InspectKimApplication extends Page implements HasForms
             foreach ($checklist->items as $item) {
                 $existing = $existingResults->get($item->id);
 
-                $fields[] = Radio::make("results.{$item->id}.result")
-                    ->label($item->item_code.' — '.$item->label)
+                // Setiap butir dibungkus Fieldset agar terpisah jelas satu sama lain.
+                $itemFields = [];
+
+                $itemFields[] = Radio::make("results.{$item->id}.result")
+                    ->label('Hasil pemeriksaan')
+                    ->hiddenLabel()
+                    ->helperText(filled($item->description)
+                        ? new HtmlString('<strong class="font-semibold text-gray-950 dark:text-white">Panduan:</strong> '.e(trim($item->description)))
+                        : null)
                     ->options([
                         InspectionResultValue::Compliant->value => 'Sesuai',
                         InspectionResultValue::Finding->value => 'Temuan',
@@ -102,34 +113,55 @@ class InspectKimApplication extends Page implements HasForms
                     ])
                     ->default($existing?->result?->value)
                     ->required()
-                    ->live();
+                    ->live()
+                    ->columnSpanFull();
 
                 if ($item->points->isNotEmpty()) {
                     $checkedPoints = array_keys(array_filter($existing?->checkedPointMap() ?? []));
+                    $pointIds = $item->points->pluck('id')->map(fn ($id) => (string) $id)->all();
+                    $pointsKey = "results.{$item->id}.points";
 
-                    $fields[] = CheckboxList::make("results.{$item->id}.points")
+                    $itemFields[] = CheckboxList::make($pointsKey)
                         ->label('Sub-butir pemeriksaan')
                         ->options($item->points->pluck('label', 'id'))
                         ->default($checkedPoints)
                         ->columns(2)
-                        ->bulkToggleable()
-                        ->helperText('Centang sub-butir yang sesuai kondisi kendaraan.');
+                        // "bulkToggleable()" bawaan mengubah DOM lewat Alpine saja, sehingga
+                        // tidak berfungsi ketika Livewire me-render ulang field ini. Jadi
+                        // tombol pilih/batalkan dibuat sebagai hint action yang memanggil
+                        // Livewire dan mengubah state secara langsung.
+                        ->hintActions([
+                            Action::make("selectAllPoints.{$item->id}")
+                                ->label('Pilih semua')
+                                ->link()
+                                ->size(Size::Small)
+                                ->action(fn (Set $set) => $set($pointsKey, $pointIds)),
+                            Action::make("deselectAllPoints.{$item->id}")
+                                ->label('Batalkan semua')
+                                ->link()
+                                ->size(Size::Small)
+                                ->action(fn (Set $set) => $set($pointsKey, [])),
+                        ])
+                        ->helperText('Centang sub-butir yang sesuai kondisi kendaraan.')
+                        ->columnSpanFull();
                 }
 
-                $fields[] = Textarea::make("results.{$item->id}.finding_description")
+                $itemFields[] = Textarea::make("results.{$item->id}.finding_description")
                     ->label('Deskripsi Temuan')
                     ->rows(2)
                     ->visible(fn ($get) => $get("results.{$item->id}.result") === InspectionResultValue::Finding->value)
                     ->required(fn ($get) => $get("results.{$item->id}.result") === InspectionResultValue::Finding->value)
-                    ->default($existing?->finding?->description);
+                    ->default($existing?->finding?->description)
+                    ->columnSpanFull();
 
-                $fields[] = Textarea::make("results.{$item->id}.notes")
+                $itemFields[] = Textarea::make("results.{$item->id}.notes")
                     ->label('Catatan (opsional)')
                     ->rows(1)
-                    ->default($existing?->notes);
+                    ->default($existing?->notes)
+                    ->columnSpanFull();
 
-                $fields[] = FileUpload::make("results.{$item->id}.attachments")
-                    ->label('Bukti Pemeriksaan (foto/dokumen, boleh lebih dari satu)')
+                $itemFields[] = FileUpload::make("results.{$item->id}.attachments")
+                    ->label('Bukti Pemeriksaan')
                     ->helperText('PDF/JPG/PNG, maks 5 MB')
                     ->multiple()
                     ->maxFiles(10)
@@ -141,11 +173,16 @@ class InspectKimApplication extends Page implements HasForms
                     ->columnSpanFull();
 
                 if ($existing && $existing->attachments->isNotEmpty()) {
-                    $fields[] = TextEntry::make("results.{$item->id}.existing_attachments")
+                    $itemFields[] = TextEntry::make("results.{$item->id}.existing_attachments")
                         ->hiddenLabel()
                         ->state(new HtmlString($this->renderExistingAttachments($existing)))
                         ->columnSpanFull();
                 }
+
+                $fields[] = Fieldset::make($item->label)
+                    ->schema($itemFields)
+                    ->columns(1)
+                    ->columnSpanFull();
             }
 
             $sections[] = Section::make('Checklist '.$department->label())

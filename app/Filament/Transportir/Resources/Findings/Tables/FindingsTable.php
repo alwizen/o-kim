@@ -5,9 +5,13 @@ namespace App\Filament\Transportir\Resources\Findings\Tables;
 use App\Enums\FindingStatus;
 use App\Models\Finding;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 class FindingsTable
 {
@@ -61,6 +65,39 @@ class FindingsTable
                     ->options(collect(FindingStatus::cases())->mapWithKeys(
                         fn (FindingStatus $s) => [$s->value => $s->label()]
                     )),
+                Filter::make('created_at')
+                    ->label('Tanggal Temuan')
+                    ->schema([
+                        DatePicker::make('created_from')
+                            ->label('Dari tanggal'),
+                        DatePicker::make('created_until')
+                            ->label('Sampai tanggal'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query
+                                ->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query
+                                ->whereDate('created_at', '<=', $date),
+                        ))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = 'Temuan dari '.Carbon::parse($data['created_from'])->translatedFormat('d M Y');
+                        }
+
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = 'Temuan sampai '.Carbon::parse($data['created_until'])->translatedFormat('d M Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
             ->recordActions([
