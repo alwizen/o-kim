@@ -1,267 +1,106 @@
 # Panduan Penggunaan O-KIM — TAD (HSSE / Distribusi / QQ)
 
-Panduan ini untuk **Tenaga Ahli Departemen (TAD)** pada fungsi **HSSE**, **Distribusi**, dan **QQ**.
+Panduan untuk **Tenaga Ahli Departemen (TAD)** fungsi HSSE, Distribusi, dan QQ di Fuel Terminal Tegal.
 
-> **Alamat panel:** `/admin`
-> **Role:** `hsse`, `distribusi`, `qq`
-> **Hak akses utama:** mengisi checklist pemeriksaan dan membuat temuan.
-
----
-
-## 1. Ringkasan Peran
-
-TAD adalah petugas yang **melakukan pemeriksaan fisik kendaraan** menggunakan checklist digital.
-
-TAD **dapat**:
-
-- Mengisi checklist pemeriksaan untuk fungsi yang sama
-- Menilai setiap butir (Sesuai / Temuan / N/A)
-- Mengunggah bukti pemeriksaan (foto/dokumen)
-- Membuat temuan
-- Memverifikasi tindak lanjut temuan pada fungsinya
-- Mencetak laporan pemeriksaan
-
-TAD **tidak dapat**:
-
-- Mengisi checklist fungsi lain (TAD HSSE tidak bisa mengisi checklist Distribusi)
-- Memberi approval pengajuan
-- Menjadwalkan pemeriksaan
-- Menerbitkan KIM
-- Memberi dispensasi temuan
+> **Aplikasi:** `https://o-kim.ft-tegal.com`
+> **Panel:** `/admin` · **Role:** `hsse`, `distribusi`, `qq`
+> **Tugas utama:** mengisi checklist pemeriksaan, membuat temuan, memverifikasi tindak lanjut.
 
 ---
 
-## 2. Hak Akses (Permission)
+## 1. Hak Akses
 
 | Permission | Arti |
 |---|---|
-| `access_admin_panel` | Dapat masuk panel `/admin` |
-| `view_applications` | Melihat daftar pengajuan |
+| `access_admin_panel` | Masuk panel `/admin` |
+| `view_applications` | Melihat pengajuan |
 | `inspect_hsse` / `inspect_distribusi` / `inspect_qq` | Mengisi checklist fungsi terkait |
 | `manage_findings` | Membuat temuan |
-| `view_findings` | Melihat daftar temuan |
+| `view_findings` | Melihat temuan |
 
-> Anda **hanya** mendapat permission `inspect_*` sesuai fungsi Anda.
-
----
-
-## 3. Menu di Panel Admin
-
-| Grup | Menu | Fungsi |
-|---|---|---|
-| Operasional | **Pengajuan & Pemeriksaan** | Daftar pengajuan, isi checklist |
-| Operasional | **Temuan & Verifikasi** | Daftar temuan & verifikasi tindak lanjut |
-
-> 📖 **Fungsi lengkap setiap menu & peta akses per role:** [menu.md](menu.md)
+TAD **tidak dapat**: mengisi checklist fungsi lain, memberi approval, menjadwalkan pemeriksaan, menerbitkan KIM, atau memberi dispensasi.
 
 ---
 
-## 4. Mengisi Checklist Pemeriksaan
+## 2. Masuk ke Panel
 
-### 4.1 Syarat Sebelum Memeriksa
+1. Buka **`https://o-kim.ft-tegal.com/admin/login`**.
+2. Isi **Email** dan **Kata Sandi** → **Masuk**.
+3. Menu yang tampil hanya **Operasional → Pengajuan & Pemeriksaan** dan **Temuan & Verifikasi**.
 
-Tombol **Isi Checklist** hanya muncul bila **semua** syarat terpenuhi:
+> Akun dibuat Super Admin (atau daftar mandiri di `/daftar/internal` lalu disetujui). Status harus **Disetujui**.
 
-1. **Jadwal pemeriksaan sudah ditetapkan** oleh admin.
-2. **Waktu pemeriksaan sudah tiba** (atau terlewat).
-3. **Status pengajuan** salah satu dari:
-   - Terkirim
-   - Dalam Pemeriksaan
-   - Perlu Perbaikan
-4. Anda memiliki permission `inspect_<fungsi>` yang sesuai.
+---
 
-Jika jadwal belum tiba, halaman pemeriksaan akan menolak dengan pesan:
+## 3. Mengisi Checklist Pemeriksaan
 
-> *"Pemeriksaan baru dapat dilakukan pada [tanggal] [jam]."*
+### Syarat tombol **Isi Checklist** muncul
 
-### 4.2 Masuk ke Halaman Pemeriksaan
+1. Jadwal pemeriksaan sudah ditetapkan admin
+2. Waktu pemeriksaan sudah tiba
+3. Status pengajuan: **Terkirim / Dalam Pemeriksaan / Perlu Perbaikan**
+4. Anda punya `inspect_<fungsi>` yang sesuai
 
-Ada dua cara:
+### Langkah
 
-- Dari tabel **Pengajuan & Pemeriksaan** → tombol **Isi Checklist**
-- Dari halaman detail pengajuan → tombol **Isi Checklist Pemeriksaan**
+1. Buka **Operasional → Pengajuan & Pemeriksaan** → klik **⋮ → Isi Checklist**
+   (atau dari detail pengajuan).
+2. Halaman **"Pemeriksaan: [No. Pengajuan]"** hanya memuat checklist fungsi Anda.
+3. Untuk setiap butir isi:
+   - **Hasil penilaian**: **Sesuai** / **Temuan** / **N/A**
+   - **Deskripsi Temuan** (wajib bila memilih *Temuan*)
+   - **Sub-butir** (centang yang sesuai), catatan opsional
+   - **Bukti pemeriksaan** (PDF/JPG/PNG, maks 5 MB, maks 10 berkas)
+4. Klik **Simpan**.
 
-### 4.3 Struktur Checklist
+> Butir yang dikosongkan tidak tersimpan dan bukan butir selesai. Butir bisa dinilai ulang selama pengajuan masih tahap pemeriksaan/perbaikan.
 
-Checklist disusun bertingkat:
+**Setelah disimpan:** status → **Dalam Pemeriksaan**; bila ada temuan → **Perlu Perbaikan**.
 
-```
-Checklist HSSE
-├── HSSE-01 — Sakelar Keamanan / Safety Switch
-│   ├── Sub-butir pemeriksaan (centang yang sesuai)
-│   └── Hasil penilaian: Sesuai / Temuan / N/A
-├── HSSE-02 — ...
-└── ...
-```
+**Pengajuan siap approval bila:** seluruh butir wajib di **ketiga fungsi** sudah dinilai **dan** tidak ada temuan yang menghalangi.
 
-**Setiap butir terdiri dari:**
+---
 
-1. **Sub-butir pemeriksaan** — daftar centang (checkbox). Centang sub-butir yang sesuai kondisi kendaraan.
-2. **Hasil penilaian** — pilihan radio:
-   - **Sesuai** — kondisi memenuhi standar
-   - **Temuan** — ada ketidaksesuaian (wajib isi deskripsi temuan)
-   - **N/A** — tidak berlaku untuk kendaraan ini
-3. **Catatan** — keterangan tambahan (opsional, kecuali diminta)
-4. **Bukti pemeriksaan** — unggah foto/dokumen pendukung
+## 4. Membuat Temuan
 
-### 4.4 Ketentuan Unggah Bukti
+Temuan **otomatis dibuat** saat Anda memilih **Temuan** pada sebuah butir.
 
-| Aspek | Ketentuan |
+Isi deskripsi yang spesifik:
+
+- ✅ *"APAR sisi kanan belakang kedaluwarsa (03/2026)"*
+- ❌ *"APAR bermasalah"*
+
+Sertakan **foto kondisi awal** — foto ini juga tampil di Berita Acara.
+
+**Status temuan:** Terbuka → Menunggu Verifikasi → Terverifikasi / Tindak Lanjut Ditolak / Dispensasi FTM / Dispensasi Kedaluwarsa.
+
+---
+
+## 5. Memverifikasi Tindak Lanjut
+
+1. Buka **Operasional → Temuan & Verifikasi** → pilih temuan **Menunggu Verifikasi**.
+2. Periksa deskripsi temuan, bukti pemeriksaan, dan **Tindak Lanjut Transportir** (deskripsi + berkas).
+3. Pilih keputusan:
+
+| Tombol | Efek |
 |---|---|
-| Format | PDF, JPG, PNG |
-| Ukuran maks | 5 MB per berkas |
-| Jumlah maks | 10 berkas per unggahan |
+| **Terima Tindak Lanjut** | Temuan → **Terverifikasi**; bila semua temuan beres, pengajuan kembali ke *Dalam Pemeriksaan* |
+| **Tolak Tindak Lanjut** | Temuan → **Tindak Lanjut Ditolak**; **wajib isi catatan** |
 
-> Gambar otomatis dikompresi oleh sistem agar hemat penyimpanan.
+**Siapa boleh verifikasi:** TAD mana pun pada **fungsi yang sama** (tidak harus pembuat temuan), Pengawas fungsi (bila pembuatnya TAD), atau Super Admin.
 
-### 4.5 Menyimpan
-
-Setelah semua butir pada fungsi Anda dinilai, simpan. Progress checklist per fungsi dapat dipantau dari halaman detail pengajuan.
+Tulis catatan penolakan yang bisa ditindaklanjuti, mis. *"Foto tidak memperlihatkan nomor segel — unggah foto close-up segel dan APAR terpasang."*
 
 ---
 
-## 5. Membuat Temuan
+## 6. Pertanyaan Umum
 
-Temuan **dibuat otomatis** ketika Anda memilih hasil **Temuan** pada sebuah butir.
+**Tombol Isi Checklist tidak muncul?** Cek berurutan: jadwal sudah ditetapkan → waktu sudah tiba → status pengajuan masih tahap pemeriksaan → Anda membuka fungsi yang benar.
 
-### 5.1 Yang Perlu Diisi
+**Tidak bisa memverifikasi temuan rekan?** Temuan harus pada fungsi yang sama dengan Anda.
 
-- **Deskripsi temuan** — uraikan ketidaksesuaian secara jelas dan spesifik
-  - Contoh baik: *"APAR di sisi kanan belakang kedaluwarsa (tanggal 03/2026)"*
-  - Contoh kurang baik: *"APAR bermasalah"*
-- **Bukti pemeriksaan** — foto kondisi awal (sangat disarankan, karena foto ini tampil di Berita Acara)
+**Bisa mengubah checklist yang sudah disimpan?** Bisa, selama pengajuan masih tahap pemeriksaan/perbaikan.
 
-### 5.2 Status Temuan
+**Kenapa belum masuk persetujuan?** Masih ada butir wajib yang kosong atau temuan yang menghalangi.
 
-| Status | Arti |
-|---|---|
-| **Terbuka** | Temuan baru, menunggu tindak lanjut transportir |
-| **Menunggu Verifikasi** | Transportir sudah mengirim bukti perbaikan |
-| **Terverifikasi** | Anda menerima tindak lanjut; temuan selesai |
-| **Tindak Lanjut Ditolak** | Bukti ditolak; transportir harus kirim ulang |
-| **Dispensasi FTM** | FTM memberi penundaan perbaikan |
-
-> **Catatan:** Selama masih ada temuan yang belum selesai, pengajuan **tidak bisa** masuk tahap persetujuan.
-
----
-
-## 6. Memverifikasi Tindak Lanjut Temuan
-
-Buka menu **Temuan & Verifikasi** → pilih temuan berstatus **Menunggu Verifikasi**.
-
-### 6.1 Siapa yang Boleh Memverifikasi
-
-| Pihak | Syarat |
-|---|---|
-| **TAD** | Memiliki `inspect_<fungsi>` untuk fungsi temuan tersebut |
-| **Pengawas fungsi** | Memiliki `approve_tad_findings` **dan** pembuat temuan adalah user TAD |
-| **Super Admin** | Selalu boleh (jalan terakhir agar temuan tidak macet) |
-
-> **Penting:** Sejak pembaruan aturan, **semua TAD pada fungsi yang sama** dapat memverifikasi temuan fungsinya — tidak terbatas pada TAD yang membuat temuan. Ini mencegah pemeriksaan macet saat petugas pembuat tidak tersedia.
->
-> TAD **tidak dapat** memverifikasi temuan fungsi lain (TAD HSSE tidak bisa memverifikasi temuan Distribusi).
-
-### 6.2 Tombol Verifikasi
-
-Pada halaman detail temuan, tersedia:
-
-| Tombol | Fungsi |
-|---|---|
-| **Terima Tindak Lanjut** | Menutup temuan (status → Terverifikasi) |
-| **Tolak Tindak Lanjut** | Menolak bukti; **wajib mengisi catatan penolakan** |
-
-Kedua tombol hanya muncul bila temuan berstatus **Menunggu Verifikasi** dan Anda berwenang.
-
-### 6.3 Saat Menolak
-
-Catatan penolakan **wajib** diisi (maks 1000 karakter). Jelaskan alasannya secara jelas agar transportir dapat memperbaiki, misalnya:
-
-> *"Foto tidak memperlihatkan bagian yang diperbaiki. Mohon unggah foto close-up beserta tanggal pengambilan."*
-
----
-
-## 7. Mencetak Laporan Pemeriksaan
-
-Pada halaman detail pengajuan tersedia tombol **Cetak Laporan Pemeriksaan** (muncul bila sudah ada hasil pemeriksaan).
-
-Laporan PDF memuat:
-
-- Data pengajuan (NOPOL, perusahaan, jenis, status, jadwal)
-- Ringkasan pemeriksaan (jumlah butir dinilai, progres, sesuai, temuan, N/A, temuan terbuka)
-- Seluruh butir checklist HSSE, Distribusi, dan QQ beserta sub-butir, hasil, catatan, dan waktu periksa
-
-**Penanda status pada nama berkas:**
-
-| Penanda | Arti |
-|---|---|
-| `[ON-PROSES]` | Checklist belum dinilai seluruhnya |
-| `[DONE]` | Seluruh butir sudah dinilai |
-
-> Laporan ini **tanpa** kolom kode butir dan **tanpa** blok tanda tangan.
-
----
-
-## 8. Dispensasi Temuan
-
-**Anda tidak dapat** memberikan dispensasi. Dispensasi hanya dapat diberikan oleh **FTM** (`dispensate_findings`).
-
-Namun Anda perlu memahami efeknya: temuan berstatus **Dispensasi FTM** tidak menghalangi pengajuan untuk lanjut ke persetujuan, **selama** batas waktunya belum terlewati. Jika batas terlewati, temuan kembali menghalangi approval.
-
----
-
-## 9. Alur Kerja TAD (Cheat Sheet)
-
-```
-Admin menjadwalkan pemeriksaan
-   ↓
-TAD buka "Isi Checklist" (setelah jadwal tiba)
-   ↓
-Untuk setiap butir:
-   ├── Centang sub-butir yang sesuai
-   ├── Pilih hasil: Sesuai / Temuan / N/A
-   ├── (Jika Temuan) isi deskripsi + unggah foto
-   └── (Opsional) isi catatan
-   ↓
-Simpan checklist
-   ↓
-Transportir menindaklanjuti temuan + kirim bukti
-   ↓
-   status temuan: Menunggu Verifikasi
-   ↓
-TAD membuka "Temuan & Verifikasi"
-   ├── Terima  → Terverifikasi
-   └── Tolak   → Tindak Lanjut Ditolak (wajib catatan)
-   ↓
-Semua fungsi selesai & tidak ada temuan terbuka
-   ↓
-Pengajuan lanjut ke persetujuan (Pengawas / FTM)
-```
-
----
-
-## 10. Pertanyaan Umum
-
-**Tombol "Isi Checklist" tidak muncul?**
-
-Periksa berurutan:
-
-1. Apakah jadwal pemeriksaan sudah ditetapkan admin?
-2. Apakah waktu pemeriksaan sudah tiba?
-3. Apakah status pengajuan masih pada tahap pemeriksaan?
-4. Apakah Anda membuka fungsi yang benar? (TAD HSSE hanya melihat tombol untuk checklist HSSE)
-
-**Tidak bisa memverifikasi temuan rekan?**
-
-Pastikan temuan tersebut berada pada **fungsi yang sama** dengan Anda. TAD fungsi lain tidak berwenang.
-
-**Tombol verifikasi tidak muncul padahal temuan "Menunggu Verifikasi"?**
-
-Periksa apakah Anda memiliki permission `inspect_<fungsi>` yang sesuai. Jika tetap tidak muncul, hubungi Super Admin.
-
-**Bisa mengubah hasil checklist yang sudah disimpan?**
-
-Ya — selama pengajuan masih dalam tahap pemeriksaan atau perbaikan, butir dapat dinilai ulang.
-
-**Bisakah saya memberi dispensasi agar pengajuan cepat lanjut?**
-
-Tidak. Dispensasi adalah kewenangan FTM. Sampaikan kebutuhan tersebut kepada FTM.
+**Bisa memberi dispensasi?** Tidak — itu kewenangan FTM.

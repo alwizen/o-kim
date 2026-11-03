@@ -48,13 +48,7 @@ FTM membuka menu "Pengajuan KIM Sementara"
 Status temuan: "Dispensasi FTM"
    └─ Temuan TIDAK LAGI menghalangi approval (selama batas belum lewat)
    ↓
-Approval fungsi (HSSE, Distribusi, QQ) menyetujui
-   ↓
-Status pengajuan: Menunggu Persetujuan
-   ↓
-Approval akhir FTM menyetujui → status: Disetujui
-   ↓
-Petugas menekan "Terbitkan KIM"
+FTM menekan "Terbitkan KIM"
    ↓
 SISTEM MENDETEKSI ADA TEMUAN DISPENSASI:
    ├─ is_dispensation        = true
@@ -96,8 +90,8 @@ FTM membuka menu "Pengajuan KIM Sementara"
 |---|---|
 | Lokasi tombol | Halaman detail temuan (panel Transportir) → header **"Ajukan Dispensasi"** |
 | Field | **Alasan Permohonan** — wajib, min 10, max 1000 karakter |
-| Kapan muncul | Temuan berstatus Terbuka / Ditolak **dan** belum ada permohonan menunggu keputusan |
-| Pantauan | Section **"Permohonan KIM Sementara (Dispensasi)"** pada detail temuan |
+| Kapan muncul | Temuan berstatus Terbuka / Ditolak / Dispensasi **dan** belum ada permohonan menunggu keputusan |
+| Pantauan | Section **"Riwayat Permohonan Dispensasi"** pada detail temuan, dan widget **"Permohonan KIM Sementara Saya"** di dashboard transportir |
 
 **Validasi:**
 
@@ -105,7 +99,7 @@ FTM membuka menu "Pengajuan KIM Sementara"
 |---|---|
 | Bukan pemilik temuan | *"Anda tidak memiliki akses ke temuan ini."* |
 | Status pengajuan bukan pemeriksaan | *"Permohonan dispensasi hanya dapat diajukan selama tahap pemeriksaan."* |
-| Status temuan bukan Terbuka/Ditolak | *"Dispensasi hanya dapat diajukan untuk temuan berstatus terbuka atau ditolak."* |
+| Status temuan bukan Terbuka/Ditolak/Dispensasi | *"Dispensasi hanya dapat diajukan untuk temuan yang dapat ditindaklanjuti."* |
 | Sudah ada permohonan pending | *"Temuan ini sudah memiliki permohonan dispensasi yang menunggu keputusan FTM."* |
 | Alasan < 10 karakter | *"Alasan dispensasi wajib diisi minimal 10 karakter."* |
 
@@ -115,11 +109,12 @@ FTM membuka menu "Pengajuan KIM Sementara"
 
 | Aspek | Keterangan |
 |---|---|
-| Menu | **Operasional → Pengajuan KIM Sementara** (dengan badge jumlah pending) |
+| Menu | **Operasional → Pengajuan KIM Sementara** |
 | Aktor | Hanya role `ftm` **dan** permission `dispensate_findings` |
-| Isi tabel | **Hanya permohonan berstatus Pending** |
+| Isi tabel | **Seluruh** permohonan; gunakan filter **Status → Menunggu FTM** untuk antrean |
 | Tombol **Setujui** | Isi **Batas Perbaikan** (wajib, min H+1) + catatan opsional |
 | Tombol **Tolak** | Isi alasan penolakan (wajib, min 10 karakter) |
+| Tombol **Terbitkan KIM Sementara** | Muncul pada permohonan yang **sudah disetujui** dan pengajuan belum punya kartu KIM |
 
 Efek keputusan:
 
@@ -127,6 +122,7 @@ Efek keputusan:
 |---|---|---|
 | **Setujui** | `approved` | `dispensation` (Dispensasi FTM) + batas perbaikan tersimpan |
 | **Tolak** | `rejected` | Tetap `open` (menghalangi approval) |
+| **Terbitkan KIM Sementara** | `approved` | `dispensation`, pengajuan → **KIM Terbit** (kartu sementara) |
 
 ### 3.4 Notifikasi
 
@@ -338,7 +334,7 @@ Menampilkan daftar kartu yang akan diproses **tanpa mengubah data**.
 **Tabel `findings`**
 | Kolom | Keterangan |
 |---|---|
-| `status` | `open`, `submitted_for_verification`, `verified`, `rejected`, `dispensation` |
+| `status` | `open`, `submitted_for_verification`, `verified`, `rejected`, `dispensation`, `expired` |
 | `dispensation_due_date` | Batas perbaikan |
 | `dispensation_reason` | Alasan dispensasi |
 | `dispensated_by` | User FTM pemberi dispensasi |
@@ -368,7 +364,7 @@ Menampilkan daftar kartu yang akan diproses **tanpa mengubah data**.
 | Komponen | Fungsi |
 |---|---|
 | `DispensationService` | `request`, `approveRequest`, `rejectRequest`, `grant`, `extend`, `updateReason`, `revoke`, `syncKimCard` |
-| `DispensationRequestResource` | Menu FTM **Pengajuan KIM Sementara** (hanya pending) |
+| `DispensationRequestResource` | Menu FTM **Pengajuan KIM Sementara** (seluruh permohonan, difilter status) |
 | `DispensationActions` | Tombol FTM (Perpanjang/Ubah Alasan/Cabut) — tombol *Beri* sudah dihapus |
 | `FindingDispensationRequest` | Model permohonan dispensasi |
 | `DispensationRequestStatus` | Enum `pending` / `approved` / `rejected` |

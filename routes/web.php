@@ -13,6 +13,7 @@ use App\Http\Controllers\InspectionResultAttachmentController;
 use App\Http\Controllers\KimDownloadController;
 use App\Http\Controllers\KimDownloadImageController;
 use App\Http\Controllers\KimValidationController;
+use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\TransporterRegistrationController;
 use App\Http\Controllers\VehicleDocumentDownloadController;
 use App\Http\Controllers\VehicleDocumentPreviewController;
@@ -66,6 +67,12 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::get('/validasi-kim/{token}', [KimValidationController::class, 'show'])
         ->name('kim.validate');
 });
+
+// Panduan penggunaan (dokumentasi/tanpa-gambar dirender sebagai halaman web)
+Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan.index');
+Route::get('/panduan/{slug}', [PanduanController::class, 'show'])
+    ->where('slug', implode('|', array_keys(PanduanController::PANDUAN)))
+    ->name('panduan.show');
 
 Route::middleware(['auth', 'account.approved'])->group(function () {
     Route::get('/pendaftaran/profil', [TransporterRegistrationController::class, 'edit'])

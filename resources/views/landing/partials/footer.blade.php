@@ -22,6 +22,7 @@
                         <li><a href="#layanan" class="transition hover:text-auth-700">Layanan</a></li>
                         <li><a href="#persyaratan" class="transition hover:text-auth-700">Persyaratan</a></li>
                         <li><a href="#panduan" class="transition hover:text-auth-700">Panduan</a></li>
+                        <li><a href="{{ route('panduan.index') }}" class="transition hover:text-auth-700">Panduan Penggunaan</a></li>
                         <li><a href="#faq" class="transition hover:text-auth-700">FAQ</a></li>
                     </ul>
                 </div>

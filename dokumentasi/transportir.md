@@ -1,315 +1,181 @@
 # Panduan Penggunaan O-KIM — Transportir
 
-Panduan ini untuk pengguna dengan role **Transportir** (perusahaan angkutan / pemilik mobil tangki).
+Panduan untuk perusahaan angkutan / pemilik mobil tangki di Fuel Terminal Tegal.
 
-> **Alamat panel:** `/transportir`
-> **Login:** akun harus berstatus **Approved** agar bisa masuk ke panel.
-
----
-
-## 1. Ringkasan Peran
-
-Sebagai Transportir Anda dapat:
-
-1. Mendaftarkan perusahaan (registrasi akun).
-2. Mengelola data kendaraan (mobil tangki) dan dokumennya.
-3. Mengajukan permohonan KIM (Kartu Izin Masuk).
-4. Memantau status pengajuan.
-5. Menindaklanjuti temuan hasil pemeriksaan.
-6. Mengunduh KIM (PDF & gambar kartu).
-7. Mencetak Laporan Pemeriksaan dan Berita Acara.
+> **Aplikasi:** `https://o-kim.ft-tegal.com`
+> **Panel:** `/transportir` · **Login:** akun harus berstatus **Disetujui**
 
 ---
 
-## 2. Registrasi & Aktivasi Akun
+## 1. Yang Bisa Anda Lakukan
 
-### 2.1 Mendaftar
-
-1. Buka halaman registrasi transportir.
-2. Isi data perusahaan dan data akun (email + kata sandi), **atau** daftar memakai akun Google.
-3. Setelah mendaftar, akun berstatus **Pending** (menunggu peninjauan).
-
-### 2.2 Status Akun
-
-| Status | Arti | Yang Bisa Dilakukan |
-|---|---|---|
-| **Pending** | Menunggu peninjauan admin | Hanya melengkapi profil perusahaan (`/registrasi/profil`) |
-| **Approved** | Disetujui | Dapat masuk ke panel `/transportir` |
-| **Rejected** | Ditolak | Tidak bisa masuk; hubungi admin |
-| **Suspended** | Dinonaktifkan | Tidak bisa masuk |
-
-> Selama status masih **Pending**, Anda hanya diarahkan ke halaman kelengkapan profil perusahaan. Setelah admin memverifikasi, barulah panel transportir terbuka.
-
-### 2.3 Melengkapi Profil Perusahaan
-
-Lengkapi data perusahaan dengan benar, lalu simpan. Data ini yang dipakai pada dokumen resmi (Laporan Pemeriksaan & Berita Acara).
+1. Mendaftar & melengkapi profil perusahaan
+2. Mengelola kendaraan dan dokumennya
+3. Mengajukan KIM dan memantau statusnya
+4. Menindaklanjuti temuan pemeriksaan
+5. Mengajukan KIM Sementara (dispensasi)
+6. Mengunduh KIM serta mencetak laporan & berita acara
 
 ---
 
-## 3. Menu di Panel Transportir
+## 2. Mendaftar Akun
+
+1. Buka **`https://o-kim.ft-tegal.com`**.
+2. Klik **Daftar** di kanan atas.
+3. Isi **Nama PIC**, **Email**, **Nomor Telepon** (opsional), **Kata Sandi**, dan **Ulangi Kata Sandi** — atau klik **Daftar dengan Google**.
+4. Setelah submit, Anda diarahkan ke form **Profil Perusahaan**.
+5. Isi **Nama PIC**, **Nama Perusahaan**, **Alamat**, **Telepon**, dan **NIB** (opsional) — lalu kirim.
+6. Data terkunci setelah dikirim. Anda masuk halaman **menunggu verifikasi admin**.
+
+> **Jangan campur jalur login:** akun Google tidak punya kata sandi, dan email yang sudah terdaftar lewat email+sandi tidak bisa memakai jalur Google.
+
+---
+
+## 3. Status Akun
+
+| Status | Arti |
+|---|---|
+| **Menunggu Verifikasi** | Baru daftar; hanya bisa melengkapi profil lalu menunggu |
+| **Disetujui** | Bisa masuk panel `/transportir` |
+| **Ditolak / Ditangguhkan** | Tidak bisa masuk; hubungi admin |
+
+---
+
+## 4. Masuk & Keluar
+
+1. Buka halaman utama → klik **Masuk → Transportir**, atau langsung ke **`/masuk`**.
+2. Isi **Email** dan **Kata Sandi** (atau **Masuk dengan Google**), lalu klik **Masuk**.
+3. Lupa sandi? Klik **Lupa kata sandi** (hanya untuk akun email+sandi).
+4. Keluar lewat menu profil di pojok kanan atas.
+
+---
+
+## 5. Mengenal Panel
+
+Menu yang tersedia:
 
 | Grup | Menu | Fungsi |
 |---|---|---|
-| Data & Profil | **Kendaraan** | Daftar mobil tangki + dokumen |
-| Operasional KIM | **Pengajuan KIM** | Membuat & memantau permohonan KIM, cetak dokumen |
-| Operasional KIM | **Temuan & Tindak Lanjut** | Kirim bukti tindak lanjut, ajukan dispensasi |
-| Operasional KIM | **KIM Terbit** | Melihat & mengunduh KIM yang sudah terbit |
+| **Data & Profil** | Profil Perusahaan | Data perusahaan (dipakai di dokumen resmi) |
+| | Kendaraan | Daftar mobil tangki + dokumen |
+| **Operasional KIM** | Pengajuan KIM | Buat & pantau permohonan KIM |
+| | Temuan & Tindak Lanjut | Kirim bukti perbaikan, ajukan dispensasi |
+| | KIM Terbit | Lihat & unduh KIM |
 
-> 📖 **Fungsi lengkap setiap menu & peta akses per role:** [menu.md](menu.md)
+Dashboard menampilkan ringkasan kendaraan, pengajuan berjalan, temuan, dan pengingat dokumen kedaluwarsa.
 
 ---
 
-## 4. Mengelola Kendaraan
+## 6. Mengelola Kendaraan
 
-### 4.1 Menambah Kendaraan
+1. Buka **Data & Profil → Kendaraan** → **Tambah**.
+2. Isi **NOPOL** (wajib, harus unik), lalu merek, tahun, karoseri, nomor rangka/mesin, dan spesifikasi teknis sesuai form.
+3. Simpan, lalu buka kendaraan tersebut → bagian **Dokumen** → **Unggah Dokumen**.
+4. Unggah **STNK**, **KEUR**, dan **TERA** (wajib). Format PDF/JPG/PNG, maks **5 MB** per berkas, sertakan tanggal kedaluwarsa.
 
-Buka **Kendaraan → Tambah**. Isi data:
+**Status dokumen:** Menunggu Verifikasi → Terverifikasi / Ditolak (unggah ulang bila ditolak).
 
-- Nomor Polisi (NOPOL) — wajib, format dinormalisasi otomatis
-- Merek / tipe kendaraan
-- Nomor rangka
-- Data karoseri (kapasitas tangki, jenis angkutan, dll.)
-- Data teknis lain yang diminta formulir
+> Seluruh dokumen wajib **harus Terverifikasi** sebelum admin bisa menjadwalkan pemeriksaan.
 
-### 4.2 Mengunggah Dokumen Kendaraan
+---
 
-Pada halaman kendaraan, buka bagian **Dokumen** lalu unggah:
+## 7. Mengajukan KIM
 
-| Dokumen | Keterangan |
+1. Buka **Operasional KIM → Pengajuan KIM** → **Tambah**.
+2. Pilih **Kendaraan** (hanya yang dokumen wajibnya Terverifikasi dan belum punya pengajuan berjalan) dan **Jenis** (Baru / Perpanjangan) → simpan sebagai **Draf**.
+3. Buka detail pengajuan → klik **Kirim Pengajuan** → konfirmasi.
+
+**Status pengajuan:** Draf → Terkirim → Dalam Pemeriksaan → (Perlu Perbaikan) → Menunggu Persetujuan → Disetujui → KIM Terbit. Status **Ditolak** disertai alasan di detail pengajuan.
+
+---
+
+## 8. Menindaklanjuti Temuan
+
+1. Buka **Temuan & Tindak Lanjut** → klik temuan.
+2. Periksa **deskripsi temuan** dan **bukti pemeriksaan** dari petugas.
+3. Klik **Kirim Tindak Lanjut** → isi deskripsi perbaikan + unggah bukti (maks 5 berkas, 5 MB/berkas).
+4. Tunggu verifikasi petugas.
+
+**Status temuan:** Terbuka → Menunggu Verifikasi → Terverifikasi / Tindak Lanjut Ditolak (kirim ulang) / Dispensasi FTM.
+
+> Tips: foto harus jelas memperlihatkan bagian yang diperbaiki, dan deskripsi menyebut apa yang diperbaiki.
+
+---
+
+## 9. Mengajukan KIM Sementara (Dispensasi)
+
+Gunakan bila perbaikan butuh waktu (mis. suku cadang indent) sementara operasional mendesak. Keputusan sepenuhnya di FTM.
+
+1. Buka detail temuan → klik **Ajukan Dispensasi**.
+2. Isi **Alasan Permohonan** (minimal 10 karakter) → kirim.
+3. Pantau statusnya di dashboard (**Permohonan KIM Sementara Saya**) atau di detail temuan.
+
+| Status Permohonan | Arti |
 |---|---|
-| **STNK** | Wajib, punya tanggal kedaluwarsa |
-| **KEUR** | Wajib, punya tanggal kedaluwarsa |
-| **TERA** | Wajib, punya tanggal kedaluwarsa |
+| Menunggu FTM | Belum diputuskan |
+| Disetujui | Temuan menjadi **Dispensasi FTM** |
+| Ditolak | Lihat catatan FTM; boleh ajukan ulang |
 
-**Ketentuan unggah:**
+> 📖 Detail alur: [kim-sementara.md](kim-sementara.md)
 
-- Format: **PDF, JPG, PNG**
-- Ukuran maksimum: **5 MB** per berkas
-- Isi tanggal kedaluwarsa sesuai dokumen asli
+---
 
-### 4.3 Status Verifikasi Dokumen
+## 10. KIM Terbit
 
-| Status | Arti |
+Buka **KIM Terbit** untuk melihat nomor KIM, masa berlaku, jenis (Normal/Sementara), dan status (Aktif/Kedaluwarsa/Dicabut).
+
+Pada detail KIM tersedia **Unduh PDF** dan **Unduh Gambar (Kartu ATM)**.
+
+**Masa berlaku** = yang paling awal dari: kedaluwarsa dokumen wajib, batas sistem, atau batas dispensasi.
+
+Bila KIM sementara sudah kedaluwarsa, buka **Pengajuan KIM** lalu klik **Ajukan Ulang** (jenis otomatis *Perpanjangan*).
+
+---
+
+## 11. Cetak Laporan & Berita Acara
+
+Dari detail pengajuan:
+
+| Tombol | Muncul bila |
 |---|---|
-| **Menunggu Verifikasi** | Baru diunggah, belum diperiksa admin |
-| **Terverifikasi** | Disetujui admin — dokumen sah |
-| **Ditolak** | Ditolak admin (ada alasan); unggah ulang perbaikan |
-
-> **Penting:** Ketiga dokumen wajib (STNK, KEUR, TERA) **harus berstatus Terverifikasi** sebelum jadwal pemeriksaan bisa ditetapkan oleh petugas. Jika ada yang masih *Menunggu Verifikasi*, proses akan tertahan.
+| **Cetak Laporan Pemeriksaan** | Sudah ada hasil checklist |
+| **Cetak Berita Acara** | Ada temuan yang sudah ditindaklanjuti & terverifikasi |
 
 ---
 
-## 5. Mengajukan KIM
-
-### 5.1 Membuat Pengajuan
-
-Buka **Pengajuan KIM → Tambah**:
-
-1. Pilih **kendaraan** yang akan diajukan.
-2. Pilih **jenis pengajuan** (mis. Baru / Perpanjangan).
-3. Simpan sebagai **Draf**.
-
-### 5.2 Mengirim Pengajuan
-
-Dari halaman detail pengajuan atau tabel, tekan **Kirim Pengajuan**.
-
-**Syarat kirim:** seluruh dokumen wajib kendaraan sudah diunggah. Jika belum lengkap, pengiriman ditolak dengan pesan kesalahan.
-
-Setelah terkirim, status berubah menjadi **Terkirim** dan menunggu admin menjadwalkan pemeriksaan.
-
-### 5.3 Status Pengajuan
-
-| Status | Arti |
-|---|---|
-| **Draf** | Belum dikirim, masih bisa diubah |
-| **Terkirim** | Sudah dikirim, menunggu penjadwalan pemeriksaan |
-| **Dalam Pemeriksaan** | Petugas sedang melakukan pemeriksaan checklist |
-| **Perlu Perbaikan** | Ada temuan; Anda harus menindaklanjuti |
-| **Menunggu Persetujuan** | Semua fungsi sudah setuju, menunggu approval akhir FTM |
-| **Disetujui** | Disetujui penuh, siap diterbitkan KIM |
-| **Ditolak** | Ditolak (alasan tertera pada pengajuan) |
-| **KIM Terbit** | KIM sudah diterbitkan |
-| **Dibatalkan** | Pengajuan dibatalkan |
-
----
-
-## 6. Menindaklanjuti Temuan
-
-Jika petugas menemukan ketidaksesuaian saat pemeriksaan, status pengajuan menjadi **Perlu Perbaikan** dan muncul daftar **temuan** pada halaman pengajuan.
-
-### 6.1 Mengirim Tindak Lanjut
-
-1. Buka pengajuan → bagian **Temuan**.
-2. Pilih temuan, lalu tekan **Kirim Tindak Lanjut**.
-3. Isi **uraian perbaikan** yang sudah dilakukan.
-4. Unggah **bukti** (foto/dokumen).
-
-**Ketentuan bukti:**
-
-- Format: **PDF, JPG, PNG**
-- Maksimum **5 berkas** per tindak lanjut
-- Ukuran maksimum **5 MB** per berkas
-
-### 6.2 Setelah Dikirim
-
-Status temuan menjadi **Menunggu Verifikasi**. Petugas fungsi terkait akan memeriksa bukti Anda:
-
-- **Diterima** → status temuan **Terverifikasi** (temuan ditutup)
-- **Ditolak** → status temuan **Tindak Lanjut Ditolak**, disertai catatan alasan. Anda harus mengirim ulang tindak lanjut.
-
-> Selama masih ada temuan yang belum selesai, pengajuan tidak dapat dilanjutkan ke tahap persetujuan.
-
-### 6.3 Status Temuan
-
-| Status | Arti |
-|---|---|
-| **Terbuka** | Temuan baru, belum ditindaklanjuti |
-| **Menunggu Verifikasi** | Bukti sudah dikirim, menunggu diperiksa petugas |
-| **Terverifikasi** | Tindak lanjut diterima, temuan selesai |
-| **Tindak Lanjut Ditolak** | Bukti ditolak, wajib kirim ulang |
-| **Dispensasi FTM** | Diberi penundaan perbaikan oleh FTM (lihat bagian 6.4 & 8) |
-
-### 6.4 Mengajukan Dispensasi (KIM Sementara)
-
-Bila temuan **tidak bisa diselesaikan segera** — misalnya harus inden suku cadang — Anda dapat memohon penundaan perbaikan kepada FTM.
-
-**Langkah:**
-
-1. Buka **Temuan & Tindak Lanjut** → pilih temuan.
-2. Pada detail temuan, tekan tombol **"Ajukan Dispensasi"**.
-3. Isi **Alasan Permohonan** (minimal 10 karakter, maks 1000). Contoh:
-   > *"Perbaikan menunggu suku cadang impor, estimasi tiba dalam 2 minggu."*
-4. Kirim. Permohonan berstatus **Menunggu FTM**.
-
-**Ketentuan:**
-
-| Aspek | Keterangan |
-|---|---|
-| Muncul saat | Temuan berstatus **Terbuka** atau **Tindak Lanjut Ditolak**, dan belum ada permohonan menunggu |
-| Jumlah permohonan | **Satu** permohonan aktif per temuan |
-| Selama menunggu | Temuan **tetap dianggap terbuka** — pengajuan belum bisa lanjut ke persetujuan |
-| Bila disetujui | Temuan menjadi **Dispensasi FTM**, Anda menerima email berisi **batas perbaikan** |
-| Bila ditolak | Temuan tetap **Terbuka**; Anda menerima email berisi alasannya dan **boleh mengajukan ulang** |
-
-> Pantau status permohonan pada section **"Permohonan KIM Sementara (Dispensasi)"** di detail temuan.
-
----
-
-## 7. Mengunduh KIM
-
-Setelah KIM terbit, buka menu **KIM Terbit**. Tersedia dua tombol:
-
-| Tombol | Hasil |
-|---|---|
-| **Unduh KIM** | Berkas PDF kartu KIM |
-| **Unduh Gambar (Kartu ATM)** | Berkas PNG ukuran 85,6 × 54 mm |
-
-> Untuk tombol **Unduh Gambar**, cetak dengan skala **100%** — jangan gunakan opsi *"fit to page"* agar ukuran kartu sesuai aslinya.
-
-Anda hanya dapat melihat KIM milik perusahaan Anda sendiri.
-
----
-
-## 8. KIM Sementara (Dispensasi)
-
-Apabila FTM memberikan **dispensasi** atas temuan (perbaikan boleh ditunda), KIM tetap dapat diterbitkan namun berstatus **KIM Sementara**.
-
-| Aspek | Keterangan |
-|---|---|
-| Penanda | Kartu bertuliskan **"KARTU IZIN MASUK (KIM) — SEMENTARA"** |
-| Alasan | Terdapat temuan yang sedang dalam dispensasi FTM |
-| Masa berlaku | Mengikuti **batas tanggal dispensasi** (bukan masa berlaku normal) |
-| Setelah batas lewat | KIM otomatis berstatus **Kedaluwarsa** dan tidak berlaku |
-
-> **Perhatian:** KIM Sementara bukan pengganti kewajiban perbaikan. Segera lakukan perbaikan sebelum tanggal batas dispensasi. Jika terlampaui, KIM tidak berlaku dan Anda akan menerima notifikasi.
-
-> 📖 **Penjelasan lengkap alur KIM Sementara:** [kim-sementara.md](kim-sementara.md)
-
----
-
-## 9. Mencetak Dokumen
-
-Pada halaman detail pengajuan, tersedia tombol cetak berikut (muncul otomatis bila syaratnya terpenuhi):
-
-### 9.1 Cetak Laporan Pemeriksaan
-
-- Tombol **Cetak Laporan Pemeriksaan**
-- Muncul bila sudah ada hasil pemeriksaan checklist
-- Menghasilkan PDF berisi seluruh butir checklist HSSE, Distribusi, dan QQ beserta hasil dan catatannya
-- Nama berkas menyertakan status kelengkapan:
-  - `...[ON-PROSES].pdf` — checklist belum terisi seluruhnya
-  - `...[DONE].pdf` — seluruh butir sudah dinilai
-
-### 9.2 Cetak Berita Acara
-
-- Tombol **Cetak Berita Acara**
-- Muncul **hanya bila** sudah ada temuan yang **ditindaklanjuti dan terverifikasi**
-- Menghasilkan PDF 2 halaman:
-  - **Halaman 1** — Berita Acara (No. BA memakai nomor pengajuan, tabel temuan, keterangan "Sudah ditindaklanjuti")
-  - **Halaman 2** — Lampiran dokumentasi: foto temuan awal & foto verifikasi tindak lanjut berdampingan, lengkap dengan tanggal masing-masing
-
----
-
-## 10. Notifikasi
-
-Anda akan menerima notifikasi (dalam aplikasi dan/atau email) pada tahap:
-
-1. Registrasi transportir ditinjau/disetujui.
-2. Dokumen kendaraan diverifikasi atau ditolak.
-3. Jadwal pemeriksaan ditetapkan atau diubah.
-4. Tindak lanjut temuan diterima atau ditolak.
-5. Pengajuan disetujui/ditolak per fungsi.
-6. Approval akhir dari FTM.
-7. KIM diterbitkan.
-8. Dispensasi diberikan.
-9. Batas dispensasi telah terlampaui (KIM sementara tidak berlaku).
-
----
-
-## 11. Alur Singkat (Cheat Sheet)
+## 12. Alur Singkat
 
 ```
-Registrasi → Approved
+Daftar → isi profil → tunggu disetujui
    ↓
-Tambah Kendaraan + Unggah STNK/KEUR/TERA
+Masuk → tambah kendaraan + unggah STNK/KEUR/TERA
    ↓
-Admin verifikasi dokumen (harus Terverifikasi)
+Admin verifikasi dokumen
    ↓
-Buat Pengajuan → Kirim  →  status: Terkirim
+Buat pengajuan → Kirim
    ↓
-Admin menjadwalkan pemeriksaan
+Admin jadwalkan → TAD isi checklist
+   ├── tanpa temuan → lanjut approval
+   └── ada temuan → kirim tindak lanjut (+ bukti)
+             └── bila butuh waktu → Ajukan Dispensasi → FTM
    ↓
-Petugas (TAD) mengisi checklist
+Approval Pengawas (HSSE ∥ Distribusi ∥ QQ) → Approval FTM
    ↓
-   ├── Tidak ada temuan → lanjut approval
-   └── Ada temuan → status: Perlu Perbaikan
-            ↓
-       Kirim tindak lanjut + bukti
-            ↓
-       Petugas verifikasi (Terima / Tolak)
-            ↓
-Approval fungsi (HSSE, Distribusi, QQ)  →  Menunggu Persetujuan
-   ↓
-Approval akhir FTM  →  Disetujui
-   ↓
-KIM diterbitkan  →  Unduh PDF / Gambar
+KIM terbit → unduh PDF / gambar
 ```
 
 ---
 
-## 12. Pertanyaan Umum
+## 13. Pertanyaan Umum
 
-**Tidak bisa masuk panel setelah daftar?**
-Akun Anda masih **Pending**. Selesaikan profil perusahaan dan tunggu persetujuan admin.
+**Tidak bisa masuk panel?** Akun masih *Menunggu Verifikasi* — pastikan profil perusahaan sudah dikirim.
 
-**Tombol "Kirim Pengajuan" tidak bisa ditekan?**
-Pastikan seluruh dokumen wajib (STNK, KEUR, TERA) sudah diunggah.
+**Tombol Kirim Pengajuan tidak aktif?** Dokumen wajib belum semuanya **Terverifikasi**.
 
-**Pemeriksaan tidak kunjung dijadwalkan?**
-Cek status dokumen kendaraan. Jika masih *Menunggu Verifikasi*, admin belum bisa menetapkan jadwal.
+**Pemeriksaan tidak dijadwalkan?** Cek status dokumen; jika masih *Menunggu Verifikasi*, admin belum bisa menjadwalkan.
 
-**Tindak lanjut temuan saya ditolak terus?**
-Perhatikan **catatan penolakan** pada temuan. Pastikan foto bukti jelas, memperlihatkan bagian yang diperbaiki, dan uraian sesuai kondisi sebenarnya.
+**Tindak lanjut ditolak terus?** Baca **catatan penolakan** dan unggah bukti yang lebih jelas.
 
-**KIM saya berstatus Kedaluwarsa padahal baru terbit?**
-Kemungkinan itu **KIM Sementara** dan batas dispensasi sudah terlewati. Segera selesaikan perbaikan dan minta petugas memverifikasi temuan.
+**KIM cepat kedaluwarsa?** Kemungkinan **KIM Sementara** dan batas dispensasi terlewat — ajukan Perpanjangan lewat **Ajukan Ulang**.
+
+**Bisa 2 pengajuan untuk 1 kendaraan?** Tidak; kendaraan tidak muncul di pilihan sampai pengajuan sebelumnya selesai.

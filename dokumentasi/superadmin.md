@@ -1,381 +1,190 @@
 # Panduan Penggunaan O-KIM — Super Admin
 
-Panduan ini untuk pengguna dengan role **Super Admin** — pengelola sistem dengan akses tertinggi.
+Panduan untuk **Super Admin** — pengelola sistem dengan akses tertinggi di Fuel Terminal Tegal.
 
-> **Alamat panel:** `/admin`
-> **Role:** `super_admin`
+> **Aplikasi:** `https://o-kim.ft-tegal.com`
+> **Panel:** `/admin` · **Role:** `super_admin`
 > **Hak akses:** seluruh permission **kecuali** `dispensate_findings`
 
 ---
 
-## 1. Ringkasan Peran
+## 1. Peran & Batasan
 
 Super Admin mengelola **sistem dan pengguna**, bukan pengambil keputusan operasional.
 
-Super Admin **dapat**:
-
-- Mengelola akun internal & role
-- Mengelola master data (jenis dokumen, checklist, kendaraan, transporter)
-- Mengatur pengaturan aplikasi (masa berlaku KIM, format penomoran, notifikasi)
-- Mengatur notifikasi email
-- Mengakses seluruh fitur operasional
-- Memverifikasi tindak lanjut temuan (sebagai **jalan terakhir**)
-
-Super Admin **tidak dapat**:
-
-- Memberi **dispensasi temuan** — ini **eksklusif FTM** (`dispensate_findings`)
-
----
-
-## 2. Batasan Penting
+**Tidak dapat:**
 
 | Batasan | Alasan |
 |---|---|
 | **Tidak bisa dispensasi temuan** | Keputusan bisnis: dispensasi wajib melalui FTM |
-| Tidak mengisi checklist | Tugas TAD fungsi terkait |
+| Tidak mengisi checklist | Tugas TAD |
 | Tidak memberi approval fungsi/final | Tugas Pengawas & FTM |
 
-> Meski secara teknis dapat mengakses hampir semua menu, gunakan hak tersebut sesuai peran. Penyalahgunaan akan tercatat pada jejak audit (pembuat approval, verifikator, dsb.).
+Super Admin **selalu boleh** memverifikasi tindak lanjut temuan (jalan terakhir bila temuan macet).
 
 ---
 
-## 3. Menu di Panel Admin
+## 2. Masuk ke Panel
 
-| Grup | Menu | Fungsi |
-|---|---|---|
-| **Operasional** | Pengajuan & Pemeriksaan | Seluruh pengajuan |
-| | Temuan & Verifikasi | Seluruh temuan |
-| | KIM Terbit | Seluruh KIM |
-| **Master Data** | Kendaraan | Data kendaraan |
-| | Jenis Dokumen | Master jenis dokumen |
-| | Checklist Pemeriksaan | Master checklist |
-| **User Manajemen** | Pengguna Internal | Akun petugas internal |
-| | Role & Permission | Role & hak akses |
-| | Verifikasi Transportir | Perusahaan transportir |
-| | Notifikasi Email | Pengaturan email per event |
-| | Pengaturan | Pengaturan sistem (halaman khusus) |
+Buka **`https://o-kim.ft-tegal.com/admin/login`** → isi **Email** dan **Kata Sandi** → **Masuk**.
 
-> 📖 **Fungsi lengkap setiap menu & peta akses per role:** [menu.md](menu.md)
+Bila belum ada akun Super Admin, buat lewat konsol:
+
+```bash
+php artisan okim:make-admin email@domain.com --name="Nama" --role=super_admin --password="rahasia123"
+```
 
 ---
 
-## 4. Mengelola Pengguna Internal
+## 3. Mengelola Pengguna Internal
 
-Buka **User Manajemen → Pengguna Internal**.
+Buka **User Manajemen → Pengguna Internal** → **Tambah**.
 
-### 4.1 Membuat Akun Petugas
-
-1. Tekan **Tambah**
-2. Isi **nama**, **email**, **kata sandi**
-3. Pilih **role** (satu atau lebih)
-4. Set **status akun** = **Approved**
-5. Simpan
-
-Akun hanya dapat masuk panel bila statusnya **Approved**.
-
-### 4.2 Role yang Tersedia
-
-| Role | Peran |
+| Field | Keterangan |
 |---|---|
-| `super_admin` | Pengelola sistem |
-| `admin_verifikasi` | Verifikasi dokumen & jadwal |
-| `hsse` | TAD HSSE — isi checklist |
-| `distribusi` | TAD Distribusi — isi checklist |
-| `qq` | TAD QQ — isi checklist |
-| `pengawas_hsse` | Pengawas HSSE |
-| `pengawas_distribusi` | Pengawas Distribusi |
-| `pengawas_qq` | Pengawas QQ |
-| `ftm` | Fuel Terminal Manager |
-| `transportir` | Perusahaan angkutan (panel terpisah) |
+| Nama, Jabatan | Jabatan dipakai pada dokumen resmi |
+| Email, Kata Sandi | Password minimal 8 karakter |
+| Role | Bisa lebih dari satu |
+| Status Akun | Pilih **Disetujui** agar bisa masuk |
 
-### 4.3 Status Akun
+**Pendaftaran mandiri petugas** lewat `/daftar/internal` masuk dengan status **Menunggu Verifikasi** — setujui dengan mengubah **Status Akun → Disetujui**.
 
-| Status | Arti |
-|---|---|
-| **Pending** | Menunggu peninjauan (tidak bisa masuk) |
-| **Approved** | Aktif (bisa masuk) |
-| **Rejected** | Ditolak |
-| **Suspended** | Dinonaktifkan sementara |
-
-### 4.4 Field Jabatan
-
-Setiap pengguna punya field **`jabatan`**. Isi dengan benar karena dipakai pada dokumen resmi.
+**Role tersedia:** `super_admin`, `admin_verifikasi`, `hsse`, `distribusi`, `qq`, `pengawas_hsse`, `pengawas_distribusi`, `pengawas_qq`, `ftm`, `transportir`.
 
 ---
 
-## 5. Mengelola Role & Permission
+## 4. Role & Permission
 
 Buka **User Manajemen → Role & Permission**.
 
-Setiap role dapat diberi permission berikut:
+**Susunan bawaan:**
 
-| Permission | Arti |
+| Role | Permission inti |
 |---|---|
-| `access_admin_panel` | Akses panel admin |
-| `manage_users` | Kelola pengguna |
-| `review_transporter_registrations` | Tinjau pendaftaran transportir |
-| `manage_transporters` | Kelola transporter |
-| `manage_vehicles` | Kelola kendaraan |
-| `manage_document_types` | Kelola jenis dokumen |
-| `verify_documents` | Verifikasi dokumen kendaraan |
-| `manage_checklists` | Kelola checklist pemeriksaan |
-| `view_applications` | Lihat pengajuan |
-| `inspect_hsse` / `inspect_distribusi` / `inspect_qq` | Isi checklist fungsi |
-| `manage_findings` | Kelola temuan |
-| `view_findings` | Lihat temuan |
-| `verify_finding_actions` | Verifikasi tindak lanjut temuan |
-| `approve_hsse` / `approve_distribusi` / `approve_qq` | Approval pengajuan fungsi |
-| `approve_tad_findings` | Verifikasi temuan dari user TAD |
-| `approve_final` | Approval akhir |
-| `dispensate_findings` | **Dispensasi temuan (eksklusif FTM)** |
-| `issue_kim` | Terbitkan KIM |
-| `view_kim_cards` | Lihat kartu KIM |
-| `schedule_inspection` | Jadwalkan pemeriksaan |
-| `view_audit_logs` | Lihat audit log |
-| `manage_settings` | Pengaturan sistem |
-| `manage_notification_settings` | Pengaturan notifikasi |
-| `manage_roles` | Kelola role |
+| `super_admin` | Semua **kecuali** `dispensate_findings` |
+| `admin_verifikasi` | Registrasi transportir, kendaraan, verifikasi dokumen, checklist, jadwal, terbit KIM |
+| `hsse` / `distribusi` / `qq` (TAD) | `view_applications`, `inspect_<fungsi>`, `manage_findings`, `view_findings` |
+| `pengawas_*` | `verify_finding_actions`, `approve_tad_findings`, `approve_<fungsi>`, `issue_kim`, `view_kim_cards` |
+| `ftm` | `approve_final`, `issue_kim`, `view_kim_cards`, `verify_documents`, `dispensate_findings` |
 
-> Saat mengubah permission sebuah role, pengguna dengan role tersebut perlu **login ulang** agar perubahan berlaku (cache permission).
+> Setelah mengubah permission, minta pengguna **login ulang** (permission di-cache).
 
 ---
 
-## 6. Pengaturan Sistem
+## 5. Pengaturan Sistem
 
-Buka menu **Pengaturan** (memerlukan `manage_settings`).
+Buka **Master Data → Pengaturan Sistem**.
 
-### 6.1 Masa Berlaku KIM
-
-| Field | Keterangan |
+| Bagian | Isi |
 |---|---|
-| **Masa Berlaku (bulan)** | Batas **maksimum** masa berlaku KIM (default 6) |
-
-> Tanggal akhir KIM diambil yang **paling awal** antara nilai ini dengan kedaluwarsa dokumen wajib. Bila ada dispensasi, dibatasi pula oleh batas dispensasi.
-
-### 6.2 Penomoran KIM
-
-| Field | Keterangan |
-|---|---|
-| **Prefix** | Awalan nomor KIM |
-| **Format Periode** | Format periode pada nomor |
-| **Digit Urutan** | Jumlah digit nomor urut |
-
-Tersedia **Pratinjau Nomor KIM** untuk melihat hasil format sebelum disimpan.
-
-### 6.3 Penomoran Pengajuan
-
-| Field | Keterangan |
-|---|---|
-| **Prefix** | Awalan nomor pengajuan |
-| **Format Periode** | Format periode |
-| **Digit Urutan** | Jumlah digit urut |
-
-Tersedia **Pratinjau Nomor Pengajuan**.
-
-> Nomor pengajuan dipakai sebagai **Nomor Berita Acara (BA)**.
-
-### 6.4 Notifikasi
-
-| Field | Keterangan |
-|---|---|
-| **Peringatan Kedaluwarsa (hari)** | Rentang hari sebelum dokumen/KIM kedaluwarsa untuk memicu pengingat email harian (1–365) |
+| **Masa Berlaku KIM** | Batas maksimum (bulan, default 6) — tanggal akhir tetap diambil yang paling awal dengan kedaluwarsa dokumen wajib |
+| **Penomoran KIM** | Prefix, format periode, digit urutan (+ pratinjau) |
+| **Penomoran Pengajuan** | Prefix, format periode, digit urutan (+ pratinjau); nomor ini dipakai sebagai nomor Berita Acara |
+| **Notifikasi** | Peringatan kedaluwarsa (hari) |
 
 ---
 
-## 7. Pengaturan Notifikasi Email
+## 6. Notifikasi Email
 
-Buka **User Manajemen → Notifikasi Email** (khusus Super Admin + `manage_notification_settings`).
+Buka **User Manajemen → Notifikasi Email**.
 
-Fitur:
-
-- Daftar **event** notifikasi
-- Pilih **role penerima** per event
-- **Aktifkan/nonaktifkan** pengiriman email per event
-
-> Pengaturan ini mengatur pengiriman **email**. Notifikasi dalam aplikasi tetap berjalan.
+- Event dikelompokkan: **Transportir**, **Internal**, **Akun & Keamanan**.
+- Per event: pilih **role penerima** dan aktifkan/nonaktifkan **email**.
+- Pengaturan ini hanya untuk email. **Notifikasi lonceng panel selalu aktif.**
 
 ---
 
-## 8. Master Data
+## 7. Master Data
 
-### 8.1 Jenis Dokumen
-
-Menu **Jenis Dokumen** — mengatur jenis dokumen kendaraan.
-
-Field penting:
-
-| Field | Keterangan |
+| Menu | Isi |
 |---|---|
-| Kode | Mis. `STNK`, `KEUR`, `TERA` |
-| Nama | Nama tampilan |
-| **Wajib** (`is_required`) | Harus diunggah & terverifikasi sebelum penjadwalan |
-| **Punya Kedaluwarsa** (`has_expiry_date`) | Memengaruhi perhitungan masa berlaku KIM |
-| Aktif | Hanya yang aktif dipakai |
+| **Jenis Dokumen** | Kode, nama, **wajib untuk pengajuan KIM**, **memiliki tanggal kedaluwarsa**, aktif |
+| **Checklist Pemeriksaan** | Checklist, butir (items), dan sub-butir (points) per fungsi |
+| **Kendaraan** | Data kendaraan + dokumen |
+| **Verifikasi Transportir** | Tinjau pendaftaran perusahaan (sama seperti Admin Verifikasi) |
 
-> Mengubah `is_required`/`has_expiry_date` berdampak langsung pada syarat penjadwalan dan masa berlaku KIM.
-
-### 8.2 Checklist Pemeriksaan
-
-Menu **Checklist Pemeriksaan** — kelola butir & sub-butir pemeriksaan (detail sama seperti panduan Admin Verifikasi).
-
-### 8.3 Kendaraan
-
-Menu **Kendaraan** — melihat/mengelola kendaraan beserta dokumennya.
-
-### 8.4 Verifikasi Transportir
-
-Menu **Verifikasi Transportir** — meninjau perusahaan yang mendaftar.
+> Mengubah `wajib`/`kedaluwarsa` pada Jenis Dokumen berdampak langsung pada syarat penjadwalan dan masa berlaku KIM.
 
 ---
 
-## 9. Verifikasi Temuan (Jalan Terakhir)
+## 8. Verifikasi Temuan (Jalan Terakhir)
 
-Super Admin **selalu boleh** memverifikasi tindak lanjut temuan. Ini disediakan sebagai pengaman agar temuan tidak pernah macet permanen.
-
-### Kapan Digunakan
-
-Gunakan hanya bila:
-
-- Temuan tercatat dibuat oleh akun **non-TAD** (mis. dibuat Super Admin saat uji coba), sehingga Pengawas tidak berwenang
-- Petugas fungsi terkait tidak tersedia dan penyelesaian mendesak
-
-### Aturan Verifikasi Temuan
+Gunakan bila temuan dibuat akun non-TAD atau petugas fungsi terkait tidak tersedia.
 
 | Pihak | Kewenangan |
 |---|---|
-| TAD | Semua temuan pada **fungsinya sendiri** |
-| Pengawas | Temuan yang **pembuatnya user TAD** pada fungsinya |
+| TAD | Temuan pada fungsinya sendiri |
+| Pengawas | Temuan yang dibuat user TAD pada fungsinya |
 | **Super Admin** | **Selalu boleh** |
 
 Tombol: **Terima Tindak Lanjut** / **Tolak Tindak Lanjut** (tolak wajib catatan).
 
 ---
 
-## 10. Dispensasi Temuan — Tidak Tersedia
+## 9. Dispensasi Temuan
 
-Super Admin **tidak memiliki** `dispensate_findings`. Bila ada kebutuhan dispensasi:
-
-1. Sampaikan ke **FTM**
-2. FTM memberikan dispensasi (batas waktu + alasan min 10 karakter)
-
-### Tentang KIM Sementara
-
-Dispensasi menghasilkan **KIM Sementara**:
-
-| Aspek | Keterangan |
-|---|---|
-| Penanda | `is_dispensation = true`, kartu bertulis "SEMENTARA" |
-| Masa berlaku | Dibatasi batas dispensasi terawal |
-| Setelah batas | Otomatis **Kedaluwarsa** |
-
-Terdapat perintah terjadwal `ExpireDispensationCards` yang menandai KIM sementara yang lewat batas dan mengirim notifikasi ke transportir & petugas.
+Super Admin **tidak** bisa memberi dispensasi. Kebutuhan dispensasi disampaikan ke **FTM**, dengan alur: **transportir mengajukan → FTM memutuskan** di menu **Pengajuan KIM Sementara**.
 
 ---
 
-## 11. Audit Log
+## 10. Perintah & Penjadwalan Server
 
-Permission `view_audit_logs` tersedia pada daftar permission.
+| Perintah | Jadwal | Fungsi |
+|---|---|---|
+| `okim:expire-dispensations` | Harian 00:05 | Menandai KIM sementara yang lewat batas + notifikasi |
+| `okim:notify-expiry` | Harian 07:00 | Pengingat dokumen & KIM akan kedaluwarsa |
+| `okim:make-admin` | Manual | Membuat/memperbarui akun internal |
+| `okim:test-mail {email}` | Manual | Uji kirim email |
 
-> **Catatan:** saat ini **belum ada menu/antarmuka khusus** untuk menampilkan audit log. Jejak perubahan tetap tersimpan pada data (mis. `approved_by`, `verified_by`, `dispensated_by`, `submitted_by`).
+**Wajib di produksi:**
+
+```bash
+* * * * * cd /path/to/o-kim && php artisan schedule:run >> /dev/null 2>&1
+php artisan queue:work --tries=3     # worker email
+```
+
+> Tanpa queue worker, email menumpuk di tabel `jobs` dan tidak terkirim.
 
 ---
 
-## 12. Perintah Terjadwal
-
-| Perintah | Fungsi |
-|---|---|
-| `ExpireDispensationCards` | Menandai KIM sementara yang melewati batas dispensasi + kirim notifikasi |
-
-Pastikan **scheduler** berjalan di server produksi (`php artisan schedule:work` atau cron) agar perintah ini berjalan otomatis.
-
----
-
-## 13. Alur Sistem End-to-End
+## 11. Alur Sistem End-to-End
 
 ```
-Transportir registrasi → Pending
+Transportir daftar → kirim profil perusahaan
    ↓
-Admin Verifikasi tinjau → Approved
+Admin Verifikasi setujui akun
    ↓
-Transportir unggah dokumen → Menunggu Verifikasi
+Transportir unggah STNK/KEUR/TERA → Admin verifikasi dokumen
    ↓
-Admin/FTM verifikasi dokumen → Terverifikasi
+Transportir kirim pengajuan → Admin jadwalkan pemeriksaan
    ↓
-Transportir buat & kirim pengajuan → Terkirim
+TAD isi checklist → temuan? → transportir kirim tindak lanjut → verifikasi
    ↓
-Admin jadwalkan pemeriksaan
+(bila butuh waktu) transportir ajukan dispensasi → FTM memutuskan
    ↓
-TAD isi checklist (setelah jadwal tiba)
-   ├── Tanpa temuan → lanjut
-   └── Ada temuan → Perlu Perbaikan
-            ↓
-       Transportir kirim tindak lanjut + bukti
-            ↓
-       TAD se-fungsi / Pengawas / Super Admin verifikasi
-            ↓
-       (Bila perlu) FTM beri DISPENSASI
-            ↓
-Approval fungsi (HSSE, Distribusi, QQ) — paralel
-   ↓
-Menunggu Persetujuan
-   ↓
-Approval akhir FTM → Disetujui
+Approval fungsi (HSSE, Distribusi, QQ) → Approval akhir FTM
    ↓
 Terbitkan KIM → Normal / SEMENTARA
-   ↓
-KIM Terbit
 ```
 
----
+**Status pengajuan:** Draf · Terkirim · Dalam Pemeriksaan · Perlu Perbaikan · Menunggu Persetujuan · Disetujui · Ditolak · KIM Terbit · Dibatalkan.
 
-## 14. Status Pengajuan & KIM
-
-### Status Pengajuan
-
-| Status | Arti |
-|---|---|
-| Draf | Belum dikirim |
-| Terkirim | Menunggu penjadwalan |
-| Dalam Pemeriksaan | Petugas memeriksa |
-| Perlu Perbaikan | Ada temuan |
-| Menunggu Persetujuan | Menunggu approval akhir FTM |
-| Disetujui | Siap terbit KIM |
-| Ditolak | Ditolak |
-| KIM Terbit | Selesai |
-| Dibatalkan | Dibatalkan |
-
-### Status KIM
-
-| Status | Arti |
-|---|---|
-| Aktif | Berlaku |
-| Kedaluwarsa | Lewat masa berlaku / batas dispensasi |
-| Dicabut | Dicabut |
+**Status KIM:** Aktif · Kedaluwarsa · Dicabut.
 
 ---
 
-## 15. Pertanyaan Umum
+## 12. Pertanyaan Umum
 
-**Kenapa Super Admin tidak bisa dispensasi temuan?**
+**Kenapa tidak bisa dispensasi temuan?** `dispensate_findings` sengaja tidak diberikan; dispensasi harus melalui FTM.
 
-`dispensate_findings` sengaja tidak diberikan demi keputusan bisnis. Dispensasi harus melalui FTM.
+**Perubahan permission tidak berlaku?** Minta pengguna **login ulang**.
 
-**Perubahan permission tidak berlaku?**
+**Pendaftar tidak muncul di antrean?** Belum mengirim profil perusahaan.
 
-Minta pengguna **login ulang**. Permission di-cache oleh sistem.
+**KIM sementara tidak otomatis kedaluwarsa?** Periksa scheduler; jalankan manual `php artisan okim:expire-dispensations`.
 
-**Tombol verifikasi temuan tidak muncul?**
+**Email tidak terkirim?** Cek event aktif & role penerima di menu Notifikasi Email, pastikan queue worker berjalan, lalu uji dengan `php artisan okim:test-mail`.
 
-Pastikan temuan berstatus **Menunggu Verifikasi**. Super Admin selalu berwenang, jadi bila tetap tidak muncul kemungkinan status temuan bukan Menunggu Verifikasi.
+**Mengubah masa berlaku KIM?** **Pengaturan Sistem → Masa Berlaku KIM** (tetap dibatasi kedaluwarsa dokumen & batas dispensasi).
 
-**KIM sementara tidak otomatis kedaluwarsa?**
-
-Periksa apakah scheduler berjalan. Jalankan `php artisan schedule:work` atau konfigurasi cron di server.
-
-**Bagaimana mengubah masa berlaku KIM?**
-
-Menu **Pengaturan → Masa Berlaku KIM**. Ingat: tanggal akhir tetap diambil paling awal antara nilai ini dan kedaluwarsa dokumen wajib.
-
-**Di mana melihat audit log?**
-
-Belum tersedia antarmukanya. Jejak tercatat di field seperti `approved_by`, `verified_by`, `dispensated_by`.
+**Di mana audit log?** Belum ada antarmukanya; jejak tersimpan di field seperti `approved_by`, `verified_by`, `dispensated_by`.

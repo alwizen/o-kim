@@ -130,7 +130,7 @@ class InspectKimApplication extends Page implements HasForms
 
                 $fields[] = FileUpload::make("results.{$item->id}.attachments")
                     ->label('Bukti Pemeriksaan (foto/dokumen, boleh lebih dari satu)')
-                    ->helperText('PDF/JPG/PNG, maks 5 MB per berkas, maks 10 berkas sekali unggah. Opsional.')
+                    ->helperText('PDF/JPG/PNG, maks 5 MB')
                     ->multiple()
                     ->maxFiles(10)
                     ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
