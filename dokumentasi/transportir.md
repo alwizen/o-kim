@@ -22,9 +22,9 @@ Panduan untuk perusahaan angkutan / pemilik mobil tangki di Fuel Terminal Tegal.
 
 1. Buka **`https://o-kim.ft-tegal.com`**.
 2. Klik **Daftar** di kanan atas.
-3. Isi **Nama PIC**, **Email**, **Nomor Telepon** (opsional), **Kata Sandi**, dan **Ulangi Kata Sandi** — atau klik **Daftar dengan Google**.
+3. Isi **Nama PIC**, **Email**, **Nomor Telepon**, **Kata Sandi**, dan **Ulangi Kata Sandi** — atau klik **Daftar dengan Google**.
 4. Setelah submit, Anda diarahkan ke form **Profil Perusahaan**.
-5. Isi **Nama PIC**, **Nama Perusahaan**, **Alamat**, **Telepon**, dan **NIB** (opsional) — lalu kirim.
+5. Isi **Nama PIC**, **Nama Perusahaan**, **Alamat**, **Telepon** — lalu kirim.
 6. Data terkunci setelah dikirim. Anda masuk halaman **menunggu verifikasi admin**.
 
 > **Jangan campur jalur login:** akun Google tidak punya kata sandi, dan email yang sudah terdaftar lewat email+sandi tidak bisa memakai jalur Google.
@@ -116,7 +116,7 @@ Gunakan bila perbaikan butuh waktu (mis. suku cadang indent) sementara operasion
 | Disetujui | Temuan menjadi **Dispensasi FTM** |
 | Ditolak | Lihat catatan FTM; boleh ajukan ulang |
 
-> 📖 Detail alur: [kim-sementara.md](kim-sementara.md)
+> 📖 Detail alur: Baca Dan Pahami Alur KIM Sementara
 
 ---
 
