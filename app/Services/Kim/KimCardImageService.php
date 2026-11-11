@@ -3,6 +3,7 @@
 namespace App\Services\Kim;
 
 use App\Models\KimCard;
+use App\Services\Setting\SettingsService;
 use App\Support\SafeFilename;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
@@ -53,7 +54,11 @@ class KimCardImageService
         $this->drawBackground();
         $this->drawHeader($card);
         $this->drawFields($card);
-        $this->drawQrCode($card);
+
+        if (app(SettingsService::class)->kimQrEnabled()) {
+            $this->drawQrCode($card);
+        }
+
         $this->drawFooter();
 
         $path = 'kim-cards/'.$this->safeFilename($card->kim_number);

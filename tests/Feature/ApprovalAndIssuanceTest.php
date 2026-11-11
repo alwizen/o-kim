@@ -51,9 +51,15 @@ class ApprovalAndIssuanceTest extends TestCase
         $owner->transporters()->attach($transporter);
         $this->vehicle = Vehicle::factory()->create(['transporter_id' => $transporter->id]);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -95,7 +101,7 @@ class ApprovalAndIssuanceTest extends TestCase
     private function approveAllFunctional(): void
     {
         $approval = app(ApprovalService::class);
-        foreach (Department::inspectingDepartments() as $department) {
+        foreach (Department::approvableDepartments() as $department) {
             $approval->decide(
                 $this->application->fresh(),
                 $department,
@@ -147,9 +153,71 @@ class ApprovalAndIssuanceTest extends TestCase
     public function test_application_reaches_pending_approval_after_all_three(): void
     {
         $this->completeInspections();
-        $this->approveAllFunctional();
+
+        $approval = app(ApprovalService::class);
+        foreach (Department::inspectingDepartments() as $department) {
+            $approval->decide(
+                $this->application->fresh(),
+                $department,
+                ApprovalDecision::Approved,
+                $this->officers[$department->value],
+            );
+        }
 
         $this->assertSame(ApplicationStatus::PendingApproval, $this->application->fresh()->status);
+    }
+
+    public function test_rsd_cannot_approve_before_functional_approvals(): void
+    {
+        $this->completeInspections();
+
+        $this->expectException(ValidationException::class);
+
+        app(ApprovalService::class)->decide(
+            $this->application->fresh(),
+            Department::Rsd,
+            ApprovalDecision::Approved,
+            $this->officers['rsd'],
+        );
+    }
+
+    public function test_ftm_cannot_approve_before_rsd_approval(): void
+    {
+        $this->completeInspections();
+
+        $approval = app(ApprovalService::class);
+        foreach (Department::inspectingDepartments() as $department) {
+            $approval->decide(
+                $this->application->fresh(),
+                $department,
+                ApprovalDecision::Approved,
+                $this->officers[$department->value],
+            );
+        }
+
+        $this->expectException(ValidationException::class);
+
+        $approval->decide(
+            $this->application->fresh(),
+            Department::Ftm,
+            ApprovalDecision::Approved,
+            $this->officers['ftm'],
+        );
+    }
+
+    public function test_ftm_can_approve_after_rsd_approval(): void
+    {
+        $this->completeInspections();
+        $this->approveAllFunctional();
+
+        app(ApprovalService::class)->decide(
+            $this->application->fresh(),
+            Department::Ftm,
+            ApprovalDecision::Approved,
+            $this->officers['ftm'],
+        );
+
+        $this->assertSame(ApplicationStatus::Approved, $this->application->fresh()->status);
     }
 
     public function test_rejection_requires_reason(): void
@@ -202,6 +270,34 @@ class ApprovalAndIssuanceTest extends TestCase
     {
         $this->completeInspections();
         $this->approveAllFunctional();
+
+        $this->expectException(ValidationException::class);
+
+        app(KimIssuanceService::class)->issue($this->application->fresh());
+    }
+
+    public function test_kim_cannot_be_issued_without_rsd_approval(): void
+    {
+        $this->completeInspections();
+
+        $approval = app(ApprovalService::class);
+        foreach (Department::inspectingDepartments() as $department) {
+            $approval->decide(
+                $this->application->fresh(),
+                $department,
+                ApprovalDecision::Approved,
+                $this->officers[$department->value],
+            );
+        }
+
+        // Paksa approval FTM tercatat tanpa RSD untuk menguji gate penerbitan.
+        $this->application->fresh()->approvals()->create([
+            'department' => Department::Ftm->value,
+            'decision' => ApprovalDecision::Approved->value,
+            'approved_by' => $this->officers['ftm']->id,
+            'decided_at' => now(),
+        ]);
+        $this->application->fresh()->update(['status' => ApplicationStatus::Approved]);
 
         $this->expectException(ValidationException::class);
 

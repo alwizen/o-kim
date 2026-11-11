@@ -8,8 +8,10 @@ use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
+use App\Enums\DocumentScanType;
 use App\Enums\InspectionResultValue;
 use App\Enums\TransporterStatus;
+use App\Models\DocumentScanLog;
 use App\Models\DocumentType;
 use App\Models\Finding;
 use App\Models\InspectionItem;
@@ -19,7 +21,9 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
+use App\Services\Document\DocumentSignatureService;
 use App\Services\Document\VehicleDocumentService;
+use App\Services\Finding\BeritaAcaraService;
 use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Inspection\InspectionService;
@@ -27,6 +31,7 @@ use App\Services\Kim\KimIssuanceService;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 /**
  * Data dummy untuk pengembangan & demonstrasi.
@@ -71,6 +76,10 @@ class DummyDataSeeder extends Seeder
         $this->seedVehiclesAndDocuments();
         $this->seedApplications();
 
+        // Contoh log verifikasi QR (BA & KIM) dibuat terpisah agar tetap terisi
+        // walau pengajuan sudah ada dari seeding sebelumnya.
+        $this->seedScanLogs();
+
         $this->report();
     }
 
@@ -89,6 +98,7 @@ class DummyDataSeeder extends Seeder
             'pengawas_hsse' => ['Alika Pengawas HSSE', 'pengawashsse@okim.test', 'Pengawas HSSE'],
             'pengawas_distribusi' => ['Dafa Pengawas Distribusi', 'pengawasdistribusi@okim.test', 'Pengawas Distribusi'],
             'pengawas_qq' => ['Uli Pengawas QQ', 'pengawasqq@okim.test', 'Pengawas QQ'],
+            'rsd' => ['Rahmat Pengawas RSD', 'rsd@okim.test', 'Pengawas RSD'],
             'ftm' => ['Saiful Hamzah', 'ftm@okim.test', 'Fuel Terminal Manager'],
         ];
 
@@ -103,7 +113,15 @@ class DummyDataSeeder extends Seeder
                 ],
             );
 
-            $user->syncRoles([$role]);
+            // Role `rsd` sengaja tidak di-seed; bila belum dibuat manual di UI,
+            // beri permission approval-nya langsung agar demo tetap berjalan.
+            if ($role === 'rsd' && ! Role::where('name', 'rsd')->exists()) {
+                $user->syncRoles([]);
+                $user->syncPermissions(['access_admin_panel', 'view_applications', 'approve_rsd']);
+            } else {
+                $user->syncRoles([$role]);
+            }
+
             $this->staff[$role] = $user;
         }
     }
@@ -287,7 +305,7 @@ class DummyDataSeeder extends Seeder
     }
 
     /**
-     * Pengajuan lengkap: checklist penuh → approval 3 fungsi → approval FTM → KIM.
+     * Pengajuan lengkap: checklist penuh → approval 3 fungsi → approval RSD → FTM → KIM.
      */
     private function buildIssuedApplication(Vehicle $vehicle): void
     {
@@ -324,6 +342,72 @@ class DummyDataSeeder extends Seeder
         );
 
         $this->approveAll($application->fresh());
+
+        // Bekukan Berita Acara bertanda tangan QR (5 tanda tangan).
+        app(BeritaAcaraService::class)->finalizeIfReady($application->fresh());
+    }
+
+    /**
+     * Contoh log pemindaian QR untuk seluruh BA dan kartu KIM yang ada.
+     */
+    private function seedScanLogs(): void
+    {
+        $signatureService = app(DocumentSignatureService::class);
+
+        foreach (KimApplication::query()->with('beritaAcara.signatures', 'kimCard.signatures')->get() as $application) {
+            $document = $application->beritaAcara;
+
+            if ($document !== null) {
+                // Backfill tanda tangan untuk dokumen lama.
+                $signatureService->ensureFor($document, $application);
+                $document->load('signatures');
+
+                foreach ($document->signatures->take(3) as $offset => $signature) {
+                    $this->createScanLogIfMissing([
+                        'document_type' => DocumentScanType::BeritaAcara,
+                        'document_signature_id' => $signature->id,
+                        'ip_address' => '10.10.'.(10 + $offset).'.'.(20 + $offset),
+                        'user_agent' => 'Mozilla/5.0 (Demo Scanner)',
+                        'scanned_at' => now()->subHours($offset + 1),
+                    ]);
+                }
+            }
+
+            if ($application->kimCard !== null) {
+                // Backfill tanda tangan untuk kartu lama.
+                $signatureService->ensureFor($application->kimCard, $application);
+                $application->kimCard->load('signatures');
+
+                foreach ($application->kimCard->signatures->take(2) as $offset => $signature) {
+                    $this->createScanLogIfMissing([
+                        'document_type' => DocumentScanType::Kim,
+                        'document_signature_id' => $signature->id,
+                        'ip_address' => '10.10.'.(30 + $offset).'.'.(40 + $offset),
+                        'user_agent' => 'Mozilla/5.0 (Demo Scanner)',
+                        'scanned_at' => now()->subHours(2 + $offset),
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createScanLogIfMissing(array $attributes): void
+    {
+        DocumentScanLog::firstOrCreate(
+            [
+                'document_type' => $attributes['document_type'],
+                'document_signature_id' => $attributes['document_signature_id'] ?? null,
+                'kim_card_id' => $attributes['kim_card_id'] ?? null,
+                'scanned_at' => $attributes['scanned_at'],
+            ],
+            [
+                'ip_address' => $attributes['ip_address'],
+                'user_agent' => $attributes['user_agent'],
+            ],
+        );
     }
 
     /**
@@ -419,7 +503,7 @@ class DummyDataSeeder extends Seeder
     }
 
     /**
-     * Setujui seluruh fungsi lalu approval final FTM.
+     * Setujui seluruh fungsi (termasuk RSD) lalu approval final FTM.
      */
     private function approveAll(KimApplication $application): void
     {
@@ -434,6 +518,17 @@ class DummyDataSeeder extends Seeder
                 ApprovalDecision::Approved,
                 $approver,
                 'Checklist lengkap, disetujui.',
+            );
+        }
+
+        // Pengawas RSD (wakil FTM) menyetujui sebelum approval final.
+        if (! $application->fresh()->hasActiveDispensation()) {
+            $approval->decide(
+                $application->fresh(),
+                Department::Rsd,
+                ApprovalDecision::Approved,
+                $this->staff['rsd'],
+                'Diverifikasi RSD, diteruskan ke FTM.',
             );
         }
 

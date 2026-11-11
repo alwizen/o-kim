@@ -14,6 +14,8 @@ class SettingsService
 
     public const GROUP_NOTIFICATION = 'notification';
 
+    public const GROUP_DOCUMENT = 'document';
+
     /**
      * Format periode khusus: bulan dalam angka Romawi diikuti tahun (XI/2026).
      */
@@ -29,6 +31,9 @@ class SettingsService
         'application.number_period_format' => 'Ymd',
         'application.number_sequence_digits' => '4',
         'notification.expiry_warning_days' => '60',
+        'document.ba_qr_enabled' => '1',
+        'document.kim_qr_enabled' => '1',
+        'document.legal_reference' => 'Undang-Undang Nomor 11 Tahun 2008 jo. Undang-Undang Nomor 19 Tahun 2016 tentang Informasi dan Transaksi Elektronik.',
     ];
 
     /**
@@ -50,6 +55,17 @@ class SettingsService
         $value = $this->get($key);
 
         return is_numeric($value) ? (int) $value : $default;
+    }
+
+    public function getBool(string $key, bool $default = false): bool
+    {
+        $value = $this->get($key);
+
+        if ($value === null) {
+            return $default;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
     }
 
     public function set(string $key, ?string $value, string $group = 'general'): void
@@ -147,6 +163,36 @@ class SettingsService
         $days = $this->getInt('notification.expiry_warning_days', 60);
 
         return max(1, $days);
+    }
+
+    // ---------------------------------------------------------------
+    // Pengaturan Dokumen (QR tanda tangan/validasi)
+    // ---------------------------------------------------------------
+
+    /**
+     * Apakah QR tanda tangan elektronik ditampilkan pada Berita Acara.
+     */
+    public function baQrEnabled(): bool
+    {
+        return $this->getBool('document.ba_qr_enabled', true);
+    }
+
+    /**
+     * Apakah QR validasi ditampilkan pada kartu KIM (PDF & gambar).
+     */
+    public function kimQrEnabled(): bool
+    {
+        return $this->getBool('document.kim_qr_enabled', true);
+    }
+
+    /**
+     * Dasar hukum tanda tangan elektronik yang dirujuk pada Berita Acara.
+     */
+    public function legalReference(): string
+    {
+        $value = trim((string) $this->get('document.legal_reference', ''));
+
+        return $value !== '' ? $value : (string) self::DEFAULTS['document.legal_reference'];
     }
 
     /**

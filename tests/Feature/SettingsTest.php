@@ -204,4 +204,54 @@ class SettingsTest extends TestCase
         $this->assertSame('Y', $settings->applicationNumberPeriodFormat());
         $this->assertSame(3, $settings->applicationNumberSequenceDigits());
     }
+
+    // ---------- Tanda Tangan QR Dokumen ----------
+
+    public function test_qr_toggles_default_to_enabled(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $this->assertTrue($settings->baQrEnabled());
+        $this->assertTrue($settings->kimQrEnabled());
+        $this->assertStringContainsString('Undang-Undang', $settings->legalReference());
+    }
+
+    public function test_admin_can_disable_qr_toggles_independently(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm([
+                'ba_qr_enabled' => false,
+                'kim_qr_enabled' => true,
+                'legal_reference' => 'UU ITE',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $settings = app(SettingsService::class);
+
+        $this->assertFalse($settings->baQrEnabled());
+        $this->assertTrue($settings->kimQrEnabled());
+        $this->assertSame('UU ITE', $settings->legalReference());
+    }
+
+    public function test_kim_qr_toggle_can_be_disabled_without_affecting_ba(): void
+    {
+        $this->actingAs($this->admin());
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm([
+                'ba_qr_enabled' => true,
+                'kim_qr_enabled' => false,
+                'legal_reference' => 'UU ITE',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $settings = app(SettingsService::class);
+
+        $this->assertTrue($settings->baQrEnabled());
+        $this->assertFalse($settings->kimQrEnabled());
+    }
 }

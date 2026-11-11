@@ -9,13 +9,11 @@ use App\Enums\Department;
 use App\Enums\DocumentVerificationStatus;
 use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
-use App\Enums\KimCardStatus;
 use App\Filament\Transportir\Widgets\VehicleProgressStepper;
 use App\Models\DocumentType;
 use App\Models\Finding;
 use App\Models\InspectionItem;
 use App\Models\KimApplication;
-use App\Models\KimCard;
 use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -317,32 +315,13 @@ class VehicleProgressStepperTest extends TestCase
         $this->assertSame('failed', $this->step($this->steps($application), 'inspection')['state']);
     }
 
-    // ---------- Service: tahap KIM ----------
+    // ---------- Service: daftar langkah ----------
 
-    public function test_kim_step_is_active_when_application_approved(): void
+    public function test_steps_do_not_include_kim_issued_step(): void
     {
-        $application = $this->makeApplication(ApplicationStatus::Approved);
+        $steps = $this->steps($this->makeApplication(ApplicationStatus::Approved));
 
-        $this->assertSame('active', $this->step($this->steps($application), 'kim')['state']);
-    }
-
-    public function test_kim_step_is_done_when_card_issued(): void
-    {
-        $application = $this->makeApplication(ApplicationStatus::Issued);
-
-        KimCard::create([
-            'kim_application_id' => $application->id,
-            'kim_number' => 'KIM/TEST/2026/01/0001',
-            'issued_at' => now(),
-            'expires_at' => now()->addMonths(6)->toDateString(),
-            'qr_token' => str_repeat('a', 48),
-            'status' => KimCardStatus::Active,
-        ]);
-
-        $step = $this->step($this->steps($application), 'kim');
-
-        $this->assertSame('done', $step['state']);
-        $this->assertSame('KIM/TEST/2026/01/0001', $step['description']);
+        $this->assertNotContains('kim', array_column($steps, 'key'));
     }
 
     public function test_steps_contain_every_approval_breaker(): void
@@ -351,7 +330,7 @@ class VehicleProgressStepperTest extends TestCase
 
         $this->assertCount(8, $steps);
         $this->assertSame(
-            ['vehicle', 'documents', 'inspection', 'hsse', 'distribusi', 'qq', 'ftm', 'kim'],
+            ['vehicle', 'documents', 'inspection', 'hsse', 'distribusi', 'qq', 'rsd', 'ftm'],
             array_column($steps, 'key')
         );
     }
@@ -377,7 +356,7 @@ class VehicleProgressStepperTest extends TestCase
         $application = $this->makeApplication(ApplicationStatus::Submitted);
 
         $this->vehicle->documents()->update([
-            'verification_status' => \App\Enums\DocumentVerificationStatus::Pending,
+            'verification_status' => DocumentVerificationStatus::Pending,
             'verified_by' => null,
             'verified_at' => null,
         ]);
@@ -405,6 +384,7 @@ class VehicleProgressStepperTest extends TestCase
         $this->assertSame('pending', $this->step($steps, 'hsse')['state']);
         $this->assertSame('pending', $this->step($steps, 'distribusi')['state']);
         $this->assertSame('pending', $this->step($steps, 'qq')['state']);
+        $this->assertSame('pending', $this->step($steps, 'rsd')['state']);
         $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
     }
 
@@ -420,10 +400,34 @@ class VehicleProgressStepperTest extends TestCase
         // Pemeriksaan belum tuntas, jadi fungsi berikutnya belum berjalan.
         $this->assertSame('pending', $this->step($steps, 'distribusi')['state']);
         $this->assertSame('pending', $this->step($steps, 'qq')['state']);
+        $this->assertSame('pending', $this->step($steps, 'rsd')['state']);
         $this->assertSame('pending', $this->step($steps, 'ftm')['state']);
     }
 
-    public function test_ftm_step_becomes_active_after_all_functions_approve(): void
+    public function test_ftm_step_becomes_active_after_rsd_approves(): void
+    {
+        $application = $this->makeApplication(ApplicationStatus::PendingApproval);
+
+        $this->approveApplication($application, [
+            ...Department::inspectingDepartments(),
+            Department::Rsd,
+        ]);
+
+        $steps = $this->steps($application);
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $this->assertSame('done', $this->step($steps, $department->value)['state']);
+        }
+
+        $rsd = $this->step($steps, 'rsd');
+        $this->assertSame('done', $rsd['state']);
+
+        $ftm = $this->step($steps, 'ftm');
+        $this->assertSame('active', $ftm['state']);
+        $this->assertSame('Menunggu persetujuan FTM', $ftm['description']);
+    }
+
+    public function test_rsd_step_becomes_active_after_all_functions_approve(): void
     {
         $application = $this->makeApplication(ApplicationStatus::PendingApproval);
 
@@ -435,9 +439,13 @@ class VehicleProgressStepperTest extends TestCase
             $this->assertSame('done', $this->step($steps, $department->value)['state']);
         }
 
+        $rsd = $this->step($steps, 'rsd');
+        $this->assertSame('active', $rsd['state']);
+        $this->assertSame('Menunggu persetujuan RSD', $rsd['description']);
+
         $ftm = $this->step($steps, 'ftm');
-        $this->assertSame('active', $ftm['state']);
-        $this->assertSame('Menunggu persetujuan FTM', $ftm['description']);
+        $this->assertSame('pending', $ftm['state']);
+        $this->assertSame('Menunggu persetujuan RSD', $ftm['description']);
     }
 
     public function test_ftm_step_is_done_when_ftm_approved(): void
@@ -445,7 +453,7 @@ class VehicleProgressStepperTest extends TestCase
         $application = $this->makeApplication(ApplicationStatus::Approved);
 
         $this->approveApplication($application, [
-            ...Department::inspectingDepartments(),
+            ...Department::approvableDepartments(),
             Department::Ftm,
         ]);
 
@@ -486,7 +494,7 @@ class VehicleProgressStepperTest extends TestCase
         $steps = $this->steps($application);
 
         // Bug: dulu langkah Pengawas langsung menyala saat verifikasi dokumen.
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $key) {
+        foreach (['hsse', 'distribusi', 'qq', 'rsd', 'ftm'] as $key) {
             $this->assertContains($this->step($steps, $key)['state'], ['done', 'pending'], $key.' seharusnya belum berjalan.');
         }
     }
@@ -514,11 +522,11 @@ class VehicleProgressStepperTest extends TestCase
         $application = $this->makeApplication($status);
         $application->update(['inspection_scheduled_at' => now()->subDay()]);
 
-        $service = app(\App\Services\Inspection\InspectionService::class);
+        $service = app(InspectionService::class);
         $inspector = $this->makeSuperAdmin();
 
         foreach (Department::inspectingDepartments() as $department) {
-            $items = \App\Models\InspectionItem::whereHas(
+            $items = InspectionItem::whereHas(
                 'checklist',
                 fn ($q) => $q->where('department', $department->value)
             )->where('is_active', true)->get();
@@ -527,7 +535,7 @@ class VehicleProgressStepperTest extends TestCase
                 $service->recordResult(
                     $application->fresh(),
                     $item,
-                    \App\Enums\InspectionResultValue::Compliant,
+                    InspectionResultValue::Compliant,
                     $inspector,
                 );
             }
@@ -565,8 +573,8 @@ class VehicleProgressStepperTest extends TestCase
             ->assertSee('Pengawas HSSE')
             ->assertSee('Pengawas Distribusi')
             ->assertSee('Pengawas QQ')
+            ->assertSee('Pengawas RSD')
             ->assertSee('FTM')
-            ->assertSee('KIM Terbit')
             ->assertSee($this->vehicle->registration_number);
     }
 

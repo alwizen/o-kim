@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Laporan Pemeriksaan — {{ $application->application_number }}</title>
+    <link rel="icon" href="{{ asset('img/fav.svg') }}" type="image/png">
     <style>
         @page {
-            margin: 24px 28px 42px 28px;
+            /* 1,27 cm (0,5") atas, bawah, kiri, kanan. */
+            margin: 1.27cm;
         }
 
         body {
@@ -165,8 +167,9 @@
         }
 
         .col-no { width: 5%; text-align: center; }
-        .col-status { width: 12%; }
-        .col-note { width: 20%; }
+        .col-status { width: 11%; }
+        .col-finding { width: 26%; }
+        .col-photo { width: 24%; text-align: center; }
 
         .item-label {
             font-weight: bold;
@@ -206,18 +209,53 @@
         .badge-na { background: #e5e7eb; color: #4b5563; }
         .badge-empty { background: #fef3c7; color: #92400e; }
 
-        .finding-box {
+        .note-box {
             margin-top: 3px;
-            border-left: 2px solid #dc2626;
-            background: #fef2f2;
+            border-left: 2px solid #6b7280;
+            background: #f9fafb;
             padding: 3px 5px;
             font-size: 8px;
-            color: #7f1d1d;
+            color: #374151;
         }
 
-        .finding-box .meta {
-            color: #b91c1c;
-            font-size: 7.5px;
+        .finding-status {
+            margin-top: 3px;
+        }
+
+        .finding-action {
+            margin-top: 3px;
+        }
+
+        .follow-up-badge {
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 8px;
+            font-size: 7px;
+            font-weight: bold;
+        }
+
+        .follow-up-badge.badge-compliant { background: #dcfce7; color: #166534; }
+        .follow-up-badge.badge-empty { background: #fef3c7; color: #92400e; }
+        .follow-up-badge.badge-finding { background: #fee2e2; color: #991b1b; }
+
+        .photo-thumb {
+            max-width: 100%;
+            max-height: 78px;
+            width: auto;
+            height: auto;
+            margin-bottom: 2px;
+            border: 1px solid #d1d5db;
+        }
+
+        .photo-empty {
+            font-size: 8px;
+            color: #6b7280;
+        }
+
+        .photo-time {
+            font-size: 7px;
+            color: #6b7280;
+            margin-top: 2px;
         }
 
         .department-head {
@@ -347,7 +385,10 @@
         <div class="department-meta">
             {{ $department['assessed'] }} dari {{ $department['total'] }} butir dinilai
             @if (! empty($department['inspectors']))
-                · Petugas: {{ implode(', ', $department['inspectors']) }}
+                · Petugas:
+                @foreach ($department['inspectors'] as $inspector)
+                    {{ $inspector['name'] }}@if (filled($inspector['jabatan'])) ({{ $inspector['jabatan'] }})@endif@if ($inspector['inspected_at']) pada {{ $inspector['inspected_at']->translatedFormat('d M Y H:i') }}@endif@if (! $loop->last), @endif
+                @endforeach
             @endif
         </div>
 
@@ -360,8 +401,8 @@
                         <th class="col-no">No</th>
                         <th>Butir Pemeriksaan</th>
                         <th class="col-status">Hasil</th>
-                        <th class="col-note">Catatan</th>
-                        <th class="col-note">Waktu Periksa</th>
+                        <th class="col-finding">Temuan</th>
+                        <th class="col-photo">Foto Bukti Temuan</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -385,15 +426,9 @@
                                     </ul>
                                 @endif
 
-                                @if ($result?->finding)
-                                    <div class="finding-box">
-                                        <strong>Temuan:</strong> {{ $result->finding->description }}
-                                        <div class="meta">
-                                            Status: {{ $result->finding->status->label() }}
-                                            @if ($result->finding->creator)
-                                                · Dilaporkan oleh {{ $result->finding->creator->name }}
-                                            @endif
-                                        </div>
+                                @if ($row['notes'])
+                                    <div class="note-box">
+                                        <strong>Catatan:</strong> {{ $row['notes'] }}
                                     </div>
                                 @endif
                             </td>
@@ -410,8 +445,40 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="col-note">{{ $result?->notes ?: '—' }}</td>
-                            <td class="col-note">{{ $result?->inspected_at?->translatedFormat('d M Y H:i') ?? '—' }}</td>
+                            <td class="col-finding">
+                                {{ $row['finding']?->description ?: '—' }}
+
+                                @if ($row['finding'])
+                                    <div class="finding-status">
+                                        <span class="badge {{ match ($row['finding']->status) {
+                                            \App\Enums\FindingStatus::Verified => 'badge-compliant',
+                                            \App\Enums\FindingStatus::SubmittedForVerification => 'badge-empty',
+                                            \App\Enums\FindingStatus::Dispensation => 'badge-na',
+                                            default => 'badge-finding',
+                                        } }}">
+                                            {{ $row['finding']->status->label() }}
+                                        </span>
+                                    </div>
+
+                                    <div class="finding-action">
+                                        <span class="follow-up-badge {{ $row['follow_up']['class'] }}">{{ $row['follow_up']['label'] }}</span>
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="col-photo">
+                                @if (! empty($row['photos']))
+                                    @foreach ($row['photos'] as $photo)
+                                        <img src="{{ $photo }}" alt="Foto bukti temuan" class="photo-thumb">
+                                    @endforeach
+                                @else
+                                    <span class="photo-empty">—</span>
+                                @endif
+                                @if ($row['finding'] && $result?->inspected_at)
+                                    <div class="photo-time">
+                                        {{ $result->inspected_at->translatedFormat('d M Y H:i') }}
+                                    </div>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

@@ -7,7 +7,7 @@ use App\Enums\FindingStatus;
 use App\Enums\InternalRole;
 use App\Filament\Transportir\Resources\KimApplications\KimApplicationResource;
 use App\Services\Application\KimApplicationService;
-use App\Services\Finding\FindingReportService;
+use App\Services\Finding\BeritaAcaraService;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -169,18 +169,18 @@ class ViewKimApplication extends ViewRecord
                 ->tooltip('PNG 85,6 × 54 mm — cetak aktual 100%, jangan "fit to page".')
                 ->url(fn (): string => route('kim.download-image', $this->record->kimCard)),
             Action::make('inspection_report')
-                ->label('Pratinjau Laporan Pemeriksaan')
+                ->label('Laporan Pemeriksaan')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
                 ->url(fn (): string => route('inspection-report.preview', $this->record))
                 ->openUrlInNewTab(),
             Action::make('berita_acara')
-                ->label('Cetak Berita Acara')
+                ->label('Berita Acara')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
-                ->visible(fn (): bool => app(FindingReportService::class)->isEligible($this->record))
-                ->url(fn (): string => route('berita-acara.download', $this->record))
+                ->visible(fn (): bool => app(BeritaAcaraService::class)->isEligible($this->record))
+                ->url(fn (): string => route('berita-acara.preview', $this->record))
                 ->openUrlInNewTab(),
             Action::make('submit')
                 ->label('Kirim Pengajuan')

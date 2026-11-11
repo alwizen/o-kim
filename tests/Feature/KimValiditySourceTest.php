@@ -14,6 +14,7 @@ use App\Services\Kim\KimValidityService;
 use App\Services\Setting\SettingsService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -196,7 +197,7 @@ class KimValiditySourceTest extends TestCase
 
         $card = $application->kimCard()->create([
             'kim_number' => 'KIM/UJI/001',
-            'qr_token' => (string) \Illuminate\Support\Str::uuid(),
+            'qr_token' => (string) Str::uuid(),
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(2),
         ]);
@@ -218,7 +219,7 @@ class KimValiditySourceTest extends TestCase
 
         $card = $application->kimCard()->create([
             'kim_number' => 'KIM/UJI/002',
-            'qr_token' => (string) \Illuminate\Support\Str::uuid(),
+            'qr_token' => (string) Str::uuid(),
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(2),
         ]);
@@ -226,5 +227,33 @@ class KimValiditySourceTest extends TestCase
         $this->get(route('kim.validate', ['token' => $card->qr_token]))
             ->assertSuccessful()
             ->assertSee('(Dokumen TERA)');
+    }
+
+    public function test_validation_page_records_scan_log_for_kim(): void
+    {
+        $application = $this->application();
+        $issuedAt = now()->startOfDay();
+        $this->verifiedDocument($application, 'TERA', $issuedAt->copy()->addMonths(2)->toDateString());
+
+        $card = $application->kimCard()->create([
+            'kim_number' => 'KIM/UJI/003',
+            'qr_token' => (string) Str::uuid(),
+            'issued_at' => $issuedAt,
+            'expires_at' => $issuedAt->copy()->addMonths(2),
+        ]);
+
+        $this->get(route('kim.validate', ['token' => $card->qr_token]))->assertSuccessful();
+
+        $this->assertDatabaseHas('document_scan_logs', [
+            'document_type' => 'kim',
+            'kim_card_id' => $card->id,
+        ]);
+    }
+
+    public function test_unknown_kim_token_does_not_create_scan_log(): void
+    {
+        $this->get(route('kim.validate', ['token' => 'tidak-ada']))->assertSuccessful();
+
+        $this->assertDatabaseCount('document_scan_logs', 0);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentScanType;
+use App\Models\DocumentScanLog;
 use App\Models\KimCard;
 use App\Services\Kim\KimValidityService;
 
@@ -20,6 +22,14 @@ class KimValidationController extends Controller
         if (! $card) {
             return view('kim.validate', ['card' => null]);
         }
+
+        DocumentScanLog::create([
+            'document_type' => DocumentScanType::Kim,
+            'kim_card_id' => $card->id,
+            'ip_address' => request()->ip(),
+            'user_agent' => mb_substr((string) request()->userAgent(), 0, 500),
+            'scanned_at' => now(),
+        ]);
 
         return view('kim.validate', [
             'card' => $card,

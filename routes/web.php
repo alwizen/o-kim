@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PendingInternalController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\DocumentSignatureVerificationController;
 use App\Http\Controllers\FindingAttachmentController;
 use App\Http\Controllers\FindingReportController;
 use App\Http\Controllers\InspectionReportController;
@@ -66,6 +67,9 @@ Route::get('/menunggu-verifikasi-transportir', [TransporterRegistrationControlle
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('/validasi-kim/{token}', [KimValidationController::class, 'show'])
         ->name('kim.validate');
+
+    Route::get('/verifikasi/tanda-tangan/{token}', [DocumentSignatureVerificationController::class, 'show'])
+        ->name('document-signature.verify');
 });
 
 // Panduan penggunaan (dokumentasi/tanpa-gambar dirender sebagai halaman web)

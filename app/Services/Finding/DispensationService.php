@@ -434,7 +434,7 @@ class DispensationService
             );
 
             AppNotifier::notifyRole(
-                ['ftm', 'pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq'],
+                ['ftm', 'pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq', 'rsd'],
                 new FindingDispensationGrantedStaff(
                     $application->application_number,
                     $registrationNumber,

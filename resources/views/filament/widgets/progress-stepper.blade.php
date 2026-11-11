@@ -10,20 +10,22 @@
 
 <x-filament-widgets::widget>
     <x-filament::section>
-        <x-slot name="heading">Progres Pengajuan KIM</x-slot>
+        <x-slot name="heading">{{ $heading ?? 'Progres Pengajuan KIM' }}</x-slot>
         <x-slot name="description">
-            Tahapan pengajuan mulai dari kendaraan terdaftar hingga KIM terbit.
+            {{ $description ?? 'Tahapan pengajuan mulai dari kendaraan terdaftar hingga persetujuan akhir.' }}
         </x-slot>
 
         @if (empty($options))
             <div class="vps-empty">
-                <p class="vps-empty-title">Belum ada pengajuan KIM</p>
+                <p class="vps-empty-title">{{ $emptyTitle ?? 'Belum ada pengajuan KIM' }}</p>
                 <p class="vps-empty-text">
-                    Buat pengajuan KIM terlebih dahulu agar progres tiap tahap dapat dipantau di sini.
+                    {{ $emptyText ?? 'Belum ada pengajuan yang dapat dipantau saat ini.' }}
                 </p>
-                <x-filament::button tag="a" href="/transportir/kim-applications/create" icon="heroicon-o-plus">
-                    Buat Pengajuan KIM
-                </x-filament::button>
+                @if (! empty($createUrl))
+                    <x-filament::button tag="a" :href="$createUrl" icon="heroicon-o-plus">
+                        Buat Pengajuan KIM
+                    </x-filament::button>
+                @endif
             </div>
         @else
             <div class="vps-toolbar">

@@ -37,11 +37,9 @@ class ExpiringDocumentsTable extends TableWidget
                     ->grow(false),
                 TextColumn::make('vehicle.transporter.company_name')
                     ->label('Perusahaan')
-                    ->searchable()
                     ->sortable(),
                 TextColumn::make('vehicle.registration_number')
-                    ->label('NOPOL')
-                    ->searchable(),
+                    ->label('NOPOL'),
                 TextColumn::make('documentType.name')
                     ->label('Jenis Dokumen')
                     ->badge(),

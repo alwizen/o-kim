@@ -69,9 +69,15 @@ class DispensationTest extends TestCase
         $this->owner->assignRole('transportir');
         $this->owner->transporters()->attach($this->transporter);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -353,6 +359,11 @@ class DispensationTest extends TestCase
 
         foreach (Department::inspectingDepartments() as $department) {
             $approval->decide($this->application->fresh(), $department, ApprovalDecision::Approved, $this->officers[$department->value]);
+        }
+
+        // Pengajuan tanpa dispensasi harus melewati approval Pengawas RSD lebih dulu.
+        if (! $this->application->fresh()->hasActiveDispensation()) {
+            $approval->decide($this->application->fresh(), Department::Rsd, ApprovalDecision::Approved, $this->officers['rsd']);
         }
 
         $approval->decide($this->application->fresh(), Department::Ftm, ApprovalDecision::Approved, $this->ftm);

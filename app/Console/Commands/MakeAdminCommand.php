@@ -31,6 +31,7 @@ class MakeAdminCommand extends Command
         'pengawas_hsse',
         'pengawas_qq',
         'pengawas_distribusi',
+        'rsd',
     ];
 
     public function handle(): int

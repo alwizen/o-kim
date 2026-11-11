@@ -13,6 +13,7 @@ enum InternalRole: string
     case PengawasHsse = 'pengawas_hsse';
     case PengawasQq = 'pengawas_qq';
     case PengawasDistribusi = 'pengawas_distribusi';
+    case Rsd = 'rsd';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum InternalRole: string
             self::PengawasHsse => 'Pengawas HSSE',
             self::PengawasQq => 'Pengawas QQ',
             self::PengawasDistribusi => 'Pengawas Distribusi',
+            self::Rsd => 'Pengawas RSD',
         };
     }
 

@@ -300,14 +300,75 @@ class InspectionWorkflowTest extends TestCase
             ->assertActionHidden('approve_ftm')
             ->assertActionHidden('reject_ftm');
 
-        // Setelah QQ menyetujui: tombol FTM muncul.
+        // Setelah QQ menyetujui: antrean berpindah ke Pengawas RSD, FTM masih disembunyikan.
         $approvals->decide($this->application->fresh(), Department::Qq, ApprovalDecision::Approved, $qqOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionHidden('approve_ftm')
+            ->assertActionHidden('reject_ftm');
+
+        // Setelah RSD menyetujui: tombol FTM muncul.
+        $rsdOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $rsdOfficer->givePermissionTo(['access_admin_panel', 'view_applications', 'approve_rsd']);
+
+        $approvals->decide($this->application->fresh(), Department::Rsd, ApprovalDecision::Approved, $rsdOfficer);
 
         Livewire::test(ViewKimApplication::class, [
             'record' => $this->application->getRouteKey(),
         ])
             ->assertActionVisible('approve_ftm')
             ->assertActionVisible('reject_ftm');
+    }
+
+    public function test_rsd_approval_actions_hidden_until_all_functional_approvals(): void
+    {
+        $this->submitAndSchedule();
+
+        $qqOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $qqOfficer->assignRole(['qq', 'pengawas_qq']);
+
+        $rsdOfficer = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $rsdOfficer->givePermissionTo(['access_admin_panel', 'view_applications', 'approve_rsd']);
+
+        $officers = [
+            Department::Hsse->value => $this->hsseOfficer,
+            Department::Distribusi->value => $this->distribusiOfficer,
+            Department::Qq->value => $qqOfficer,
+        ];
+
+        $approvals = app(ApprovalService::class);
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $items = InspectionItem::whereHas('checklist', fn ($q) => $q->where('department', $department->value))->get();
+            foreach ($items as $item) {
+                app(InspectionService::class)->recordResult(
+                    $this->application->fresh(),
+                    $item,
+                    InspectionResultValue::Compliant,
+                    $officers[$department->value],
+                );
+            }
+        }
+
+        $this->actingAs($rsdOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionHidden('approve_rsd')
+            ->assertActionHidden('reject_rsd');
+
+        $approvals->decide($this->application->fresh(), Department::Hsse, ApprovalDecision::Approved, $this->hssePengawas);
+        $approvals->decide($this->application->fresh(), Department::Distribusi, ApprovalDecision::Approved, $this->distribusiPengawas);
+        $approvals->decide($this->application->fresh(), Department::Qq, ApprovalDecision::Approved, $qqOfficer);
+
+        Livewire::test(ViewKimApplication::class, [
+            'record' => $this->application->getRouteKey(),
+        ])
+            ->assertActionVisible('approve_rsd')
+            ->assertActionVisible('reject_rsd');
     }
 
     public function test_finding_requires_description(): void

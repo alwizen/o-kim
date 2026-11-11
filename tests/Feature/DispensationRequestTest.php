@@ -67,9 +67,15 @@ class DispensationRequestTest extends TestCase
         $this->owner->assignRole('transportir');
         $this->owner->transporters()->attach($this->transporter);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 

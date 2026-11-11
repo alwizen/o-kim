@@ -14,7 +14,7 @@ class VehicleProgressStepper extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected string $view = 'filament.transportir.widgets.vehicle-progress-stepper';
+    protected string $view = 'filament.widgets.progress-stepper';
 
     public ?int $applicationId = null;
 
@@ -32,6 +32,9 @@ class VehicleProgressStepper extends Widget
 
     /**
      * Pengajuan milik perusahaan pengguna, terbaru lebih dahulu.
+     *
+     * Pengajuan yang KIM-nya sudah terbit atau dibatalkan tidak ditampilkan:
+     * progresnya sudah selesai sehingga tidak perlu dipantau lagi.
      * Hasil di-cache per request agar tidak query berulang saat widget dirender.
      *
      * @return Collection<int, KimApplication>
@@ -51,6 +54,10 @@ class VehicleProgressStepper extends Widget
         return $this->applicationsCache = KimApplication::query()
             ->with('vehicle')
             ->whereIn('transporter_id', $transporterIds)
+            ->whereNotIn('status', [
+                ApplicationStatus::Issued->value,
+                ApplicationStatus::Cancelled->value,
+            ])
             ->orderByDesc('id')
             ->get();
     }
@@ -75,7 +82,7 @@ class VehicleProgressStepper extends Widget
 
         if ($application !== null) {
             $service = app(VehicleProgressService::class);
-            $steps = $service->stepsFor($application);
+            $steps = $service->stepsFor($application, 'transportir');
             $currentIndex = $service->currentStepIndex($steps);
         }
 
@@ -84,6 +91,11 @@ class VehicleProgressStepper extends Widget
             'steps' => $steps,
             'currentIndex' => $currentIndex,
             'selectedApplication' => $application,
+            'heading' => 'Progres Pengajuan KIM',
+            'description' => 'Tahapan pengajuan mulai dari kendaraan terdaftar hingga persetujuan akhir.',
+            'emptyTitle' => 'Belum ada pengajuan KIM',
+            'emptyText' => 'Buat pengajuan KIM terlebih dahulu agar progres tiap tahap dapat dipantau di sini.',
+            'createUrl' => '/transportir/kim-applications/create',
         ];
     }
 

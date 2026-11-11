@@ -71,9 +71,15 @@ class NotificationEmailTest extends TestCase
         $this->verifier = User::factory()->create(['account_status' => AccountStatus::Approved]);
         $this->verifier->assignRole('admin_verifikasi');
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -137,6 +143,13 @@ class NotificationEmailTest extends TestCase
                 $this->officers[$department->value],
             );
         }
+
+        $approval->decide(
+            $application->fresh(),
+            Department::Rsd,
+            ApprovalDecision::Approved,
+            $this->officers['rsd'],
+        );
     }
 
     private function readyForIssuance(): KimApplication

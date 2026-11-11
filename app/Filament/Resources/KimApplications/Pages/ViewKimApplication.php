@@ -14,7 +14,7 @@ use App\Notifications\InspectionScheduled;
 use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
-use App\Services\Finding\FindingReportService;
+use App\Services\Finding\BeritaAcaraService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Kim\KimIssuanceService;
 use App\Support\AppNotifier;
@@ -406,19 +406,22 @@ class ViewKimApplication extends ViewRecord
         $functionalApprovalsComplete = collect(Department::inspectingDepartments())
             ->every(fn (Department $department) => $approvedDepartments->contains($department->value));
 
-        foreach (Department::inspectingDepartments() as $department) {
-            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
-            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
+        $rsdApprovalComplete = $approvedDepartments->contains(Department::Rsd->value);
+        $preFinalApprovalsComplete = $functionalApprovalsComplete && $rsdApprovalComplete;
+
+        foreach (Department::approvableDepartments() as $department) {
+            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $preFinalApprovalsComplete, $approvedDepartments);
+            $actions[] = $this->makeApprovalAction($department, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $preFinalApprovalsComplete, $approvedDepartments);
         }
 
-        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
-        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $approvedDepartments);
+        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Approved, $hasOpenFindings, $functionalApprovalsComplete, $preFinalApprovalsComplete, $approvedDepartments);
+        $actions[] = $this->makeApprovalAction(Department::Ftm, ApprovalDecision::Rejected, $hasOpenFindings, $functionalApprovalsComplete, $preFinalApprovalsComplete, $approvedDepartments);
 
         // Pemberian dispensasi baru kini melalui menu "Pengajuan KIM Sementara"
         // agar alur selalu dimulai dari permohonan transportir.
 
         $actions[] = Action::make('inspection_report')
-            ->label('Pratinjau Laporan Pemeriksaan')
+            ->label('Laporan Pemeriksaan')
             ->icon('heroicon-o-printer')
             ->color('gray')
             ->visible(fn (): bool => $this->record->inspectionResults->isNotEmpty())
@@ -426,10 +429,10 @@ class ViewKimApplication extends ViewRecord
             ->openUrlInNewTab();
 
         $actions[] = Action::make('berita_acara')
-            ->label('Cetak Berita Acara')
+            ->label('Berita Acara')
             ->icon('heroicon-o-document-text')
             ->color('gray')
-            ->visible(fn (): bool => app(FindingReportService::class)->isEligible($this->record))
+            ->visible(fn (): bool => app(BeritaAcaraService::class)->isEligible($this->record))
             ->url(fn (): string => route('berita-acara.download', $this->record))
             ->openUrlInNewTab();
 
@@ -500,12 +503,20 @@ class ViewKimApplication extends ViewRecord
         ApprovalDecision $decision,
         bool $hasOpenFindings,
         bool $functionalApprovalsComplete,
+        bool $preFinalApprovalsComplete,
         Collection $approvedDepartments,
     ): Action {
         $permission = $department === Department::Ftm ? 'approve_final' : 'approve_'.$department->value;
         $isApprove = $decision === ApprovalDecision::Approved;
         $label = $department === Department::Ftm ? 'Approval Final (FTM)' : 'Approval '.$department->label();
         $label = $isApprove ? $label : 'Tolak — '.$department->label();
+
+        // RSD menunggu ketiga fungsi; FTM menunggu ketiga fungsi + RSD.
+        $gateOpen = match ($department) {
+            Department::Rsd => $functionalApprovalsComplete,
+            Department::Ftm => $preFinalApprovalsComplete,
+            default => true,
+        };
 
         return Action::make(($isApprove ? 'approve_' : 'reject_').$department->value)
             ->label($label)
@@ -519,7 +530,7 @@ class ViewKimApplication extends ViewRecord
                 )
                 && ! $approvedDepartments->contains($department->value)
                 && ! $hasOpenFindings
-                && ($department !== Department::Ftm || $functionalApprovalsComplete))
+                && $gateOpen)
             ->schema([
                 Textarea::make('notes')
                     ->label($isApprove ? 'Catatan (opsional)' : 'Alasan Penolakan (wajib)')

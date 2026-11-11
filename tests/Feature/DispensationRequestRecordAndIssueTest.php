@@ -8,7 +8,6 @@ use App\Enums\ApplicationType;
 use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\DispensationRequestStatus;
-use App\Enums\FindingStatus;
 use App\Enums\InspectionResultValue;
 use App\Filament\Resources\DispensationRequests\DispensationRequestResource;
 use App\Models\Finding;
@@ -19,7 +18,9 @@ use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
+use App\Services\Approval\ApprovalService;
 use App\Services\Finding\DispensationService;
+use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionService;
 use App\Services\Kim\KimIssuanceService;
 use Database\Seeders\DocumentTypeSeeder;
@@ -65,9 +66,15 @@ class DispensationRequestRecordAndIssueTest extends TestCase
         $this->owner->assignRole('transportir');
         $this->owner->transporters()->attach($this->transporter);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -206,7 +213,7 @@ class DispensationRequestRecordAndIssueTest extends TestCase
         $this->approvedDispensationRequest();
 
         // Approve FTM lebih dulu, lalu terbitkan.
-        app(\App\Services\Approval\ApprovalService::class)->decide(
+        app(ApprovalService::class)->decide(
             $this->application->fresh(),
             Department::Ftm,
             ApprovalDecision::Approved,
@@ -227,9 +234,9 @@ class DispensationRequestRecordAndIssueTest extends TestCase
     {
         // Selesaikan temuan tanpa dispensasi: tidak ada dispensasi aktif.
         $finding = $this->completeInspectionsWithFinding();
-        $action = app(\App\Services\Finding\FindingService::class)
+        $action = app(FindingService::class)
             ->submitAction($finding, $this->owner, 'Sparepart sudah diganti.');
-        app(\App\Services\Finding\FindingService::class)
+        app(FindingService::class)
             ->verifyAction($finding->fresh(), $action, $this->officers['hsse'], true);
 
         $this->expectException(ValidationException::class);

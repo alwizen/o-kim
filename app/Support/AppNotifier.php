@@ -9,6 +9,7 @@ use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notification;
+use Spatie\Permission\Models\Role;
 
 class AppNotifier
 {
@@ -110,13 +111,25 @@ class AppNotifier
     /**
      * Kirim notifikasi berbasis class (email + lonceng) ke seluruh pengguna dengan role tertentu.
      *
+     * Role yang belum dibuat (mis. pengawas baru yang masih dikelola manual via UI)
+     * diabaikan agar pengiriman notifikasi tidak gagal.
+     *
      * @param  string|array<int, string>  $roles
      */
     public static function notifyRole(string|array $roles, Notification $notification): void
     {
+        $roles = Role::query()
+            ->whereIn('name', (array) $roles)
+            ->pluck('name')
+            ->all();
+
+        if ($roles === []) {
+            return;
+        }
+
         $users = User::query()
             ->where('account_status', AccountStatus::Approved)
-            ->role((array) $roles)
+            ->role($roles)
             ->get();
 
         foreach ($users as $user) {

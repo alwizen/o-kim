@@ -6,6 +6,7 @@ use App\Services\Setting\SettingsService;
 use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
@@ -53,6 +54,9 @@ class ManageSettings extends Page implements HasForms
             'application_number_period_format' => $settings->applicationNumberPeriodFormat(),
             'application_number_sequence_digits' => (string) $settings->applicationNumberSequenceDigits(),
             'notification_expiry_warning_days' => (string) $settings->expiryWarningDays(),
+            'ba_qr_enabled' => $settings->baQrEnabled(),
+            'kim_qr_enabled' => $settings->kimQrEnabled(),
+            'legal_reference' => $settings->legalReference(),
         ]);
     }
 
@@ -189,6 +193,29 @@ class ManageSettings extends Page implements HasForms
                             ->required()
                             ->helperText('Dokumen/KIM yang kedaluwarsa dalam rentang hari ini akan memicu pengingat email harian.'),
                     ]),
+
+                Section::make('Tanda Tangan QR Dokumen')
+                    ->description('Tampilkan QR tanda tangan/validasi pada dokumen. Nama, jabatan, dan tanggal tetap tercetak walau QR dimatikan.')
+                    ->icon('heroicon-o-qr-code')
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('ba_qr_enabled')
+                            ->label('QR Tanda Tangan Berita Acara')
+                            ->helperText('Berlaku untuk Berita Acara yang dibekukan setelah pengaturan ini disimpan.')
+                            ->default(true),
+
+                        Toggle::make('kim_qr_enabled')
+                            ->label('QR Validasi Kartu KIM')
+                            ->helperText('Berlaku untuk penerbitan/regenerasi kartu KIM berikutnya. Halaman validasi tetap aktif.')
+                            ->default(true),
+
+                        TextInput::make('legal_reference')
+                            ->label('Dasar Hukum Tanda Tangan Elektronik')
+                            ->required()
+                            ->maxLength(500)
+                            ->columnSpanFull()
+                            ->helperText('Dirujuk pada halaman verifikasi QR tanda tangan Berita Acara.'),
+                    ]),
             ]);
     }
 
@@ -211,6 +238,12 @@ class ManageSettings extends Page implements HasForms
             (string) $data['notification_expiry_warning_days'],
             SettingsService::GROUP_NOTIFICATION,
         );
+
+        $settings->setMany([
+            'document.ba_qr_enabled' => $data['ba_qr_enabled'] ? '1' : '0',
+            'document.kim_qr_enabled' => $data['kim_qr_enabled'] ? '1' : '0',
+            'document.legal_reference' => (string) $data['legal_reference'],
+        ], SettingsService::GROUP_DOCUMENT);
 
         Notification::make()
             ->title('Pengaturan berhasil disimpan')

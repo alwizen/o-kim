@@ -71,7 +71,7 @@ class KimApplicationPolicy
             );
         }
 
-        foreach ([...Department::inspectingDepartments(), Department::Ftm] as $candidate) {
+        foreach (Department::approvableDepartments() as $candidate) {
             $permission = $candidate === Department::Ftm ? 'approve_final' : 'approve_'.$candidate->value;
 
             if ($user->can($permission)) {

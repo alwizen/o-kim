@@ -57,7 +57,7 @@ class DepartmentScope
         }
 
         return array_values(array_filter(
-            Department::inspectingDepartments(),
+            Department::approvableDepartments(),
             fn (Department $department): bool => $user->can('approve_'.$department->value),
         ));
     }

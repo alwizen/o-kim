@@ -10,11 +10,14 @@ use App\Models\KimApplication;
 use App\Models\User;
 use App\Notifications\ApplicationApproved;
 use App\Notifications\ApplicationApprovedByDepartment;
+use App\Notifications\ApplicationPendingDepartmentApproval;
 use App\Notifications\ApplicationPendingFinalApproval;
 use App\Notifications\ApplicationRejected;
+use App\Services\Finding\BeritaAcaraService;
 use App\Services\Inspection\InspectionService;
 use App\Support\AppNotifier;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ApprovalService
@@ -69,12 +72,23 @@ class ApprovalService
 
             if ($department === Department::Ftm) {
                 // KIM sementara (ada temuan dispensasi aktif) cukup disetujui FTM;
-                // approval pengawas tidak diperlukan karena temuan sudah didispensasi.
+                // approval pengawas dan RSD tidak diperlukan karena temuan sudah didispensasi.
                 if (! $application->hasActiveDispensation()) {
-                    $this->ensureFunctionalApprovalsComplete($application);
+                    $this->ensurePreFinalApprovalsComplete($application);
                 }
 
                 $this->ensureInspectionReady($application);
+            }
+
+            if ($department === Department::Rsd) {
+                // RSD hanya menjadi gerbang setelah ketiga fungsi menyetujui.
+                if ($application->hasActiveDispensation()) {
+                    throw ValidationException::withMessages([
+                        'approval' => 'KIM sementara cukup approval FTM; approval RSD tidak diperlukan.',
+                    ]);
+                }
+
+                $this->ensureFunctionalApprovalsComplete($application);
             }
 
             if ($decision === ApprovalDecision::Approved && $department !== Department::Ftm) {
@@ -91,6 +105,8 @@ class ApprovalService
                 'decision' => $decision,
                 'approved_by' => $approver->id,
                 'notes' => $notes,
+                'ip_address' => request()->ip(),
+                'user_agent' => Str::limit((string) request()->userAgent(), 500, ''),
                 'decided_at' => now(),
             ]);
 
@@ -117,9 +133,33 @@ class ApprovalService
                     ),
                 ));
 
-                if ($this->allFunctionalApprovalsComplete($application)) {
+                if ($department !== Department::Rsd && $this->allFunctionalApprovalsComplete($application)) {
                     $application->update(['status' => ApplicationStatus::PendingApproval]);
 
+                    if ($application->hasActiveDispensation()) {
+                        // KIM sementara: temuan sudah didispensasi, FTM langsung memutuskan.
+                        DB::afterCommit(fn () => AppNotifier::notifyStaffWithPermission(
+                            'approve_final',
+                            new ApplicationPendingFinalApproval(
+                                $application->application_number,
+                                $application->vehicle->registration_number,
+                            ),
+                        ));
+                    } else {
+                        // Ketiga fungsi selesai: antrean berpindah ke Pengawas RSD
+                        // (wakil FTM) sebelum approval final.
+                        DB::afterCommit(fn () => AppNotifier::notifyStaffWithPermission(
+                            'approve_rsd',
+                            new ApplicationPendingDepartmentApproval(
+                                $application->application_number,
+                                $application->vehicle->registration_number,
+                                Department::Rsd->label(),
+                                (string) $application->getRouteKey(),
+                            ),
+                        ));
+                    }
+                } elseif ($department === Department::Rsd) {
+                    // RSD menyetujui: pengajuan menunggu approval final FTM.
                     DB::afterCommit(fn () => AppNotifier::notifyStaffWithPermission(
                         'approve_final',
                         new ApplicationPendingFinalApproval(
@@ -141,6 +181,10 @@ class ApprovalService
                         $application->vehicle->registration_number,
                     ),
                 ));
+
+                // Setelah approval final lengkap, bekukan Berita Acara (bila layak).
+                DB::afterCommit(fn () => app(BeritaAcaraService::class)
+                    ->finalizeIfReady($application->fresh()));
             }
 
             return $approval;
@@ -159,6 +203,30 @@ class ApprovalService
     }
 
     /**
+     * Seluruh approval pra-final selesai: tiga fungsi pemeriksa plus Pengawas RSD.
+     */
+    public function allPreFinalApprovalsComplete(KimApplication $application): bool
+    {
+        $departments = Department::approvableDepartments();
+
+        $approved = $application->approvals()
+            ->whereIn('department', collect($departments)->map->value)
+            ->where('decision', ApprovalDecision::Approved)
+            ->pluck('department')
+            ->unique();
+
+        return $approved->count() === count($departments);
+    }
+
+    public function rsdApprovalComplete(KimApplication $application): bool
+    {
+        return $application->approvals()
+            ->where('department', Department::Rsd->value)
+            ->where('decision', ApprovalDecision::Approved)
+            ->exists();
+    }
+
+    /**
      * Approval final tetap menunggu temuan selesai/didispensasi dan seluruh checklist terisi.
      */
     private function ensureInspectionReady(KimApplication $application): void
@@ -170,11 +238,26 @@ class ApprovalService
         }
     }
 
-    private function ensureFunctionalApprovalsComplete(KimApplication $application): void
+    private function ensurePreFinalApprovalsComplete(KimApplication $application): void
     {
         if (! $this->allFunctionalApprovalsComplete($application)) {
             throw ValidationException::withMessages([
                 'approval' => 'FTM hanya dapat menyetujui setelah HSSE, Distribusi, dan QQ menyetujui.',
+            ]);
+        }
+
+        if (! $this->rsdApprovalComplete($application)) {
+            throw ValidationException::withMessages([
+                'approval' => 'FTM hanya dapat menyetujui setelah Pengawas RSD menyetujui.',
+            ]);
+        }
+    }
+
+    private function ensureFunctionalApprovalsComplete(KimApplication $application): void
+    {
+        if (! $this->allFunctionalApprovalsComplete($application)) {
+            throw ValidationException::withMessages([
+                'approval' => 'Pengawas RSD hanya dapat menyetujui setelah HSSE, Distribusi, dan QQ menyetujui.',
             ]);
         }
     }

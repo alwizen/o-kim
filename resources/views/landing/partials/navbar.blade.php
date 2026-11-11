@@ -136,11 +136,15 @@
                             Masuk
                             <x-heroicon-m-chevron-down class="h-4 w-4" />
                         </button>
-                        <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
-                            <a href="{{ route('login.form') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-auth-50">
+                        <div data-dropdown-panel hidden class="flex flex-col gap-2 px-4 pb-3">
+                            <a href="{{ route('login.form') }}"
+                               class="flex items-center gap-3 rounded-xl border border-auth-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition active:bg-auth-50">
+                                <x-heroicon-o-truck class="h-5 w-5 shrink-0 text-auth-600" />
                                 Masuk sebagai Transportir
                             </a>
-                            <a href="/admin/login" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-auth-50">
+                            <a href="/admin/login"
+                               class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition active:bg-auth-50">
+                                <x-heroicon-o-identification class="h-5 w-5 shrink-0 text-slate-500" />
                                 Masuk sebagai Petugas Internal
                             </a>
                         </div>
@@ -153,11 +157,15 @@
                             Daftar
                             <x-heroicon-m-chevron-down class="h-4 w-4" />
                         </button>
-                        <div data-dropdown-panel hidden class="flex flex-col gap-1 pb-2">
-                            <a href="{{ route('register') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-auth-50">
+                        <div data-dropdown-panel hidden class="flex flex-col gap-2 px-4 pb-3">
+                            <a href="{{ route('register') }}"
+                               class="flex items-center gap-3 rounded-xl border border-auth-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition active:bg-auth-50">
+                                <x-heroicon-o-truck class="h-5 w-5 shrink-0 text-auth-600" />
                                 Daftar sebagai Transportir
                             </a>
-                            <a href="{{ route('register.internal') }}" class="rounded-lg px-4 py-2.5 text-sm text-slate-600 hover:bg-auth-50">
+                            <a href="{{ route('register.internal') }}"
+                               class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition active:bg-auth-50">
+                                <x-heroicon-o-identification class="h-5 w-5 shrink-0 text-slate-500" />
                                 Daftar sebagai Petugas Internal
                             </a>
                         </div>

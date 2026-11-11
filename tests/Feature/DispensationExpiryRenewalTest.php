@@ -20,6 +20,7 @@ use App\Notifications\FindingDispensationExpired;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
 use App\Services\Finding\DispensationService;
+use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionService;
 use App\Services\Kim\KimIssuanceService;
 use Database\Seeders\DocumentTypeSeeder;
@@ -66,9 +67,15 @@ class DispensationExpiryRenewalTest extends TestCase
         $this->owner->assignRole('transportir');
         $this->owner->transporters()->attach($this->transporter);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -198,10 +205,10 @@ class DispensationExpiryRenewalTest extends TestCase
         $finding = $this->completeInspectionsWithFinding();
 
         // Selesaikan temuan tanpa dispensasi agar KIM terbit normal.
-        $action = app(\App\Services\Finding\FindingService::class)
+        $action = app(FindingService::class)
             ->submitAction($finding, $this->owner, 'Sparepart sudah diganti.');
 
-        app(\App\Services\Finding\FindingService::class)
+        app(FindingService::class)
             ->verifyAction($finding->fresh(), $action, $this->officers['hsse'], true);
 
         foreach (Department::inspectingDepartments() as $department) {
@@ -212,6 +219,13 @@ class DispensationExpiryRenewalTest extends TestCase
                 $this->officers[$department->value],
             );
         }
+
+        app(ApprovalService::class)->decide(
+            $this->application->fresh(),
+            Department::Rsd,
+            ApprovalDecision::Approved,
+            $this->officers['rsd'],
+        );
 
         app(ApprovalService::class)->decide(
             $this->application->fresh(),

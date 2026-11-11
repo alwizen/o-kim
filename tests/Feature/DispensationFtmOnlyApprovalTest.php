@@ -29,6 +29,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -64,9 +65,15 @@ class DispensationFtmOnlyApprovalTest extends TestCase
         $this->owner->assignRole('transportir');
         $this->owner->transporters()->attach($this->transporter);
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -177,7 +184,7 @@ class DispensationFtmOnlyApprovalTest extends TestCase
         $this->completeInspectionsWithFinding();
         $this->application->update(['status' => ApplicationStatus::PendingApproval]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
 
         app(ApprovalService::class)->decide(
             $this->application->fresh(),
@@ -209,7 +216,7 @@ class DispensationFtmOnlyApprovalTest extends TestCase
         $this->completeInspectionsWithFinding();
         $this->application->update(['status' => ApplicationStatus::Approved]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
 
         app(KimIssuanceService::class)->issue($this->application->fresh());
     }
