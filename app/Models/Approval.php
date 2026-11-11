@@ -11,7 +11,7 @@ class Approval extends Model
 {
     protected $fillable = [
         'kim_application_id', 'department', 'decision',
-        'approved_by', 'notes', 'decided_at',
+        'approved_by', 'notes', 'ip_address', 'user_agent', 'decided_at',
     ];
 
     protected function casts(): array

@@ -5,13 +5,14 @@ namespace App\Models;
 use App\Enums\KimCardStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 class KimCard extends Model
 {
     protected $fillable = [
         'kim_application_id', 'kim_number', 'issued_at',
-        'expires_at', 'qr_token', 'pdf_path', 'image_path', 'status',
+        'expires_at', 'qr_token', 'pdf_path', 'pdf_hash', 'image_path', 'status',
         'is_dispensation', 'dispensation_expires_at', 'dispensation_lapsed_at',
     ];
 
@@ -30,6 +31,14 @@ class KimCard extends Model
     public function application(): BelongsTo
     {
         return $this->belongsTo(KimApplication::class, 'kim_application_id');
+    }
+
+    /**
+     * Tanda tangan elektronik lima fungsi pada dokumen KIM.
+     */
+    public function signatures(): MorphMany
+    {
+        return $this->morphMany(DocumentSignature::class, 'signable')->orderBy('sort_order');
     }
 
     public function currentStatus(): KimCardStatus

@@ -146,7 +146,7 @@ enum NotificationEvent: string
             self::InternalFindingDispensationGranted => 'Dikirim ke FTM dan pengawas fungsi saat dispensasi diberikan.',
             self::InternalFindingDispensationExpired => 'Dikirim ke FTM dan pengawas fungsi saat KIM sementara kedaluwarsa.',
             self::InternalDepartmentApprovalNeeded => 'Dikirim saat checklist suatu fungsi selesai dan menunggu approval.',
-            self::InternalFinalApprovalNeeded => 'Dikirim saat ketiga fungsi menyetujui dan menunggu approval final.',
+            self::InternalFinalApprovalNeeded => 'Dikirim setelah RSD menyetujui dan menunggu approval final FTM.',
             self::InternalExpiryReminder => 'Ringkasan harian dokumen dan KIM yang akan kedaluwarsa untuk petugas.',
             self::InternalAccountApproved => 'Dikirim saat akun internal diaktifkan.',
             self::InternalAccountRejected => 'Dikirim saat akun internal ditolak.',
@@ -225,7 +225,7 @@ enum NotificationEvent: string
      */
     public function defaultRoles(): array
     {
-        $pengawas = ['pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq'];
+        $pengawas = ['pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq', 'rsd'];
 
         return match ($this) {
             self::TransporterRegistrationReceived,

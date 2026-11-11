@@ -3,6 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\ApprovalDecision;
+use App\Enums\Department;
 use App\Enums\DispensationRequestStatus;
 use App\Enums\FindingStatus;
 use App\Enums\InternalRole;
@@ -36,6 +38,9 @@ class FtmStatsOverview extends StatsOverviewWidget
 
         $pendingFinalApproval = KimApplication::query()
             ->where('status', ApplicationStatus::PendingApproval->value)
+            ->whereHas('approvals', fn ($query) => $query
+                ->where('department', Department::Rsd->value)
+                ->where('decision', ApprovalDecision::Approved->value))
             ->count();
 
         $activeDispensations = Finding::query()
@@ -64,7 +69,7 @@ class FtmStatsOverview extends StatsOverviewWidget
                 ->url('/admin/dispensation-requests'),
 
             Stat::make('Menunggu Approval Akhir', $pendingFinalApproval)
-                ->description('Semua fungsi sudah setuju')
+                ->description('Fungsi & RSD sudah setuju')
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color($pendingFinalApproval > 0 ? 'info' : 'gray')
                 ->icon('heroicon-o-check-badge')

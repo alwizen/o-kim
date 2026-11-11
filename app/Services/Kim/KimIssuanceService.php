@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\KimCardIssued;
 use App\Notifications\KimCardIssuedAsDispensationStaff;
 use App\Services\Approval\ApprovalService;
+use App\Services\Document\DocumentSignatureService;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
 use Illuminate\Support\Carbon;
@@ -52,6 +53,10 @@ class KimIssuanceService
                 'dispensation_expires_at' => $dispensationDueDate?->toDateString(),
             ]);
 
+            // Bekukan tanda tangan elektronik lima fungsi (atau FTM saja untuk
+            // KIM sementara) pada dokumen KIM.
+            app(DocumentSignatureService::class)->createFor($card, $application);
+
             $application->update([
                 'status' => ApplicationStatus::Issued,
                 'issued_at' => $issuedAt,
@@ -77,7 +82,7 @@ class KimIssuanceService
             // diberi tahu bahwa NOPOL tersebut memperoleh dispensasi FTM.
             if ($isDispensation) {
                 DB::afterCommit(fn () => AppNotifier::notifyRole(
-                    ['pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq'],
+                    ['pengawas_hsse', 'pengawas_distribusi', 'pengawas_qq', 'rsd'],
                     new KimCardIssuedAsDispensationStaff(
                         $applicationNumber,
                         $registrationNumber,
@@ -156,11 +161,11 @@ class KimIssuanceService
         }
 
         // KIM sementara cukup approval FTM: temuan terkait sudah didispensasi
-        // sehingga pengawas fungsi tidak perlu menyetujui lagi.
+        // sehingga pengawas fungsi dan RSD tidak perlu menyetujui lagi.
         $requiresFunctionalApprovals = ! $application->hasActiveDispensation();
 
         if ($requiresFunctionalApprovals) {
-            foreach (Department::inspectingDepartments() as $department) {
+            foreach (Department::approvableDepartments() as $department) {
                 $has = $application->approvals()
                     ->where('department', $department->value)
                     ->where('decision', ApprovalDecision::Approved)

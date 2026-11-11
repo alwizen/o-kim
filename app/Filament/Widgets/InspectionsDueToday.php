@@ -55,8 +55,7 @@ class InspectionsDueToday extends TableWidget
             ->defaultPaginationPageOption(5)
             ->columns([
                 TextColumn::make('application_number')
-                    ->label('No. Pengajuan')
-                    ->searchable(),
+                    ->label('No. Pengajuan'),
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
                     ->badge(),

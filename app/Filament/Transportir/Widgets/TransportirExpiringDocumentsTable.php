@@ -38,8 +38,7 @@ class TransportirExpiringDocumentsTable extends TableWidget
                     ->width(1)
                     ->grow(false),
                 TextColumn::make('vehicle.registration_number')
-                    ->label('NOPOL')
-                    ->searchable(),
+                    ->label('NOPOL'),
                 TextColumn::make('documentType.name')
                     ->label('Jenis Dokumen')
                     ->badge(),

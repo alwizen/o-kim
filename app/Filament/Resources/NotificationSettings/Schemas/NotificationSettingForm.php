@@ -42,6 +42,7 @@ class NotificationSettingForm
             'pengawas_hsse' => 'Pengawas HSSE — verifikasi temuan & approval HSSE.',
             'pengawas_distribusi' => 'Pengawas Distribusi — verifikasi temuan & approval Distribusi.',
             'pengawas_qq' => 'Pengawas QQ — verifikasi temuan & approval QQ.',
+            'rsd' => 'Pengawas RSD — approval sebelum approval final FTM.',
             'transportir' => 'PIC perusahaan transportir.',
             default => 'Role tambahan.',
         };

@@ -4,9 +4,13 @@ namespace App\Services\Inspection;
 
 use App\Enums\Department;
 use App\Enums\InspectionResultValue;
+use App\Models\Finding;
+use App\Models\FindingAction;
+use App\Models\FindingVerification;
 use App\Models\InspectionChecklist;
 use App\Models\InspectionResult;
 use App\Models\KimApplication;
+use App\Support\PdfImage;
 use App\Support\SafeFilename;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -32,6 +36,10 @@ class InspectionReportService
             'inspectionResults.pointResults',
             'inspectionResults.inspector',
             'inspectionResults.finding',
+            'inspectionResults.finding.actions' => fn ($query) => $query->latest('id'),
+            'inspectionResults.finding.actions.submitter',
+            'inspectionResults.finding.verifications' => fn ($query) => $query->latest('id'),
+            'inspectionResults.attachments',
             'findings.creator',
         ]);
 
@@ -83,7 +91,19 @@ class InspectionReportService
                     };
 
                     if ($result->inspector !== null) {
-                        $inspectors[$result->inspector->name] = true;
+                        $inspectorId = $result->inspector->id;
+
+                        // Simpan waktu periksa terbaru per petugas pada fungsi ini.
+                        $existingAt = $inspectors[$inspectorId]['inspected_at'] ?? null;
+
+                        $inspectors[$inspectorId] = [
+                            'name' => $result->inspector->name,
+                            'jabatan' => $result->inspector->jabatan,
+                            'inspected_at' => $result->inspected_at !== null
+                                && ($existingAt === null || $result->inspected_at->gt($existingAt))
+                                    ? $result->inspected_at
+                                    : $existingAt,
+                        ];
                     }
 
                     if ($result->finding !== null && $result->finding->blocksApproval()) {
@@ -91,10 +111,20 @@ class InspectionReportService
                     }
                 }
 
+                $finding = $result?->finding;
+                $action = $finding?->actions->first();
+                $verification = $finding?->verifications->first();
+
                 $rows[] = [
                     'item' => $item,
                     'result' => $result,
                     'checked_points' => $result?->checkedPointMap() ?? [],
+                    'notes' => $result?->notes,
+                    'finding' => $finding,
+                    'action' => $action,
+                    'verification' => $verification,
+                    'follow_up' => $this->followUpStatus($finding, $action, $verification),
+                    'photos' => $this->photosFor($result),
                 ];
             }
 
@@ -102,7 +132,7 @@ class InspectionReportService
                 'department' => $checklist->department,
                 'checklist' => $checklist,
                 'rows' => $rows,
-                'inspectors' => array_keys($inspectors),
+                'inspectors' => array_values($inspectors),
                 'assessed' => collect($rows)->filter(fn (array $row) => $row['result'] !== null)->count(),
                 'total' => count($rows),
             ];
@@ -116,6 +146,59 @@ class InspectionReportService
             'departments' => $departments,
             'summary' => $summary,
         ];
+    }
+
+    /**
+     * Ambil foto bukti pemeriksaan (data URI siap semat) untuk satu hasil.
+     *
+     * Hanya lampiran berupa gambar yang disertakan; PDF/bukan gambar dilewati
+     * karena tabel laporan hanya menampilkan bukti visual.
+     *
+     * @return array<int, string>
+     */
+    private function photosFor(?InspectionResult $result): array
+    {
+        if ($result === null) {
+            return [];
+        }
+
+        $disk = (string) config('media.disk');
+
+        return $result->attachments
+            ->filter(fn ($attachment) => str_starts_with((string) $attachment->mime_type, 'image/'))
+            ->map(fn ($attachment) => PdfImage::dataUri(
+                (string) $attachment->file_path,
+                (string) $attachment->mime_type,
+                $disk,
+                600,
+            ))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Status tindak lanjut transportir untuk sebuah temuan.
+     *
+     * @return array{label: string, class: string}|null
+     */
+    private function followUpStatus(?Finding $finding, ?FindingAction $action, ?FindingVerification $verification): ?array
+    {
+        if ($finding === null) {
+            return null;
+        }
+
+        if ($action === null) {
+            return ['label' => 'Belum ditindaklanjuti', 'class' => 'badge-finding'];
+        }
+
+        if ($verification === null) {
+            return ['label' => 'Menunggu verifikasi', 'class' => 'badge-empty'];
+        }
+
+        return $verification->decision === 'accepted'
+            ? ['label' => 'Tindak lanjut diterima', 'class' => 'badge-compliant']
+            : ['label' => 'Tindak lanjut ditolak', 'class' => 'badge-finding'];
     }
 
     /**

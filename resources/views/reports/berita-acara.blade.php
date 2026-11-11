@@ -5,7 +5,8 @@
     <title>Berita Acara — {{ $application->application_number }}</title>
     <style>
         @page {
-            margin: 24px 52px 42px 52px;
+            /* 1,27 cm (0,5") atas, bawah, kiri, kanan — sama dengan laporan checklist. */
+            margin: 1.27cm;
         }
 
         body {
@@ -13,6 +14,8 @@
             font-size: 10px;
             color: #000000;
             line-height: 1.45;
+            margin: 0;
+            padding: 0;
         }
 
         h1, h2, h3 {
@@ -197,6 +200,71 @@
             border-top: 1px solid #e5e7eb;
             padding-top: 3px;
         }
+
+        .signature-section {
+            margin-top: 18px;
+        }
+
+        .signature-title {
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        table.signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        table.signature-table td.signature-cell {
+            width: 33.33%;
+            text-align: center;
+            vertical-align: top;
+            padding: 6px 4px;
+        }
+
+        .signature-cell-empty {
+            border: none;
+        }
+
+        .signature-qr {
+            width: 68px;
+            height: 68px;
+        }
+
+        .signature-name {
+            font-size: 9px;
+            font-weight: bold;
+            margin-top: 3px;
+            color: #000000;
+        }
+
+        .signature-role {
+            font-size: 8px;
+            font-weight: bold;
+            margin-top: 4px;
+            border-top: 1px solid #000000;
+            padding-top: 2px;
+        }
+
+        .signature-placeholder {
+            font-size: 8px;
+            color: #6b7280;
+            height: 68px;
+            display: block;
+            padding-top: 22px;
+        }
+
+        .signature-hash {
+            margin-top: 8px;
+            font-size: 7px;
+            color: #6b7280;
+            text-align: center;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
@@ -267,6 +335,47 @@
     Demikian Berita Acara ini dibuat sesuai dengan keadaan sebenarnya dan untuk dipergunakan
     sebagaimana mestinya.
 </p>
+
+@if (! empty($signatureBlocks))
+    @php
+        // Susun baris tanda tangan: [HSSE, Distribusi, QQ] lalu [RSD, FTM].
+        $signatureRows = array_chunk($signatureBlocks, 3);
+    @endphp
+
+    <div class="signature-section">
+        <div class="signature-title">Disetujui Oleh</div><br>
+
+        @foreach ($signatureRows as $row)
+            <table class="signature-table">
+                <tr>
+                    @foreach ($row as $block)
+                        <td class="signature-cell">
+                            @if ($block['placeholder'])
+                                <div class="signature-placeholder">Tidak tersedia<br>(data lama)</div>
+                            @else
+                                @if ($block['qr'])
+                                    <img src="{{ $block['qr'] }}" alt="QR Tanda Tangan {{ $block['department']->label() }}" class="signature-qr">
+                                @endif
+                                <div class="signature-name">{{ $block['signature']->name }}</div>
+                            @endif
+                            <div class="signature-role">{{ $block['signature']?->jabatan ?: $block['department']->label() }}</div>
+                        </td>
+                    @endforeach
+
+                    @for ($i = count($row); $i < 3; $i++)
+                        <td class="signature-cell signature-cell-empty"></td>
+                    @endfor
+                </tr>
+            </table>
+        @endforeach
+
+        @if ($document?->pdf_hash)
+            <div class="signature-hash">
+                No. BA {{ $document->number }} · SHA-256: {{ $document->pdf_hash }}
+            </div>
+        @endif
+    </div>
+@endif
 
 <div class="page-break"></div>
 

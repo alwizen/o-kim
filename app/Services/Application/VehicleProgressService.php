@@ -12,23 +12,35 @@ use App\Services\Inspection\InspectionService;
 
 class VehicleProgressService
 {
+    /**
+     * Panel yang sedang merender stepper: 'transportir' atau 'admin'.
+     * Dipakai untuk menyusun tautan tiap langkah agar mengarah ke panel yang tepat.
+     */
+    private string $panel = 'transportir';
+
     public function __construct(
         private KimApplicationService $applicationService,
         private InspectionService $inspectionService,
     ) {}
 
     /**
-     * Susun lima langkah progres pengajuan untuk satu pengajuan KIM.
+     * Susun langkah progres pengajuan untuk satu pengajuan KIM.
      *
-     * Checklist dan temuan digabung menjadi satu tahap "Pemeriksaan & Temuan"
-     * karena keduanya merupakan satu rangkaian pemeriksaan yang sama.
+     * Urutan: kendaraan, verifikasi dokumen, pemeriksaan & temuan, lalu
+     * approval per fungsi (HSSE, Distribusi, QQ, RSD, FTM).
+     * Langkah "KIM Terbit" tidak ditampilkan karena kartu sudah punya
+     * halaman sendiri.
+     *
+     * `$panel` menentukan panel tujuan tautan tiap langkah (transportir/admin).
      *
      * State yang dipakai: done, active, warning, failed, pending.
      *
      * @return array<int, array{key: string, label: string, state: string, description: string, url: string}>
      */
-    public function stepsFor(KimApplication $application): array
+    public function stepsFor(KimApplication $application, string $panel = 'transportir'): array
     {
+        $this->panel = in_array($panel, ['transportir', 'admin'], true) ? $panel : 'transportir';
+
         $application->loadMissing(['vehicle', 'findings', 'kimCard', 'approvals']);
 
         return [
@@ -36,7 +48,6 @@ class VehicleProgressService
             $this->documentStep($application),
             $this->inspectionStep($application),
             ...$this->departmentApprovalSteps($application),
-            $this->kimStep($application),
         ];
     }
 
@@ -64,7 +75,7 @@ class VehicleProgressService
             'label' => 'Pendaftaran Kendaraan',
             'state' => 'done',
             'description' => $application->vehicle->registration_number,
-            'url' => '/transportir/vehicles/'.$application->vehicle_id.'/edit',
+            'url' => $this->vehicleUrl($application->vehicle_id),
         ];
     }
 
@@ -93,7 +104,7 @@ class VehicleProgressService
             'label' => 'Verifikasi Dokumen',
             'state' => $state,
             'description' => $description,
-            'url' => '/transportir/vehicles/'.$vehicle->id.'/edit',
+            'url' => $this->vehicleUrl($vehicle->id),
         ];
     }
 
@@ -140,7 +151,7 @@ class VehicleProgressService
                 'label' => 'Pemeriksaan & Temuan',
                 'state' => 'failed',
                 'description' => 'Pengajuan ditolak',
-                'url' => '/transportir/findings',
+                'url' => $this->findingsUrl(),
             ];
         }
 
@@ -152,7 +163,7 @@ class VehicleProgressService
                 'state' => 'warning',
                 'description' => $openFindings->count().' temuan perlu ditindaklanjuti'
                     .($checklistDone ? '' : ' · checklist '.$completedDepartments.'/'.$totalDepartments.' fungsi'),
-                'url' => '/transportir/findings',
+                'url' => $this->findingsUrl(),
             ];
         }
 
@@ -164,7 +175,7 @@ class VehicleProgressService
                 'description' => $findings->isEmpty()
                     ? 'Seluruh checklist selesai, tanpa temuan'
                     : 'Seluruh checklist selesai dan temuan tuntas',
-                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+                'url' => $this->applicationUrl($application),
             ];
         }
 
@@ -174,7 +185,7 @@ class VehicleProgressService
                 'label' => 'Pemeriksaan & Temuan',
                 'state' => 'active',
                 'description' => $completedDepartments.' dari '.$totalDepartments.' fungsi selesai diperiksa',
-                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+                'url' => $this->applicationUrl($application),
             ];
         }
 
@@ -199,12 +210,12 @@ class VehicleProgressService
             'label' => 'Pemeriksaan & Temuan',
             'state' => 'pending',
             'description' => $description,
-            'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+            'url' => $this->applicationUrl($application),
         ];
     }
 
     /**
-     * Tahap persetujuan, dipecah per pengawas: HSSE, Distribusi, QQ, lalu FTM.
+     * Tahap persetujuan, dipecah per pengawas: HSSE, Distribusi, QQ, RSD, lalu FTM.
      *
      * Setiap fungsi punya langkahnya sendiri agar transportir dapat melihat
      * fungsi mana yang sudah menyetujui dan mana yang masih menunggu.
@@ -226,6 +237,7 @@ class VehicleProgressService
         );
 
         $functions = Department::inspectingDepartments();
+        $rsd = Department::Rsd;
         $ftm = Department::Ftm;
 
         $approvedFunctions = collect($functions)
@@ -233,11 +245,12 @@ class VehicleProgressService
             ->count();
 
         $allFunctionsApproved = $approvedFunctions >= count($functions);
+        $rsdApproved = $approvedDepartments->contains($rsd->value);
         $ftmApproved = $approvedDepartments->contains($ftm->value);
         $applicationRejected = $application->status === ApplicationStatus::Rejected;
 
         // KIM sementara: temuan sudah didispensasi FTM, sehingga approval pengawas
-        // tidak diperlukan dan hanya FTM yang menunggu.
+        // dan RSD tidak diperlukan dan hanya FTM yang menunggu.
         $isDispensation = $application->hasActiveDispensation();
 
         // Approval hanya boleh tampak berjalan setelah pemeriksaan tuntas:
@@ -258,8 +271,9 @@ class VehicleProgressService
         $steps = [];
         $runningMarked = false;
 
-        foreach ([...$functions, $ftm] as $department) {
+        foreach ([...$functions, $rsd, $ftm] as $department) {
             $isFtm = $department === $ftm;
+            $isRsd = $department === $rsd;
             $approved = $approvedDepartments->contains($department->value);
             $rejectedHere = $rejected !== null && $rejected->department === $department;
 
@@ -268,7 +282,9 @@ class VehicleProgressService
                 rejectedHere: $rejectedHere,
                 applicationRejected: $applicationRejected,
                 isFtm: $isFtm,
+                isRsd: $isRsd,
                 allFunctionsApproved: $allFunctionsApproved,
+                rsdApproved: $rsdApproved,
                 ftmApproved: $ftmApproved,
                 approvedBy: $approverByDepartment->get($department->value)?->approver?->name,
                 isDispensation: $isDispensation,
@@ -290,7 +306,7 @@ class VehicleProgressService
                 'label' => $isFtm ? 'FTM' : 'Pengawas '.$department->label(),
                 'state' => $state,
                 'description' => $description,
-                'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
+                'url' => $this->applicationUrl($application),
             ];
         }
 
@@ -307,7 +323,9 @@ class VehicleProgressService
         bool $rejectedHere,
         bool $applicationRejected,
         bool $isFtm,
+        bool $isRsd,
         bool $allFunctionsApproved,
+        bool $rsdApproved,
         bool $ftmApproved,
         ?string $approvedBy,
         bool $isDispensation = false,
@@ -331,8 +349,33 @@ class VehicleProgressService
         }
 
         if ($isFtm) {
-            if ($isDispensation || $allFunctionsApproved) {
+            if ($isDispensation || ($allFunctionsApproved && $rsdApproved)) {
                 return ['active', 'Menunggu persetujuan FTM'];
+            }
+
+            if ($allFunctionsApproved) {
+                return ['pending', 'Menunggu persetujuan RSD'];
+            }
+
+            return ['pending', 'Menunggu persetujuan fungsi'];
+        }
+
+        // RSD adalah gerbang sebelum FTM: menunggu ketiga fungsi selesai.
+        if ($isRsd) {
+            if ($isDispensation) {
+                return ['pending', 'Tidak diperlukan — dispensasi FTM'];
+            }
+
+            if ($ftmApproved || ($allFunctionsApproved && $rsdApproved)) {
+                return ['done', 'Disetujui'];
+            }
+
+            if ($allFunctionsApproved) {
+                return ['active', 'Menunggu persetujuan RSD'];
+            }
+
+            if (! $approvalOpen) {
+                return ['pending', 'Menunggu pemeriksaan selesai'];
             }
 
             return ['pending', 'Menunggu persetujuan fungsi'];
@@ -357,33 +400,39 @@ class VehicleProgressService
     }
 
     /**
-     * @return array{key: string, label: string, state: string, description: string, url: string}
+     * URL halaman kendaraan sesuai panel yang sedang dipakai.
      */
-    private function kimStep(KimApplication $application): array
+    private function vehicleUrl(int $vehicleId): string
     {
-        $card = $application->kimCard;
+        return $this->panel === 'admin'
+            ? '/admin/vehicles/'.$vehicleId
+            : '/transportir/vehicles/'.$vehicleId.'/edit';
+    }
 
-        if ($card !== null) {
-            $state = 'done';
-            $description = $card->kim_number;
-        } elseif ($application->status === ApplicationStatus::Approved) {
-            $state = 'active';
-            $description = 'Menunggu penerbitan KIM';
-        } elseif ($application->status === ApplicationStatus::Rejected) {
-            $state = 'failed';
-            $description = 'Tidak diterbitkan';
-        } else {
-            $state = 'pending';
-            $description = 'Menunggu persetujuan';
-        }
+    /**
+     * URL daftar temuan sesuai panel yang sedang dipakai.
+     */
+    private function findingsUrl(): string
+    {
+        return $this->panel === 'admin'
+            ? '/admin/findings'
+            : '/transportir/findings';
+    }
 
-        return [
-            'key' => 'kim',
-            'label' => 'KIM Terbit',
-            'state' => $state,
-            'description' => $description,
-            'url' => '/transportir/kim-applications/'.$application->getRouteKey(),
-        ];
+    /**
+     * URL detail pengajuan sesuai panel yang sedang dipakai.
+     */
+    private function applicationUrl(KimApplication $application): string
+    {
+        return '/'.$this->panel.'/kim-applications/'.$application->getRouteKey();
+    }
+
+    /**
+     * Panel yang dipakai untuk menyusun tautan langkah.
+     */
+    public function panel(): string
+    {
+        return $this->panel;
     }
 
     /**

@@ -55,9 +55,15 @@ class KimDownloadAuthorizationTest extends TestCase
             $this->uploadVehicleDocument($this->vehicle, $code, now()->addMonths(4)->toDateString());
         }
 
-        foreach (['hsse', 'distribusi', 'qq', 'ftm'] as $role) {
+        foreach (['hsse', 'distribusi', 'qq', 'ftm', 'rsd'] as $role) {
             $officer = User::factory()->create(['account_status' => AccountStatus::Approved]);
-            $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+
+            if ($role === 'rsd') {
+                $officer->givePermissionTo('approve_rsd');
+            } else {
+                $officer->assignRole($role === 'ftm' ? ['ftm'] : [$role, 'pengawas_'.$role]);
+            }
+
             $this->officers[$role] = $officer;
         }
 
@@ -94,6 +100,13 @@ class KimDownloadAuthorizationTest extends TestCase
                 $this->officers[$department->value],
             );
         }
+
+        $approval->decide(
+            $this->application->fresh(),
+            Department::Rsd,
+            ApprovalDecision::Approved,
+            $this->officers['rsd'],
+        );
 
         $approval->decide(
             $this->application->fresh(),

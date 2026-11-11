@@ -2,7 +2,10 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Widgets\AdminStatsOverview;
+use App\Filament\Widgets\ApplicationProgressStepper;
 use App\Filament\Widgets\ApplicationTrendChart;
 use App\Filament\Widgets\ExpiringDispensations;
 use App\Filament\Widgets\ExpiringDocumentsTable;
@@ -20,13 +23,11 @@ use App\Filament\Widgets\TadStatsOverview;
 use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\FontProviders\BunnyFontProvider;
-use Filament\Navigation\NavigationGroup;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Pages\Auth\Login;
-use App\Filament\Pages\Dashboard;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -75,6 +76,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AdminStatsOverview::class,
+                ApplicationProgressStepper::class,
                 TadStatsOverview::class,
                 PengawasStatsOverview::class,
                 FtmStatsOverview::class,

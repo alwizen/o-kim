@@ -50,12 +50,10 @@ class PendingDocumentVerification extends TableWidget
                 TextColumn::make('vehicle.transporter.company_name')
                     ->label('Perusahaan')
                     ->limit(28)
-                    ->wrap()
-                    ->searchable(),
+                    ->wrap(),
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
-                    ->badge()
-                    ->searchable(),
+                    ->badge(),
                 TextColumn::make('documentType.name')
                     ->label('Jenis Dokumen')
                     ->badge(),

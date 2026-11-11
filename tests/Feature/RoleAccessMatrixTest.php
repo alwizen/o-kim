@@ -259,4 +259,19 @@ class RoleAccessMatrixTest extends TestCase
         $this->assertTrue(Gate::forUser($pengawasHsse)->allows('approve', [$application, Department::Hsse]));
         $this->assertFalse(Gate::forUser($pengawasHsse)->allows('approve', [$application, Department::Ftm]));
     }
+
+    public function test_kim_application_policy_approve_rsd_requires_approve_rsd_permission(): void
+    {
+        $application = KimApplication::factory()->create();
+
+        // Role rsd dibuat manual via UI; di sini diuji lewat permission langsung.
+        $rsdUser = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $rsdUser->givePermissionTo('approve_rsd');
+
+        $this->assertTrue(Gate::forUser($rsdUser)->allows('approve', [$application, Department::Rsd]));
+        $this->assertFalse(Gate::forUser($rsdUser)->allows('approve', [$application, Department::Ftm]));
+
+        $pengawasHsse = $this->userWithRole('pengawas_hsse');
+        $this->assertFalse(Gate::forUser($pengawasHsse)->allows('approve', [$application, Department::Rsd]));
+    }
 }

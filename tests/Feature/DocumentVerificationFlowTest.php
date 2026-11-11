@@ -309,6 +309,7 @@ class DocumentVerificationFlowTest extends TestCase
         foreach (Department::inspectingDepartments() as $department) {
             app(ApprovalService::class)->decide($application, $department, ApprovalDecision::Approved, $this->admin);
         }
+        app(ApprovalService::class)->decide($application->fresh(), Department::Rsd, ApprovalDecision::Approved, $this->admin);
         app(ApprovalService::class)->decide($application->fresh(), Department::Ftm, ApprovalDecision::Approved, $this->admin);
 
         return app(KimIssuanceService::class)->issue($application->fresh());

@@ -5,25 +5,25 @@
     <title>Kartu Izin Masuk — {{ $card->kim_number }}</title>
     <style>
         @page {
-            margin: 14px 16px;
+            margin: 10px 12px;
         }
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             color: #000000;
             margin: 0;
         }
 
         .card {
             border: 2px solid #000000;
-            padding: 12px 14px;
+            padding: 8px 10px;
         }
 
         .header {
             border-bottom: 2px solid #000000;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .header table {
@@ -51,29 +51,29 @@
         }
 
         .header .logo-k3 {
-            height: 44px;
+            height: 32px;
             width: auto;
         }
 
         .header .logo-ppn {
-            height: 26px;
+            height: 20px;
             width: auto;
         }
 
         .header .brand {
-            font-size: 9px;
+            font-size: 8px;
             color: #000000;
         }
 
         .header h1 {
-            font-size: 14px;
-            margin: 2px 0 0;
+            font-size: 12px;
+            margin: 1px 0 0;
             color: #000000;
             font-weight: bold;
         }
 
         .header .sub {
-            font-size: 9px;
+            font-size: 8px;
             color: #000000;
             margin-top: 1px;
         }
@@ -86,12 +86,12 @@
 
         table.data td {
             border: 1px solid #000000;
-            padding: 4px 6px;
+            padding: 2px 5px;
             vertical-align: middle;
         }
 
         table.data td.label {
-            width: 30%;
+            width: 26%;
             color: #000000;
             font-weight: bold;
         }
@@ -104,41 +104,101 @@
         .bottom table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
+            margin-top: 5px;
         }
 
         .bottom td.qr {
-            width: 30%;
+            width: 20%;
             text-align: center;
             vertical-align: middle;
         }
 
         .bottom td.note {
-            width: 70%;
+            width: 80%;
             vertical-align: middle;
-            padding-right: 10px;
+            padding-right: 8px;
         }
 
         .qr-caption {
-            font-size: 7px;
+            font-size: 6px;
             color: #000000;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .dispensation-note {
-            font-size: 8px;
+            font-size: 7px;
             color: #000000;
             border: 1px solid #000000;
-            padding: 5px 6px;
+            padding: 4px 5px;
         }
 
         .footer {
-            margin-top: 8px;
-            font-size: 7.5px;
+            margin-top: 5px;
+            font-size: 6.5px;
             color: #000000;
             border-top: 1px solid #000000;
-            padding-top: 4px;
+            padding-top: 3px;
             text-align: center;
+        }
+
+        /* Strip tanda tangan elektronik lima fungsi. */
+        .signatures {
+            margin-top: 6px;
+            border-top: 1px solid #000000;
+            padding-top: 4px;
+        }
+
+        .signatures-title {
+            font-size: 7px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        table.signatures-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table.signatures-table td.signature-cell {
+            text-align: center;
+            vertical-align: top;
+            padding: 2px 2px;
+        }
+
+        .signature-qr {
+            width: 46px;
+            height: 46px;
+        }
+
+        .signature-name {
+            font-size: 6.5px;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+
+        .signature-role {
+            font-size: 5.5px;
+            font-weight: bold;
+            margin-top: 2px;
+            border-top: 1px solid #000000;
+            padding-top: 1px;
+        }
+
+        .signature-placeholder {
+            font-size: 5.5px;
+            color: #6b7280;
+            height: 46px;
+            padding-top: 16px;
+        }
+
+        .signature-hash {
+            margin-top: 3px;
+            font-size: 5px;
+            color: #6b7280;
+            text-align: center;
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -203,12 +263,44 @@
                         @endif
                     </td>
                     <td class="qr">
-                        <img src="data:image/svg+xml;base64,{{ base64_encode($qrSvg) }}" width="105" alt="QR Validasi">
-                        <div class="qr-caption">Pindai untuk validasi</div>
+                        @if (! empty($qrSvg))
+                            <img src="data:image/svg+xml;base64,{{ base64_encode($qrSvg) }}" width="78" alt="QR Validasi">
+                            <div class="qr-caption">Pindai untuk validasi</div>
+                        @endif
                     </td>
                 </tr>
             </table>
         </div>
+
+        @if (! empty($signatureBlocks))
+            <div class="signatures">
+                <div class="signatures-title">Di Setujui Oleh</div>
+
+                <table class="signatures-table">
+                    <tr>
+                        @foreach ($signatureBlocks as $block)
+                            <td class="signature-cell">
+                                @if ($block['placeholder'])
+                                    <div class="signature-placeholder">Tidak tersedia<br>(data lama)</div>
+                                @else
+                                    @if ($block['qr'])
+                                        <img src="{{ $block['qr'] }}" alt="QR Tanda Tangan {{ $block['department']->label() }}" class="signature-qr">
+                                    @endif
+                                    <div class="signature-name">{{ $block['signature']->name }}</div>
+                                @endif
+                                <div class="signature-role">{{ $block['signature']?->jabatan ?: $block['department']->label() }}</div>
+                            </td>
+                        @endforeach
+                    </tr>
+                </table>
+
+                @if ($card->pdf_hash)
+                    <div class="signature-hash">
+                        No. KIM : {{ $card->kim_number }} · SHA-256: {{ $card->pdf_hash }}
+                    </div>
+                @endif
+            </div>
+        @endif
 
         <div class="footer">
             @if ($card->is_dispensation)

@@ -102,6 +102,11 @@ class KimApplication extends Model
         return $this->hasOne(KimCard::class);
     }
 
+    public function beritaAcara(): HasOne
+    {
+        return $this->hasOne(BeritaAcaraDocument::class);
+    }
+
     /**
      * KIM sementara masih dapat diterbitkan: dispensasi aktif dan belum ada kartu.
      *

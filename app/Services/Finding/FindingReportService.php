@@ -3,6 +3,7 @@
 namespace App\Services\Finding;
 
 use App\Enums\FindingStatus;
+use App\Models\BeritaAcaraDocument;
 use App\Models\Finding;
 use App\Models\FindingActionAttachment;
 use App\Models\InspectionResultAttachment;
@@ -32,9 +33,15 @@ class FindingReportService
 
     /**
      * Apakah pengajuan sudah layak memiliki Berita Acara.
+     *
+     * KIM sementara (dispensasi aktif) tidak menerbitkan BA.
      */
     public function isEligible(KimApplication $application): bool
     {
+        if ($application->hasActiveDispensation()) {
+            return false;
+        }
+
         return $this->verifiedFindings($application)->isNotEmpty();
     }
 
@@ -198,7 +205,6 @@ class FindingReportService
             $target = imagescale($image, (int) round($width * $scale), (int) round($height * $scale));
 
             if ($target !== false) {
-                imagedestroy($image);
                 $image = $target;
             }
         }
@@ -207,15 +213,19 @@ class FindingReportService
         imagepng($image, null, 6);
         $png = ob_get_clean();
 
-        imagedestroy($image);
-
         return is_string($png) && $png !== '' ? $png : null;
     }
 
     /**
      * Render Berita Acara menjadi PDF.
+     *
+     * Bila `$signatures` diberikan, blok tanda tangan elektronik ikut dirender
+     * (dokumen final). Tanpa `$signatures`, dokumen berisi isi temuan saja
+     * (pratinjau sebelum approval lengkap).
+     *
+     * @param  array<int, array<string, mixed>>  $signatures
      */
-    public function render(KimApplication $application)
+    public function render(KimApplication $application, array $signatures = [], ?BeritaAcaraDocument $document = null)
     {
         $report = $this->buildReport($application);
 
@@ -224,6 +234,8 @@ class FindingReportService
             'rows' => $report['rows'],
             'attachments' => $report['attachments'],
             'printedAt' => now(),
+            'signatureBlocks' => $signatures,
+            'document' => $document,
         ])->setPaper('a4', 'portrait');
     }
 

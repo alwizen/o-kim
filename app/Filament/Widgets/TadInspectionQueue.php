@@ -65,16 +65,14 @@ class TadInspectionQueue extends TableWidget
             )
             ->description('Jadwal pemeriksaan sudah tiba dan checklist fungsi Anda belum lengkap.')
             ->defaultSort('inspection_scheduled_at', 'asc')
-            ->paginated([5, 10])
+            ->paginated([10, 25])
             ->defaultPaginationPageOption(5)
             ->columns([
                 TextColumn::make('application_number')
-                    ->label('No. Pengajuan')
-                    ->searchable(),
+                    ->label('No. Pengajuan'),
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
-                    ->badge()
-                    ->searchable(),
+                    ->badge(),
                 TextColumn::make('transporter.company_name')
                     ->label('Perusahaan')
                     ->limit(30)

@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\ApprovalDecision;
+use App\Enums\Department;
 use App\Filament\Resources\KimApplications\KimApplicationResource;
 use App\Models\KimApplication;
 use App\Support\Widget\DepartmentScope;
@@ -32,15 +33,29 @@ class PengawasApprovalQueue extends TableWidget
     {
         $departments = DepartmentScope::approvableValues();
 
+        // RSD hanya menjadi gerbang setelah seluruh fungsi pemeriksa menyetujui.
+        $isRsd = in_array(Department::Rsd->value, $departments, true);
+        $functionalDepartments = collect(Department::inspectingDepartments())->map->value->all();
+
         return $table
             ->query(
                 KimApplication::query()
                     ->with(['vehicle', 'transporter'])
-                    ->whereIn('status', [
-                        ApplicationStatus::PendingApproval->value,
-                        ApplicationStatus::Inspection->value,
-                        ApplicationStatus::RevisionRequired->value,
-                    ])
+                    ->whereIn('status', $isRsd
+                        ? [ApplicationStatus::PendingApproval->value]
+                        : [
+                            ApplicationStatus::PendingApproval->value,
+                            ApplicationStatus::Inspection->value,
+                            ApplicationStatus::RevisionRequired->value,
+                        ])
+                    ->when($isRsd, fn ($query) => $query->whereHas(
+                        'approvals',
+                        fn ($q) => $q
+                            ->whereIn('department', $functionalDepartments)
+                            ->where('decision', ApprovalDecision::Approved->value),
+                        '=',
+                        count($functionalDepartments),
+                    ))
                     ->when($departments === [], fn ($query) => $query->whereRaw('1 = 0'))
                     ->when($departments !== [], fn ($query) => $query->whereDoesntHave(
                         'approvals',
@@ -55,8 +70,7 @@ class PengawasApprovalQueue extends TableWidget
             ->defaultPaginationPageOption(5)
             ->columns([
                 TextColumn::make('application_number')
-                    ->label('No. Pengajuan')
-                    ->searchable(),
+                    ->label('No. Pengajuan'),
                 TextColumn::make('vehicle.registration_number')
                     ->label('NOPOL')
                     ->badge(),
