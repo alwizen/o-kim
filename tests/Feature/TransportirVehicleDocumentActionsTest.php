@@ -68,14 +68,13 @@ class TransportirVehicleDocumentActionsTest extends TestCase
         ]);
     }
 
-    public function test_delete_vehicle_action_is_visible_but_disabled(): void
+    public function test_transportir_has_no_delete_vehicle_action(): void
     {
         Filament::setCurrentPanel('transportir');
 
         Livewire::actingAs($this->owner)
             ->test(EditVehicle::class, ['record' => $this->vehicle->getRouteKey()])
-            ->assertActionVisible('delete')
-            ->assertActionDisabled('delete');
+            ->assertActionDoesNotExist('delete');
     }
 
     public function test_pending_document_can_be_edited_and_deleted(): void

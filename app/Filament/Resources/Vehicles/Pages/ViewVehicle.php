@@ -2,13 +2,19 @@
 
 namespace App\Filament\Resources\Vehicles\Pages;
 
+use App\Actions\Vehicle\ActivateVehicle;
+use App\Actions\Vehicle\DeactivateVehicle;
 use App\Enums\ApplicationStatus;
 use App\Enums\DocumentVerificationStatus;
+use App\Enums\InternalRole;
 use App\Enums\KimCardStatus;
+use App\Enums\VehicleStatus;
 use App\Filament\Resources\Vehicles\VehicleResource;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -25,6 +31,49 @@ class ViewVehicle extends ViewRecord
             'documents.documentType',
             'kimApplications.kimCard',
         ]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('deactivate')
+                ->label('Nonaktifkan')
+                ->icon('heroicon-o-no-symbol')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Nonaktifkan kendaraan')
+                ->modalDescription('Kendaraan tidak akan bisa dipakai pada pengajuan/pemeriksaan baru. Data tetap tersimpan.')
+                ->visible(fn (): bool => $this->currentUserIsSuperAdmin()
+                    && $this->getRecord()->status === VehicleStatus::Active)
+                ->action(function (): void {
+                    app(DeactivateVehicle::class)->execute($this->getRecord());
+
+                    Notification::make()
+                        ->title('Kendaraan dinonaktifkan')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('activate')
+                ->label('Aktifkan')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $this->currentUserIsSuperAdmin()
+                    && $this->getRecord()->status === VehicleStatus::Inactive)
+                ->action(function (): void {
+                    app(ActivateVehicle::class)->execute($this->getRecord());
+
+                    Notification::make()
+                        ->title('Kendaraan diaktifkan')
+                        ->success()
+                        ->send();
+                }),
+        ];
+    }
+
+    private function currentUserIsSuperAdmin(): bool
+    {
+        return auth()->user()?->hasRole(InternalRole::SuperAdmin->value) ?? false;
     }
 
     public function infolist(Schema $schema): Schema
