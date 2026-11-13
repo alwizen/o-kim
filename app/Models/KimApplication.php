@@ -45,9 +45,15 @@ class KimApplication extends Model
         ];
     }
 
+    /**
+     * Kendaraan terkait, termasuk yang sudah dihapus lunak.
+     *
+     * Riwayat pengajuan/KIM harus tetap menampilkan data kendaraan walau
+     * kendaraannya kemudian dihapus, agar dokumen terbit tetap dapat diaudit.
+     */
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(Vehicle::class)->withTrashed();
     }
 
     public function transporter(): BelongsTo

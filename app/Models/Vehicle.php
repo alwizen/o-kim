@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class Vehicle extends Model
 {
@@ -43,6 +44,16 @@ class Vehicle extends Model
             $vehicle->registration_number = static::normalizeRegistrationNumber(
                 $vehicle->registration_number
             );
+        });
+
+        // Kendaraan yang punya riwayat pengajuan/KIM tidak boleh dihapus agar
+        // dokumen terbit tetap dapat diaudit. Nonaktifkan saja bila tidak dipakai.
+        static::deleting(function (Vehicle $vehicle) {
+            if ($vehicle->kimApplications()->exists()) {
+                throw ValidationException::withMessages([
+                    'vehicle' => 'Kendaraan yang memiliki riwayat pengajuan/KIM tidak dapat dihapus. Nonaktifkan kendaraan sebagai gantinya.',
+                ]);
+            }
         });
     }
 
