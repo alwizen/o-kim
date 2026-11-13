@@ -13,7 +13,9 @@ class EditVehicle extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->disabled()
+                ->tooltip('Penghapusan kendaraan tidak tersedia. Hubungi admin untuk menonaktifkan kendaraan.'),
         ];
     }
 }

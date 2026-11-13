@@ -132,6 +132,53 @@ class VehicleDocumentService
     }
 
     /**
+     * Perbarui metadata dokumen kendaraan.
+     *
+     * Dokumen yang sudah diverifikasi bersifat final: metadata tidak boleh
+     * diubah agar dasar penerbitan KIM tetap dapat diaudit. Untuk memperbarui,
+     * unggah dokumen baru (versi lama otomatis ditandai tergantikan).
+     *
+     * @param  array<string, mixed>  $metadata
+     *
+     * @throws ValidationException bila dokumen sudah terverifikasi
+     */
+    public function update(VehicleDocument $document, array $metadata): VehicleDocument
+    {
+        $this->ensureMutable($document);
+
+        $documentType = DocumentType::find($document->document_type_id);
+
+        if ($documentType?->has_expiry_date && blank($metadata['expires_at'] ?? $document->expires_at)) {
+            throw ValidationException::withMessages([
+                'expires_at' => 'Tanggal kedaluwarsa wajib diisi untuk jenis dokumen ini.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($document, $metadata) {
+            $document->update([
+                'document_type_id' => $metadata['document_type_id'] ?? $document->document_type_id,
+                'document_number' => $metadata['document_number'] ?? null,
+                'issued_at' => $metadata['issued_at'] ?? null,
+                'expires_at' => $metadata['expires_at'] ?? null,
+            ]);
+
+            app(ActivityLogger::class)->log(
+                'document.updated',
+                $document->vehicle,
+                'Dokumen '.($document->documentType?->name ?? 'kendaraan').' untuk '
+                    .($document->vehicle?->registration_number ?? '-').' diperbarui.',
+                [
+                    'document_id' => $document->id,
+                    'document_type_id' => $document->document_type_id,
+                    'document_number' => $document->document_number,
+                ],
+            );
+
+            return $document->refresh();
+        });
+    }
+
+    /**
      * Hapus dokumen kendaraan.
      *
      * Dokumen yang sudah diverifikasi bersifat final: tidak boleh dihapus agar
@@ -140,7 +187,7 @@ class VehicleDocumentService
      */
     public function delete(VehicleDocument $document): void
     {
-        $this->ensureDeletable($document);
+        $this->ensureMutable($document);
 
         DB::transaction(function () use ($document) {
             Storage::disk($this->disk())->delete($document->file_path);
@@ -164,7 +211,7 @@ class VehicleDocumentService
     /**
      * @throws ValidationException bila dokumen sudah terverifikasi
      */
-    private function ensureDeletable(VehicleDocument $document): void
+    private function ensureMutable(VehicleDocument $document): void
     {
         if ($document->verification_status === DocumentVerificationStatus::Verified) {
             throw ValidationException::withMessages([

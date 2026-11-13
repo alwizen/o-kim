@@ -9,6 +9,7 @@ use App\Services\Document\VehicleDocumentService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -50,6 +51,7 @@ class DocumentsRelationManager extends RelationManager
                 ]),
 
             Section::make('Berkas')
+                ->visible(fn (string $operation): bool => $operation === 'create')
                 ->schema([
                     FileUpload::make('file')
                         ->label('Berkas (PDF/JPG/PNG, maks 5 MB)')
@@ -123,8 +125,22 @@ class DocumentsRelationManager extends RelationManager
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (VehicleDocument $record) => route('documents.download', $record))
                     ->openUrlInNewTab(),
+                EditAction::make()
+                    ->label('Ubah')
+                    ->fillForm(fn (VehicleDocument $record): array => [
+                        'document_type_id' => $record->document_type_id,
+                        'document_number' => $record->document_number,
+                        'issued_at' => $record->issued_at,
+                        'expires_at' => $record->expires_at,
+                    ])
+                    ->disabled(fn (VehicleDocument $record): bool => $record->isVerified())
+                    ->tooltip(fn (VehicleDocument $record): ?string => $record->isVerified()
+                        ? 'Dokumen terverifikasi tidak dapat diubah'
+                        : null)
+                    ->using(fn (VehicleDocument $record, array $data): VehicleDocument => app(VehicleDocumentService::class)
+                        ->update($record, collect($data)->except('file')->all())),
                 DeleteAction::make()
-                    ->visible(fn (VehicleDocument $record): bool => ! $record->isVerified())
+                    ->disabled(fn (VehicleDocument $record): bool => $record->isVerified())
                     ->tooltip(fn (VehicleDocument $record): ?string => $record->isVerified()
                         ? 'Dokumen terverifikasi tidak dapat dihapus'
                         : null)
