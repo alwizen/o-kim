@@ -6,6 +6,7 @@ use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Models\BeritaAcaraDocument;
 use App\Models\KimApplication;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Document\DocumentSignatureService;
 use App\Services\Setting\SettingsService;
 use App\Support\SafeFilename;
@@ -122,6 +123,13 @@ class BeritaAcaraService
                 'pdf_path' => $path,
                 'pdf_hash' => hash('sha256', $binary),
             ]);
+
+            app(ActivityLogger::class)->log(
+                'berita_acara.finalized',
+                $document,
+                'Berita Acara '.$document->number.' dibekukan beserta tanda tangan elektronik.',
+                ['number' => $document->number, 'pdf_hash' => $document->pdf_hash],
+            );
 
             return $document->fresh('signatures');
         });

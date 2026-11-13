@@ -6,6 +6,7 @@ use App\Enums\AccountStatus;
 use App\Enums\TransporterStatus;
 use App\Models\User;
 use App\Notifications\TransporterRejected;
+use App\Services\Audit\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -40,5 +41,13 @@ class RejectTransporterRegistration
         });
 
         $target->notify(new TransporterRejected($reason));
+
+        app(ActivityLogger::class)->log(
+            'user.transporter_rejected',
+            $target,
+            'Pendaftaran transportir '.$target->name.' ditolak.',
+            ['reason' => $reason],
+            label: $target->email,
+        );
     }
 }

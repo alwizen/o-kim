@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\KimCardIssued;
 use App\Notifications\KimCardIssuedAsDispensationStaff;
 use App\Services\Approval\ApprovalService;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Document\DocumentSignatureService;
 use App\Services\Setting\SettingsService;
 use App\Support\AppNotifier;
@@ -92,6 +93,19 @@ class KimIssuanceService
                     ),
                 ));
             }
+
+            app(ActivityLogger::class)->log(
+                'kim.issued',
+                $card,
+                'KIM '.$card->kim_number.' diterbitkan untuk '.$registrationNumber
+                    .($isDispensation ? ' (sementara/dispensasi).' : '.'),
+                [
+                    'kim_number' => $card->kim_number,
+                    'application_number' => $applicationNumber,
+                    'is_dispensation' => $isDispensation,
+                    'expires_at' => $expiresAt->toDateString(),
+                ],
+            );
 
             return $card;
         });

@@ -9,6 +9,7 @@ use App\Models\InspectionChecklist;
 use App\Models\InspectionItem;
 use App\Models\InspectionResult;
 use App\Models\KimApplication;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Inspection\InspectionService;
 use Filament\Actions\Action;
@@ -275,7 +276,15 @@ class InspectKimApplication extends Page implements HasForms
 
                 $saved++;
             } catch (ValidationException $e) {
-                $errors[] = collect($e->errors())->flatten()->first();
+                $reason = app(ActivityLogger::class)->firstError($e);
+                $errors[] = $reason;
+
+                app(ActivityLogger::class)->failureFromValidation(
+                    'inspection',
+                    $this->record,
+                    $e,
+                    ['action' => 'record_result'],
+                );
             }
         }
 

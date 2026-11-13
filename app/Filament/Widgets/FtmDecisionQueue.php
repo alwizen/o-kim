@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\DispensationRequests\DispensationRequestResource;
 use App\Models\FindingDispensationRequest;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\DispensationService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -96,9 +97,18 @@ class FtmDecisionQueue extends TableWidget
                                 $data['notes'] ?? null,
                             );
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'dispensation',
+                                $record->finding?->application,
+                                $e,
+                                ['action' => 'approve_request', 'request_id' => $record->id],
+                            );
+
                             Notification::make()
                                 ->title('Gagal menyetujui')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 
@@ -130,9 +140,18 @@ class FtmDecisionQueue extends TableWidget
                                 $data['decision_notes'],
                             );
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'dispensation',
+                                $record->finding?->application,
+                                $e,
+                                ['action' => 'reject_request', 'request_id' => $record->id],
+                            );
+
                             Notification::make()
                                 ->title('Gagal menolak')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 

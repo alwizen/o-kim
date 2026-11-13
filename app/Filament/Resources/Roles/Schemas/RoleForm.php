@@ -65,6 +65,7 @@ class RoleForm
                 'review_transporter_registrations',
                 'manage_vehicles',
                 'view_audit_logs',
+                'view_activity_logs',
             ],
             'Dokumen & Checklist' => [
                 'verify_documents',
@@ -214,6 +215,7 @@ class RoleForm
             'review_transporter_registrations' => 'Verifikasi registrasi transportir',
             'manage_vehicles' => 'Kelola armada',
             'view_audit_logs' => 'Lihat audit log',
+            'view_activity_logs' => 'Lihat log aktivitas pengguna',
             'verify_documents' => 'Verifikasi dokumen',
             'manage_checklists' => 'Kelola butir checklist',
             'schedule_inspection' => 'Tetapkan jadwal pemeriksaan',

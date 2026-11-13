@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\DocumentVerificationStatus;
 use App\Models\User;
 use App\Models\VehicleDocument;
 
@@ -23,11 +24,30 @@ class VehicleDocumentPolicy
         return $user->hasRole('transportir');
     }
 
+    /**
+     * Dokumen terverifikasi bersifat final; perbarui dengan unggah versi baru.
+     */
     public function delete(User $user, VehicleDocument $document): bool
     {
+        if ($document->verification_status === DocumentVerificationStatus::Verified) {
+            return false;
+        }
+
         return $user->transporters()
             ->where('transporters.id', $document->vehicle->transporter_id)
             ->exists();
+    }
+
+    /**
+     * Dokumen terverifikasi tidak dapat diubah.
+     */
+    public function update(User $user, VehicleDocument $document): bool
+    {
+        if ($document->verification_status === DocumentVerificationStatus::Verified) {
+            return false;
+        }
+
+        return $this->delete($user, $document);
     }
 
     /**

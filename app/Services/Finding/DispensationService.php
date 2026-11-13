@@ -18,6 +18,7 @@ use App\Notifications\DispensationRequestRejected;
 use App\Notifications\DispensationRequestSubmitted;
 use App\Notifications\FindingDispensationGranted;
 use App\Notifications\FindingDispensationGrantedStaff;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Kim\KimValidityService;
 use App\Support\AppNotifier;
 use Illuminate\Support\Carbon;
@@ -103,6 +104,13 @@ class DispensationService
             ),
         ));
 
+        app(ActivityLogger::class)->log(
+            'dispensation.requested',
+            $finding->application,
+            $requester->name.' mengajukan dispensasi temuan fungsi '.$finding->department->label().'.',
+            ['finding_id' => $finding->id, 'request_id' => $request->id, 'reason' => $reason],
+        );
+
         return $request;
     }
 
@@ -145,6 +153,14 @@ class DispensationService
                 )
                 : null);
 
+            app(ActivityLogger::class)->log(
+                'dispensation.request_approved',
+                $application,
+                $ftm->name.' menyetujui permohonan dispensasi temuan fungsi '
+                    .($request->finding?->department->label() ?? '-').'.',
+                ['request_id' => $request->id, 'due_date' => $request->due_date?->toDateString()],
+            );
+
             return $request->fresh();
         });
     }
@@ -186,6 +202,14 @@ class DispensationService
                     ),
                 )
                 : null);
+
+            app(ActivityLogger::class)->log(
+                'dispensation.request_rejected',
+                $application,
+                $ftm->name.' menolak permohonan dispensasi temuan fungsi '
+                    .($request->finding?->department->label() ?? '-').'.',
+                ['request_id' => $request->id, 'reason' => $reason],
+            );
 
             return $request->fresh();
         });
@@ -262,6 +286,14 @@ class DispensationService
 
             $this->notifyGranted($finding->fresh(), $ftm);
 
+            app(ActivityLogger::class)->log(
+                'dispensation.granted',
+                $finding->application,
+                $ftm->name.' memberi dispensasi temuan fungsi '.$finding->department->label()
+                    .' sampai '.$dueDate->translatedFormat('d M Y').'.',
+                ['finding_id' => $finding->id, 'due_date' => $dueDate->toDateString(), 'reason' => $reason],
+            );
+
             return $finding;
         });
     }
@@ -294,6 +326,14 @@ class DispensationService
 
             $this->syncKimCard($finding->application);
 
+            app(ActivityLogger::class)->log(
+                'dispensation.extended',
+                $finding->application,
+                $ftm->name.' memperpanjang dispensasi temuan fungsi '.$finding->department->label()
+                    .' sampai '.$newDueDate->translatedFormat('d M Y').'.',
+                ['finding_id' => $finding->id, 'due_date' => $newDueDate->toDateString()],
+            );
+
             return $finding;
         });
     }
@@ -316,6 +356,13 @@ class DispensationService
             $finding->update(['dispensation_reason' => $reason]);
 
             $this->record($finding, $ftm, DispensationAction::ReasonUpdated, $finding->dispensation_due_date, $reason, $notes);
+
+            app(ActivityLogger::class)->log(
+                'dispensation.reason_updated',
+                $finding->application,
+                $ftm->name.' mengubah alasan dispensasi temuan fungsi '.$finding->department->label().'.',
+                ['finding_id' => $finding->id, 'reason' => $reason],
+            );
 
             return $finding;
         });
@@ -345,6 +392,13 @@ class DispensationService
             ]);
 
             $this->revokeKimCard($finding->application);
+
+            app(ActivityLogger::class)->log(
+                'dispensation.revoked',
+                $finding->application,
+                $ftm->name.' mencabut dispensasi temuan fungsi '.$finding->department->label().'.',
+                ['finding_id' => $finding->id],
+            );
 
             return $finding;
         });

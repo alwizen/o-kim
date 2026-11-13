@@ -66,6 +66,47 @@ class DocumentSignatureService
     }
 
     /**
+     * Susun snapshot tanda tangan tanpa menyimpannya ke dokumen.
+     *
+     * Dipakai laporan pemeriksaan checklist yang tidak memiliki tabel
+     * tanda tangan sendiri: objek DocumentSignature dibuat di memori agar
+     * nama, jabatan, waktu, dan QR verifikasi tetap konsisten dengan BA/KIM.
+     *
+     * @return array<int, DocumentSignature>
+     */
+    public function createForApplication(KimApplication $application): array
+    {
+        $signatures = [];
+
+        foreach (Department::approvalSteps() as $index => $department) {
+            $approval = $application->approvals()
+                ->with('approver')
+                ->where('department', $department->value)
+                ->where('decision', ApprovalDecision::Approved->value)
+                ->latest('id')
+                ->first();
+
+            if ($approval === null) {
+                continue;
+            }
+
+            $signatures[] = new DocumentSignature([
+                'department' => $department,
+                'user_id' => $approval->approved_by,
+                'name' => $approval->approver?->name ?? '—',
+                'jabatan' => $approval->approver?->jabatan,
+                'decided_at' => $approval->decided_at,
+                'ip_address' => $approval->ip_address,
+                'user_agent' => $approval->user_agent,
+                'qr_token' => Str::random(48),
+                'sort_order' => $index,
+            ]);
+        }
+
+        return $signatures;
+    }
+
+    /**
      * Pastikan dokumen memiliki tanda tangan. Dipakai untuk backfill dokumen
      * lama (BA/KIM yang dibuat sebelum fitur tanda tangan ada).
      *

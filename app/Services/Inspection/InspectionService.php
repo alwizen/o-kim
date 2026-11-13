@@ -14,6 +14,7 @@ use App\Models\KimApplication;
 use App\Models\User;
 use App\Notifications\ApplicationPendingDepartmentApproval;
 use App\Notifications\FindingCreated;
+use App\Services\Audit\ActivityLogger;
 use App\Support\AppNotifier;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -131,7 +132,7 @@ class InspectionService
                 ));
             }
 
-            DB::afterCommit(fn () => $this->notifyDepartmentApprovalReady($application, $department));
+            DB::afterCommit(fn () => $this->notifyDepartmentApprovalReady($application, $department, $inspector));
 
             return $inspectionResult;
         });
@@ -141,11 +142,20 @@ class InspectionService
      * Beri tahu pengawas fungsi bahwa checklist fungsi tersebut sudah lengkap
      * dan pengajuan menunggu approval mereka. Dikirim sekali per pengajuan+fungsi.
      */
-    private function notifyDepartmentApprovalReady(KimApplication $application, Department $department): void
+    private function notifyDepartmentApprovalReady(KimApplication $application, Department $department, User $inspector): void
     {
         if (! $this->isDepartmentInspectionComplete($application, $department)) {
             return;
         }
+
+        // Catat sekali per fungsi+aplikasi (bukan per butir) agar log aktivitas
+        // tidak dibanjiri puluhan baris untuk satu pemeriksaan.
+        app(ActivityLogger::class)->logOnce(
+            'inspection.completed',
+            $application,
+            'Checklist fungsi '.$department->label().' selesai diisi oleh '.$inspector->name.'.',
+            ['department' => $department->value],
+        );
 
         if ($application->status === ApplicationStatus::RevisionRequired) {
             return;
@@ -231,12 +241,31 @@ class InspectionService
      */
     public function isReadyForApproval(KimApplication $application): bool
     {
+        return $this->approvalBlockers($application) === [];
+    }
+
+    /**
+     * Daftar alasan pengajuan belum siap di-approve, dalam bahasa manusia.
+     *
+     * Dipakai agar pesan error (dan log aktivitas) menyebut fungsi mana yang
+     * masih kurang, bukan sekadar "checklist belum lengkap".
+     *
+     * @return array<int, string>
+     */
+    public function approvalBlockers(KimApplication $application): array
+    {
+        $blockers = [];
+
         foreach (Department::inspectingDepartments() as $department) {
             if (! $this->isDepartmentInspectionComplete($application, $department)) {
-                return false;
+                $blockers[] = 'Checklist fungsi '.$department->label().' belum lengkap.';
             }
         }
 
-        return ! $application->hasBlockingFindings();
+        if ($application->hasBlockingFindings()) {
+            $blockers[] = 'Masih ada temuan yang belum selesai atau dispensasinya kedaluwarsa.';
+        }
+
+        return $blockers;
     }
 }

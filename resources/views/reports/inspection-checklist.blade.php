@@ -279,6 +279,60 @@
             padding: 5px 6px;
         }
 
+        .signature-section {
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+
+        .signature-title {
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        table.signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+
+        table.signature-table td.signature-cell {
+            width: 33.33%;
+            text-align: center;
+            vertical-align: top;
+            padding: 4px 4px;
+        }
+
+        .signature-qr {
+            width: 58px;
+            height: 58px;
+        }
+
+        .signature-name {
+            font-size: 8px;
+            font-weight: bold;
+            margin-top: 2px;
+            color: #000000;
+        }
+
+        .signature-role {
+            font-size: 7.5px;
+            font-weight: bold;
+            margin-top: 3px;
+            border-top: 1px solid #000000;
+            padding-top: 2px;
+        }
+
+        .signature-placeholder {
+            font-size: 7.5px;
+            color: #6b7280;
+            height: 58px;
+            display: block;
+            padding-top: 18px;
+        }
+
         .disclaimer {
             margin-top: 18px;
             font-size: 7.5px;
@@ -488,6 +542,37 @@
 @empty
     <div class="empty-note">Belum ada checklist aktif yang dapat dilaporkan.</div>
 @endforelse
+
+@if (! empty($signatureBlocks ?? []))
+    <div class="signature-section">
+        <div class="signature-title">Disetujui Oleh</div>
+
+        {{-- Baris tanda tangan: [HSSE, Distribusi, QQ] lalu [RSD, FTM]. --}}
+        @foreach (array_chunk($signatureBlocks, 3) as $signatureRow)
+            <table class="signature-table">
+                <tr>
+                    @foreach ($signatureRow as $block)
+                        <td class="signature-cell">
+                            @if ($block['placeholder'])
+                                <div class="signature-placeholder">Tidak tersedia</div>
+                            @else
+                                @if ($block['qr'])
+                                    <img src="{{ $block['qr'] }}" alt="QR Tanda Tangan {{ $block['department']->label() }}" class="signature-qr">
+                                @endif
+                                <div class="signature-name">{{ $block['signature']->name }}</div>
+                            @endif
+                            <div class="signature-role">{{ $block['signature']?->jabatan ?: $block['department']->label() }}</div>
+                        </td>
+                    @endforeach
+
+                    @for ($i = count($signatureRow); $i < 3; $i++)
+                        <td class="signature-cell"></td>
+                    @endfor
+                </tr>
+            </table>
+        @endforeach
+    </div>
+@endif
 
 <div class="disclaimer">
     Dokumen ini dihasilkan otomatis oleh O-KIM berdasarkan data hasil pemeriksaan yang tersimpan pada sistem.

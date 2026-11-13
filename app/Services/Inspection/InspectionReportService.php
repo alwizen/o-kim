@@ -2,6 +2,7 @@
 
 namespace App\Services\Inspection;
 
+use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\InspectionResultValue;
 use App\Models\Finding;
@@ -10,6 +11,8 @@ use App\Models\FindingVerification;
 use App\Models\InspectionChecklist;
 use App\Models\InspectionResult;
 use App\Models\KimApplication;
+use App\Services\Document\DocumentSignatureService;
+use App\Services\Setting\SettingsService;
 use App\Support\PdfImage;
 use App\Support\SafeFilename;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -213,7 +216,55 @@ class InspectionReportService
             'departments' => $report['departments'],
             'summary' => $report['summary'],
             'printedAt' => now(),
+            'signatureBlocks' => $this->signatureBlocks($application),
         ])->setPaper('a4', 'portrait');
+    }
+
+    /**
+     * Blok tanda tangan untuk laporan pemeriksaan.
+     *
+     * Hanya dibuat bila toggle pengaturan aktif DAN seluruh pengawas
+     * (HSSE, Distribusi, QQ, RSD) serta FTM sudah menyetujui pengajuan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function signatureBlocks(KimApplication $application): array
+    {
+        if (! app(SettingsService::class)->inspectionReportSignatureEnabled()) {
+            return [];
+        }
+
+        if (! $this->allApprovalsComplete($application)) {
+            return [];
+        }
+
+        $signatures = app(DocumentSignatureService::class)->createForApplication($application);
+
+        return app(DocumentSignatureService::class)->blocks(
+            collect($signatures),
+            Department::approvalSteps(),
+            true,
+        );
+    }
+
+    /**
+     * Seluruh tahap approval (pengawas fungsi, RSD, FTM) sudah menyetujui.
+     */
+    private function allApprovalsComplete(KimApplication $application): bool
+    {
+        $approved = $application->approvals()
+            ->where('decision', ApprovalDecision::Approved)
+            ->pluck('department')
+            ->map(fn (Department $department) => $department->value)
+            ->unique();
+
+        foreach (Department::approvalSteps() as $department) {
+            if (! $approved->contains($department->value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

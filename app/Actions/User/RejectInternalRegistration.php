@@ -6,6 +6,7 @@ use App\Enums\AccountStatus;
 use App\Enums\InternalRole;
 use App\Models\User;
 use App\Notifications\InternalAccountRejected;
+use App\Services\Audit\ActivityLogger;
 use Illuminate\Validation\ValidationException;
 
 class RejectInternalRegistration
@@ -37,6 +38,14 @@ class RejectInternalRegistration
         ]);
 
         $target->notify(new InternalAccountRejected($reason));
+
+        app(ActivityLogger::class)->log(
+            'user.registration_rejected',
+            $target,
+            'Pendaftaran internal '.$target->name.' ditolak.',
+            ['reason' => $reason],
+            label: $target->email,
+        );
     }
 
     private function isInternal(User $user): bool

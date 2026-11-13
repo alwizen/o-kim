@@ -67,6 +67,7 @@ class DocumentsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('original_filename')
+            ->description('Dokumen terverifikasi bersifat final. Untuk memperbarui, unggah dokumen baru.')
             ->columns([
                 TextColumn::make('documentType.name')
                     ->label('Jenis Dokumen')
@@ -123,6 +124,10 @@ class DocumentsRelationManager extends RelationManager
                     ->url(fn (VehicleDocument $record) => route('documents.download', $record))
                     ->openUrlInNewTab(),
                 DeleteAction::make()
+                    ->visible(fn (VehicleDocument $record): bool => ! $record->isVerified())
+                    ->tooltip(fn (VehicleDocument $record): ?string => $record->isVerified()
+                        ? 'Dokumen terverifikasi tidak dapat dihapus'
+                        : null)
                     ->using(fn (VehicleDocument $record) => app(VehicleDocumentService::class)->delete($record)),
             ]);
     }

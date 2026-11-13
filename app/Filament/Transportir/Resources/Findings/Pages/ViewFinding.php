@@ -4,6 +4,7 @@ namespace App\Filament\Transportir\Resources\Findings\Pages;
 
 use App\Enums\FindingStatus;
 use App\Filament\Transportir\Resources\Findings\FindingResource;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\DispensationService;
 use App\Services\Finding\FindingService;
 use Filament\Actions\Action;
@@ -233,9 +234,18 @@ class ViewFinding extends ViewRecord
                             $data['reason'],
                         );
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'dispensation',
+                            $this->record->application,
+                            $e,
+                            ['finding_id' => $this->record->id, 'action' => 'request'],
+                        );
+
                         Notification::make()
                             ->title('Gagal mengajukan dispensasi')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 
@@ -281,9 +291,18 @@ class ViewFinding extends ViewRecord
                             $data['attachments'] ?? []
                         );
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'finding',
+                            $this->record->application,
+                            $e,
+                            ['finding_id' => $this->record->id, 'action' => 'submit_action'],
+                        );
+
                         Notification::make()
                             ->title('Gagal mengirim tindak lanjut')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 

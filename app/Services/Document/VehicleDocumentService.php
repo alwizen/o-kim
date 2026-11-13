@@ -7,6 +7,7 @@ use App\Models\DocumentType;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Notifications\VehicleDocumentUploaded;
+use App\Services\Audit\ActivityLogger;
 use App\Support\AppNotifier;
 use App\Support\ImageCompressor;
 use App\Support\SafeFilename;
@@ -58,7 +59,7 @@ class VehicleDocumentService
             ]);
         }
 
-        return DB::transaction(function () use ($vehicle, $documentTypeId, $file, $metadata) {
+        return DB::transaction(function () use ($vehicle, $documentType, $documentTypeId, $file, $metadata) {
             $current = $vehicle->documents()
                 ->where('document_type_id', $documentTypeId)
                 ->whereNull('replaced_by_id')
@@ -94,6 +95,17 @@ class VehicleDocumentService
 
             DB::afterCommit(fn () => $this->notifyStaffOfUpload($documentId));
 
+            app(ActivityLogger::class)->log(
+                'document.uploaded',
+                $document,
+                'Dokumen '.$documentType->name.' untuk '.$vehicle->registration_number.' diunggah.',
+                [
+                    'document_type_id' => $documentTypeId,
+                    'document_number' => $metadata['document_number'] ?? null,
+                    'replaced_document_id' => $current?->id,
+                ],
+            );
+
             return $document;
         });
     }
@@ -119,12 +131,46 @@ class VehicleDocumentService
         );
     }
 
+    /**
+     * Hapus dokumen kendaraan.
+     *
+     * Dokumen yang sudah diverifikasi bersifat final: tidak boleh dihapus agar
+     * dasar penerbitan KIM tetap dapat diaudit. Untuk memperbarui, unggah
+     * dokumen baru (versi lama otomatis ditandai tergantikan).
+     */
     public function delete(VehicleDocument $document): void
     {
+        $this->ensureDeletable($document);
+
         DB::transaction(function () use ($document) {
             Storage::disk($this->disk())->delete($document->file_path);
+
+            app(ActivityLogger::class)->log(
+                'document.deleted',
+                $document->vehicle,
+                'Dokumen '.($document->documentType?->name ?? 'kendaraan').' untuk '
+                    .($document->vehicle?->registration_number ?? '-').' dihapus.',
+                [
+                    'document_id' => $document->id,
+                    'document_type_id' => $document->document_type_id,
+                    'document_number' => $document->document_number,
+                ],
+            );
+
             $document->delete();
         });
+    }
+
+    /**
+     * @throws ValidationException bila dokumen sudah terverifikasi
+     */
+    private function ensureDeletable(VehicleDocument $document): void
+    {
+        if ($document->verification_status === DocumentVerificationStatus::Verified) {
+            throw ValidationException::withMessages([
+                'document' => 'Dokumen yang sudah terverifikasi tidak dapat diubah atau dihapus. Unggah dokumen baru untuk memperbarui.',
+            ]);
+        }
     }
 
     public function download(VehicleDocument $document)
