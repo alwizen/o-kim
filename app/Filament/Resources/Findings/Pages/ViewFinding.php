@@ -8,6 +8,7 @@ use App\Filament\Resources\Findings\Actions\DispensationActions;
 use App\Filament\Resources\Findings\FindingResource;
 use App\Models\Finding;
 use App\Models\FindingAction;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\FindingService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -207,9 +208,18 @@ class ViewFinding extends ViewRecord
                 $notes
             );
         } catch (ValidationException $e) {
+            $reason = app(ActivityLogger::class)->firstError($e);
+
+            app(ActivityLogger::class)->failureFromValidation(
+                'finding',
+                $this->record->application,
+                $e,
+                ['finding_id' => $this->record->id, 'action' => 'verify_action'],
+            );
+
             Notification::make()
                 ->title('Verifikasi gagal')
-                ->body(collect($e->errors())->flatten()->first())
+                ->body($reason)
                 ->danger()
                 ->send();
 

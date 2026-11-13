@@ -127,6 +127,70 @@ class DashboardWidgetTest extends TestCase
             ->assertSee('2');
     }
 
+    /**
+     * Ambil nilai stat berdasarkan label dari widget yang dirender.
+     */
+    private function statValue(string $label): int
+    {
+        $widget = new AdminStatsOverview;
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        $stat = collect($stats)->first(fn ($stat) => $stat->getLabel() === $label);
+
+        $this->assertNotNull($stat, "Stat '{$label}' tidak ditemukan.");
+
+        return (int) $stat->getValue();
+    }
+
+    public function test_pending_registration_stat_only_counts_submitted_profiles(): void
+    {
+        // Transportir dengan profil terkirim: masuk antrean verifikasi.
+        $submitted = User::factory()->create(['account_status' => AccountStatus::Pending]);
+        $submitted->assignRole('transportir');
+        $submitted->transporters()->attach(
+            Transporter::factory()->create(['profile_submitted_at' => now()])
+        );
+
+        // Transportir tanpa profil: belum masuk antrean, tidak boleh dihitung.
+        $noProfile = User::factory()->create(['account_status' => AccountStatus::Pending]);
+        $noProfile->assignRole('transportir');
+        $noProfile->transporters()->attach(
+            Transporter::factory()->create(['profile_submitted_at' => null])
+        );
+
+        $this->actingAs($this->admin);
+
+        $this->assertSame(1, $this->statValue('Pendaftaran Menunggu Verifikasi'));
+        $this->assertSame(0, $this->statValue('Pendaftaran Internal Menunggu Verifikasi'));
+    }
+
+    public function test_rejected_registration_is_not_counted_as_pending(): void
+    {
+        $rejected = User::factory()->create(['account_status' => AccountStatus::Rejected]);
+        $rejected->assignRole('transportir');
+        $rejected->transporters()->attach(
+            Transporter::factory()->create(['profile_submitted_at' => now()])
+        );
+
+        $this->actingAs($this->admin);
+
+        $this->assertSame(0, $this->statValue('Pendaftaran Menunggu Verifikasi'));
+    }
+
+    public function test_internal_pending_registration_is_counted_separately(): void
+    {
+        $internal = User::factory()->create(['account_status' => AccountStatus::Pending]);
+        $internal->assignRole('hsse');
+
+        $this->actingAs($this->admin);
+
+        $this->assertSame(1, $this->statValue('Pendaftaran Internal Menunggu Verifikasi'));
+        $this->assertSame(0, $this->statValue('Pendaftaran Menunggu Verifikasi'));
+    }
+
     public function test_transportir_stats_widget_counts_own_vehicles_only(): void
     {
         Vehicle::factory()->count(3)->create(['transporter_id' => $this->transporter->id]);

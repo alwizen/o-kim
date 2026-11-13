@@ -6,6 +6,7 @@ use App\Enums\InternalRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\InternalRegisterRequest;
 use App\Notifications\InternalRegistrationSubmitted;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Registration\RegistrationService;
 use App\Support\AppNotifier;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +42,14 @@ class InternalRegisterController extends Controller
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();
+
+        app(ActivityLogger::class)->log(
+            'registered',
+            $user,
+            $user->name.' mendaftar sebagai petugas internal ('.($roleLabel ?? 'Pengguna Internal').').',
+            ['method' => 'password', 'role' => $user->getRoleNames()->first()],
+            label: $user->email,
+        );
 
         return redirect()->to($user->homeUrl())
             ->with('success', 'Pendaftaran berhasil. Akun Anda menunggu verifikasi super admin sebelum dapat digunakan.');

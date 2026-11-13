@@ -6,6 +6,7 @@ use App\Enums\AccountStatus;
 use App\Enums\TransporterStatus;
 use App\Models\User;
 use App\Notifications\TransporterApproved;
+use App\Services\Audit\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,5 +39,13 @@ class ApproveTransporterRegistration
         });
 
         $target->notify(new TransporterApproved);
+
+        app(ActivityLogger::class)->log(
+            'user.transporter_approved',
+            $target,
+            'Pendaftaran transportir '.$target->name.' disetujui.',
+            [],
+            label: $target->email,
+        );
     }
 }

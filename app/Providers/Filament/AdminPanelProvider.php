@@ -50,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandlogo(asset('img/ppn.png'))
+            ->darkModeBrandLogo(asset('img/ppn_d.png'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('img/fav.svg'))
             ->sidebarCollapsibleOnDesktop()

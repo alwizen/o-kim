@@ -10,6 +10,7 @@ use App\Models\FindingActionAttachment;
 use App\Models\FindingVerification;
 use App\Models\User;
 use App\Notifications\FindingActionSubmitted;
+use App\Services\Audit\ActivityLogger;
 use App\Support\AppNotifier;
 use App\Support\ImageCompressor;
 use App\Support\SafeFilename;
@@ -96,6 +97,17 @@ class FindingService
             return $action;
         });
 
+        app(ActivityLogger::class)->log(
+            'finding.action_submitted',
+            $finding->application,
+            $submitter->name.' mengirim tindak lanjut temuan pada fungsi '.$finding->department->label().'.',
+            [
+                'finding_id' => $finding->id,
+                'finding_action_id' => $action->id,
+                'department' => $finding->department->value,
+            ],
+        );
+
         $this->notifyVerifierOfAction($finding->fresh());
 
         return $action;
@@ -156,8 +168,28 @@ class FindingService
                 $finding->update(['status' => FindingStatus::Rejected]);
             }
 
+            $this->logVerification($finding->fresh(), $verifier, $accepted);
+
             return $verification;
         });
+    }
+
+    /**
+     * Catat hasil verifikasi tindak lanjut untuk jejak audit.
+     */
+    private function logVerification(Finding $finding, User $verifier, bool $accepted): void
+    {
+        app(ActivityLogger::class)->log(
+            'finding.action_verified',
+            $finding->application,
+            $verifier->name.' '.($accepted ? 'menerima' : 'menolak')
+                .' tindak lanjut temuan fungsi '.$finding->department->label().'.',
+            [
+                'finding_id' => $finding->id,
+                'accepted' => $accepted,
+                'department' => $finding->department->value,
+            ],
+        );
     }
 
     public function attachmentDownload(FindingActionAttachment $attachment)

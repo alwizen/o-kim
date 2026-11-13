@@ -6,6 +6,7 @@ use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\Audit\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,14 @@ class LoginController extends Controller
 
         // Akun Google-only tidak memiliki password sehingga tidak dapat login manual (PRD: jalur terpisah).
         if (! $user || ! $user->password || ! Hash::check($request->validated('password'), $user->password)) {
+            app(ActivityLogger::class)->failure(
+                'login_failed',
+                null,
+                'Percobaan login gagal untuk '.$request->validated('email').'.',
+                ['email' => $request->validated('email')],
+                actor: null,
+            );
+
             throw ValidationException::withMessages([
                 'email' => 'Email atau kata sandi salah.',
             ]);
@@ -37,9 +46,22 @@ class LoginController extends Controller
         Auth::login($user, remember: $request->boolean('remember'));
         $request->session()->regenerate();
 
+        app(ActivityLogger::class)->log(
+            'login',
+            $user,
+            $user->name.' masuk ke sistem.',
+            ['method' => 'password'],
+            label: $user->email,
+        );
+
         return $this->redirectAfterLogin($user);
     }
 
+    /**
+     * Logout dicatat sekali oleh listener App\Listeners\LogSuccessfulLogout
+     * pada event Illuminate\Auth\Events\Logout, sehingga controller ini tidak
+     * mencatatnya lagi (menghindari log ganda).
+     */
     public function destroy(Request $request)
     {
         Auth::logout();

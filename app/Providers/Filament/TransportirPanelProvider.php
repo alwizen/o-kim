@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Transportir\Widgets\MyDispensationRequests;
 use App\Filament\Transportir\Widgets\RejectedFollowUps;
 use App\Filament\Transportir\Widgets\TransportirExpiringDocumentsTable;
@@ -11,12 +12,11 @@ use App\Filament\Widgets\RecentActivity;
 use Elemind\PressFilamentTheme\Enums\PressVariant;
 use Elemind\PressFilamentTheme\PressFilamentTheme;
 use Filament\FontProviders\BunnyFontProvider;
-use Filament\Navigation\NavigationGroup;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Pages\Dashboard;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -38,6 +38,7 @@ class TransportirPanelProvider extends PanelProvider
             ->id('transportir')
             ->path('transportir')
             ->brandlogo(asset('img/ppn.png'))
+            ->darkModeBrandLogo(asset('img/ppn_d.png'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('img/fav.svg'))
             ->databaseNotifications()
@@ -68,10 +69,10 @@ class TransportirPanelProvider extends PanelProvider
             ->bootUsing(function (Panel $panel): void {
                 $plugin = $panel->getPlugin('press-filament-theme');
 
-                $isBroadsheet = fn(): bool => $plugin->resolveVariant() === PressVariant::Broadsheet;
+                $isBroadsheet = fn (): bool => $plugin->resolveVariant() === PressVariant::Broadsheet;
 
                 $panel->font(
-                    fn(): string => $isBroadsheet()
+                    fn (): string => $isBroadsheet()
                         ? 'Figtree'
                         : $plugin->resolveVariant()->getSansFont(),
                     provider: BunnyFontProvider::class,
@@ -82,10 +83,10 @@ class TransportirPanelProvider extends PanelProvider
                 // Nilai harus berupa Closure agar mengikuti varian saat render;
                 // varian non-Broadsheet memakai serif yang ditetapkan plugin.
                 $panel->serifFont(
-                    fn(): string => $isBroadsheet()
+                    fn (): string => $isBroadsheet()
                         ? 'Inter'
                         : ($plugin->resolveVariant()->getSerifFont() ?? 'ui-serif'),
-                    url: fn(): ?string => $isBroadsheet()
+                    url: fn (): ?string => $isBroadsheet()
                         ? null
                         : $plugin->resolveVariant()->getSerifFontUrl(),
                     provider: BunnyFontProvider::class,

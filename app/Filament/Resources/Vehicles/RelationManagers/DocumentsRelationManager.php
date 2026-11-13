@@ -6,6 +6,7 @@ use App\Actions\Document\RejectVehicleDocument;
 use App\Actions\Document\VerifyVehicleDocument;
 use App\Enums\DocumentVerificationStatus;
 use App\Models\VehicleDocument;
+use App\Services\Audit\ActivityLogger;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -95,9 +96,18 @@ class DocumentsRelationManager extends RelationManager
                         try {
                             app(VerifyVehicleDocument::class)->execute($record, auth()->user());
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'document',
+                                $record->vehicle,
+                                $e,
+                                ['document_id' => $record->id, 'action' => 'verify'],
+                            );
+
                             Notification::make()
                                 ->title('Verifikasi gagal')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 
@@ -126,9 +136,18 @@ class DocumentsRelationManager extends RelationManager
                         try {
                             app(RejectVehicleDocument::class)->execute($record, auth()->user(), $data['reason']);
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'document',
+                                $record->vehicle,
+                                $e,
+                                ['document_id' => $record->id, 'action' => 'reject'],
+                            );
+
                             Notification::make()
                                 ->title('Penolakan gagal')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\AccountStatus;
+use App\Models\User;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
 use Filament\Support\Icons\Heroicon;
@@ -61,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
     private function enforceApprovedAccountStatus(): void
     {
         Gate::before(function ($user, string $ability): ?bool {
-            if (! $user instanceof \App\Models\User) {
+            if (! $user instanceof User) {
                 return null;
             }
 

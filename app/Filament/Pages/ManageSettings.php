@@ -56,6 +56,7 @@ class ManageSettings extends Page implements HasForms
             'notification_expiry_warning_days' => (string) $settings->expiryWarningDays(),
             'ba_qr_enabled' => $settings->baQrEnabled(),
             'kim_qr_enabled' => $settings->kimQrEnabled(),
+            'inspection_report_signature_enabled' => $settings->inspectionReportSignatureEnabled(),
             'legal_reference' => $settings->legalReference(),
         ]);
     }
@@ -209,6 +210,11 @@ class ManageSettings extends Page implements HasForms
                             ->helperText('Berlaku untuk penerbitan/regenerasi kartu KIM berikutnya. Halaman validasi tetap aktif.')
                             ->default(true),
 
+                        Toggle::make('inspection_report_signature_enabled')
+                            ->label('Tanda Tangan pada Laporan Pemeriksaan')
+                            ->helperText('Tampilkan QR tanda tangan lima fungsi pada laporan checklist. Hanya muncul setelah seluruh pengawas dan FTM menyetujui pengajuan.')
+                            ->default(true),
+
                         TextInput::make('legal_reference')
                             ->label('Dasar Hukum Tanda Tangan Elektronik')
                             ->required()
@@ -242,6 +248,7 @@ class ManageSettings extends Page implements HasForms
         $settings->setMany([
             'document.ba_qr_enabled' => $data['ba_qr_enabled'] ? '1' : '0',
             'document.kim_qr_enabled' => $data['kim_qr_enabled'] ? '1' : '0',
+            'document.inspection_report_signature_enabled' => $data['inspection_report_signature_enabled'] ? '1' : '0',
             'document.legal_reference' => (string) $data['legal_reference'],
         ], SettingsService::GROUP_DOCUMENT);
 

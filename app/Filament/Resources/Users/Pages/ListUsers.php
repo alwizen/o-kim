@@ -7,6 +7,7 @@ use App\Actions\User\DeactivateUser;
 use App\Actions\User\RejectInternalRegistration;
 use App\Enums\AccountStatus;
 use App\Filament\Resources\Users\UserResource;
+use App\Services\Audit\ActivityLogger;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
@@ -42,9 +43,18 @@ class ListUsers extends ListRecords
                     try {
                         app(DeactivateUser::class)->execute($record, auth()->user());
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'user',
+                            $record,
+                            $e,
+                            ['action' => 'deactivate'],
+                        );
+
                         Notification::make()
                             ->title('Gagal menonaktifkan')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 
@@ -86,9 +96,18 @@ class ListUsers extends ListRecords
                         app(RejectInternalRegistration::class)
                             ->execute($record, auth()->user(), $data['reason']);
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'user',
+                            $record,
+                            $e,
+                            ['action' => 'reject_registration'],
+                        );
+
                         Notification::make()
                             ->title('Gagal menolak pendaftaran')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 

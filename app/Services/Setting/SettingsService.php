@@ -33,6 +33,7 @@ class SettingsService
         'notification.expiry_warning_days' => '60',
         'document.ba_qr_enabled' => '1',
         'document.kim_qr_enabled' => '1',
+        'document.inspection_report_signature_enabled' => '1',
         'document.legal_reference' => 'Undang-Undang Nomor 11 Tahun 2008 jo. Undang-Undang Nomor 19 Tahun 2016 tentang Informasi dan Transaksi Elektronik.',
     ];
 
@@ -183,6 +184,17 @@ class SettingsService
     public function kimQrEnabled(): bool
     {
         return $this->getBool('document.kim_qr_enabled', true);
+    }
+
+    /**
+     * Apakah blok tanda tangan ditampilkan pada laporan pemeriksaan checklist.
+     *
+     * Tanda tangan hanya muncul bila seluruh pengawas (HSSE, Distribusi, QQ,
+     * RSD) dan FTM sudah menyetujui pengajuan.
+     */
+    public function inspectionReportSignatureEnabled(): bool
+    {
+        return $this->getBool('document.inspection_report_signature_enabled', true);
     }
 
     /**

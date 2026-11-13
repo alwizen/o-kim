@@ -5,6 +5,7 @@ namespace App\Actions\User;
 use App\Enums\AccountStatus;
 use App\Enums\InternalRole;
 use App\Models\User;
+use App\Services\Audit\ActivityLogger;
 use Illuminate\Validation\ValidationException;
 
 class DeactivateUser
@@ -31,6 +32,14 @@ class DeactivateUser
         $target->update([
             'account_status' => AccountStatus::Suspended,
         ]);
+
+        app(ActivityLogger::class)->log(
+            'user.deactivated',
+            $target,
+            'Akun '.$target->name.' dinonaktifkan.',
+            [],
+            label: $target->email,
+        );
     }
 
     private function isLastActiveSuperAdmin(User $target): bool

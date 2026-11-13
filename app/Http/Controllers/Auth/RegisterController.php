@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Registration\RegistrationService;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +30,14 @@ class RegisterController extends Controller
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();
+
+        app(ActivityLogger::class)->log(
+            'registered',
+            $user,
+            $user->name.' mendaftar sebagai transportir.',
+            ['method' => 'password'],
+            label: $user->email,
+        );
 
         return redirect()->route('registration.profile.edit')
             ->with('success', 'Akun berhasil dibuat. Lengkapi profil perusahaan Anda untuk proses verifikasi.');

@@ -37,6 +37,7 @@ class RolePermissionSeeder extends Seeder
             'approve_final',
             'view_kim_cards',
             'view_audit_logs',
+            'view_activity_logs',
             'manage_settings',
             'issue_kim',
             'schedule_inspection',

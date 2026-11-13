@@ -5,6 +5,7 @@ namespace App\Actions\User;
 use App\Enums\AccountStatus;
 use App\Models\User;
 use App\Notifications\InternalAccountApproved;
+use App\Services\Audit\ActivityLogger;
 
 class ActivateUser
 {
@@ -25,5 +26,13 @@ class ActivateUser
         if ($wasPending) {
             $target->notify(new InternalAccountApproved);
         }
+
+        app(ActivityLogger::class)->log(
+            'user.activated',
+            $target,
+            'Akun '.$target->name.' diaktifkan.',
+            ['was_pending' => $wasPending],
+            label: $target->email,
+        );
     }
 }

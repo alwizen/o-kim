@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Registration\RegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,6 +54,14 @@ class GoogleController extends Controller
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();
+
+        app(ActivityLogger::class)->log(
+            'login',
+            $user,
+            $user->name.' masuk ke sistem.',
+            ['method' => 'google'],
+            label: $user->email,
+        );
 
         if ($user->account_status === AccountStatus::Pending) {
             return redirect()->route('registration.profile.edit');

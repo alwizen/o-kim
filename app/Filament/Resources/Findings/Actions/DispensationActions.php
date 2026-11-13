@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\FindingStatus;
 use App\Models\Finding;
 use App\Models\User;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\DispensationService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -60,7 +61,7 @@ class DispensationActions
                     auth()->user(),
                     $data['dispensation_due_date'],
                     $data['dispensation_reason'],
-                ), 'Dispensasi diberikan');
+                ), 'Dispensasi diberikan', $record);
             });
     }
 
@@ -90,7 +91,7 @@ class DispensationActions
                     auth()->user(),
                     $data['dispensation_due_date'],
                     $data['notes'] ?? null,
-                ), 'Dispensasi diperpanjang');
+                ), 'Dispensasi diperpanjang', $record);
             });
     }
 
@@ -121,7 +122,7 @@ class DispensationActions
                     auth()->user(),
                     $data['dispensation_reason'],
                     $data['notes'] ?? null,
-                ), 'Alasan dispensasi diperbarui');
+                ), 'Alasan dispensasi diperbarui', $record);
             });
     }
 
@@ -146,21 +147,30 @@ class DispensationActions
                     $record,
                     auth()->user(),
                     $data['notes'] ?? null,
-                ), 'Dispensasi dicabut');
+                ), 'Dispensasi dicabut', $record);
             });
     }
 
     /**
      * @param  callable(): mixed  $callback
      */
-    private static function run(callable $callback, string $successTitle): void
+    private static function run(callable $callback, string $successTitle, ?Finding $finding = null): void
     {
         try {
             $callback();
         } catch (ValidationException $e) {
+            $reason = app(ActivityLogger::class)->firstError($e);
+
+            app(ActivityLogger::class)->failureFromValidation(
+                'dispensation',
+                $finding?->application,
+                $e,
+                ['finding_id' => $finding?->id, 'action' => $successTitle],
+            );
+
             Notification::make()
                 ->title('Proses gagal')
-                ->body(collect($e->errors())->flatten()->first())
+                ->body($reason)
                 ->danger()
                 ->send();
 

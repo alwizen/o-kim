@@ -7,6 +7,7 @@ use App\Enums\FindingStatus;
 use App\Enums\InternalRole;
 use App\Filament\Transportir\Resources\KimApplications\KimApplicationResource;
 use App\Services\Application\KimApplicationService;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\BeritaAcaraService;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -192,9 +193,18 @@ class ViewKimApplication extends ViewRecord
                     try {
                         app(KimApplicationService::class)->submit($this->record, auth()->user());
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'application',
+                            $this->record,
+                            $e,
+                            ['action' => 'submit'],
+                        );
+
                         Notification::make()
                             ->title('Pengajuan gagal dikirim')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 

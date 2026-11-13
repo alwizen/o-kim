@@ -62,4 +62,12 @@ class VehicleDocument extends Model
     {
         return $this->replaced_by_id === null;
     }
+
+    /**
+     * Dokumen terverifikasi bersifat final (tidak dapat diubah/dihapus).
+     */
+    public function isVerified(): bool
+    {
+        return $this->verification_status === DocumentVerificationStatus::Verified;
+    }
 }

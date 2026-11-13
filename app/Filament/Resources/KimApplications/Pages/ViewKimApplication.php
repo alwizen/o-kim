@@ -14,6 +14,7 @@ use App\Notifications\InspectionScheduled;
 use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
 use App\Services\Approval\ApprovalService;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\BeritaAcaraService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Kim\KimIssuanceService;
@@ -345,9 +346,18 @@ class ViewKimApplication extends ViewRecord
                         app(KimApplicationService::class)
                             ->ensureRequiredDocumentsVerified($this->record->vehicle);
                     } catch (ValidationException $e) {
+                        $reason = app(ActivityLogger::class)->firstError($e);
+
+                        app(ActivityLogger::class)->failureFromValidation(
+                            'inspection',
+                            $this->record,
+                            $e,
+                            ['action' => 'schedule'],
+                        );
+
                         Notification::make()
                             ->title('Dokumen belum terverifikasi')
-                            ->body(collect($e->errors())->flatten()->first())
+                            ->body($reason)
                             ->danger()
                             ->send();
 
@@ -451,9 +461,18 @@ class ViewKimApplication extends ViewRecord
                 try {
                     app(KimIssuanceService::class)->issueProvisional($this->record, auth()->user());
                 } catch (ValidationException $e) {
+                    $reason = app(ActivityLogger::class)->firstError($e);
+
+                    app(ActivityLogger::class)->failureFromValidation(
+                        'kim',
+                        $this->record,
+                        $e,
+                        ['action' => 'issue_provisional'],
+                    );
+
                     Notification::make()
                         ->title('Penerbitan gagal')
-                        ->body(collect($e->errors())->flatten()->first())
+                        ->body($reason)
                         ->danger()
                         ->send();
 
@@ -464,6 +483,13 @@ class ViewKimApplication extends ViewRecord
                     ->title('KIM sementara diterbitkan')
                     ->success()
                     ->send();
+
+                // Segarkan halaman agar tombol approval/terbit dan riwayat ikut terbarui
+                // tanpa perlu reload manual.
+                $this->redirect(
+                    KimApplicationResource::getUrl('view', ['record' => $this->record]),
+                    navigate: true,
+                );
             });
 
         $actions[] = Action::make('issue_kim')
@@ -477,9 +503,18 @@ class ViewKimApplication extends ViewRecord
                 try {
                     app(KimIssuanceService::class)->issue($this->record);
                 } catch (ValidationException $e) {
+                    $reason = app(ActivityLogger::class)->firstError($e);
+
+                    app(ActivityLogger::class)->failureFromValidation(
+                        'kim',
+                        $this->record,
+                        $e,
+                        ['action' => 'issue'],
+                    );
+
                     Notification::make()
                         ->title('Penerbitan gagal')
-                        ->body(collect($e->errors())->flatten()->first())
+                        ->body($reason)
                         ->danger()
                         ->send();
 
@@ -490,6 +525,13 @@ class ViewKimApplication extends ViewRecord
                     ->title('KIM berhasil diterbitkan')
                     ->success()
                     ->send();
+
+                // Segarkan halaman agar tombol approval/terbit dan riwayat ikut terbarui
+                // tanpa perlu reload manual.
+                $this->redirect(
+                    KimApplicationResource::getUrl('view', ['record' => $this->record]),
+                    navigate: true,
+                );
             });
 
         return $actions;
@@ -548,9 +590,21 @@ class ViewKimApplication extends ViewRecord
                         $data['notes'] ?? null,
                     );
                 } catch (ValidationException $e) {
+                    $reason = app(ActivityLogger::class)->firstError($e);
+
+                    app(ActivityLogger::class)->failureFromValidation(
+                        'approval',
+                        $this->record,
+                        $e,
+                        [
+                            'department' => $department->value,
+                            'decision' => $decision->value,
+                        ],
+                    );
+
                     Notification::make()
                         ->title('Proses gagal')
-                        ->body(collect($e->errors())->flatten()->first())
+                        ->body($reason)
                         ->danger()
                         ->send();
 
@@ -563,6 +617,13 @@ class ViewKimApplication extends ViewRecord
                         : 'Pengajuan ditolak')
                     ->success()
                     ->send();
+
+                // Segarkan halaman agar tombol approval/terbit dan riwayat ikut terbarui
+                // tanpa perlu reload manual.
+                $this->redirect(
+                    KimApplicationResource::getUrl('view', ['record' => $this->record]),
+                    navigate: true,
+                );
             });
     }
 }

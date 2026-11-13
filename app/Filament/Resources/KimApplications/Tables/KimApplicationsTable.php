@@ -8,6 +8,7 @@ use App\Models\KimApplication;
 use App\Notifications\InspectionScheduled;
 use App\Notifications\InspectionScheduledForStaff;
 use App\Services\Application\KimApplicationService;
+use App\Services\Audit\ActivityLogger;
 use App\Support\AppNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -48,19 +49,19 @@ class KimApplicationsTable
                     ->searchable(),
                 TextColumn::make('pending_documents_count')
                     ->label('Dokumen Pending')
-                    ->state(fn(KimApplication $record): int => (int) ($record->vehicle?->pending_documents_count ?? 0))
+                    ->state(fn (KimApplication $record): int => (int) ($record->vehicle?->pending_documents_count ?? 0))
                     ->badge()
                     ->placeholder('0')
-                    ->color(fn($state) => $state > 0 ? 'warning' : 'success')
-                    ->formatStateUsing(fn($state) => $state > 0 ? "{$state} pending" : 'Lengkap'),
+                    ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} pending" : 'Lengkap'),
                 TextColumn::make('application_type')
                     ->label('Jenis')
                     ->badge()
-                    ->formatStateUsing(fn($state) => $state->label()),
+                    ->formatStateUsing(fn ($state) => $state->label()),
                 TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn($state) => $state->label())
-                    ->color(fn(ApplicationStatus $state) => match ($state) {
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn (ApplicationStatus $state) => match ($state) {
                         ApplicationStatus::Draft => 'gray',
                         ApplicationStatus::Submitted, ApplicationStatus::Inspection => 'info',
                         ApplicationStatus::RevisionRequired, ApplicationStatus::PendingApproval => 'warning',
@@ -76,7 +77,7 @@ class KimApplicationsTable
                     ->dateTime('d M Y H:i')
                     ->placeholder('Belum dijadwalkan')
                     ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'warning')
+                    ->color(fn ($state) => $state ? 'success' : 'warning')
                     ->sortable(),
                 TextColumn::make('submitted_at')
                     ->label('Diajukan Pada')
@@ -88,7 +89,7 @@ class KimApplicationsTable
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(collect(ApplicationStatus::cases())->mapWithKeys(
-                        fn(ApplicationStatus $s) => [$s->value => $s->label()]
+                        fn (ApplicationStatus $s) => [$s->value => $s->label()]
                     )),
                 Filter::make('submitted_at')
                     ->label('Tanggal Pengajuan')
@@ -131,14 +132,14 @@ class KimApplicationsTable
                         ->label('Laporan Pemeriksaan')
                         ->icon('heroicon-o-printer')
                         ->color('gray')
-                        ->visible(fn(KimApplication $record): bool => (bool) $record->inspection_results_exists)
-                        ->url(fn(KimApplication $record): string => route('inspection-report.preview', $record))
+                        ->visible(fn (KimApplication $record): bool => (bool) $record->inspection_results_exists)
+                        ->url(fn (KimApplication $record): string => route('inspection-report.preview', $record))
                         ->openUrlInNewTab(),
                     Action::make('inspect')
                         ->label('Isi Checklist')
                         ->icon('heroicon-o-clipboard-document-check')
                         ->color('info')
-                        ->visible(fn(KimApplication $record): bool => $record->isInspectionDue()
+                        ->visible(fn (KimApplication $record): bool => $record->isInspectionDue()
                             && in_array($record->status, [
                                 ApplicationStatus::Submitted,
                                 ApplicationStatus::Inspection,
@@ -148,14 +149,14 @@ class KimApplicationsTable
                                 || auth()->user()->can('inspect_distribusi')
                                 || auth()->user()->can('inspect_qq')
                             ))
-                        ->url(fn(KimApplication $record): string => KimApplicationResource::getUrl('inspect', ['record' => $record])),
+                        ->url(fn (KimApplication $record): string => KimApplicationResource::getUrl('inspect', ['record' => $record])),
                     Action::make('schedule')
-                        ->label(fn(KimApplication $record): string => $record->inspection_scheduled_at
+                        ->label(fn (KimApplication $record): string => $record->inspection_scheduled_at
                             ? 'Reschedule'
                             : 'Tetapkan Tanggal Pemeriksaan')
                         ->icon('heroicon-o-calendar-days')
                         ->color('primary')
-                        ->visible(fn(KimApplication $record): bool => in_array($record->status, [
+                        ->visible(fn (KimApplication $record): bool => in_array($record->status, [
                             ApplicationStatus::Submitted,
                             ApplicationStatus::Inspection,
                         ], true) && auth()->user()->can('schedule_inspection'))
@@ -165,9 +166,9 @@ class KimApplicationsTable
                                 ->required()
                                 ->seconds(false)
                                 // ->native(false)
-                                ->default(fn(KimApplication $record) => $record->inspection_scheduled_at),
+                                ->default(fn (KimApplication $record) => $record->inspection_scheduled_at),
                         ])
-                        ->fillForm(fn(KimApplication $record): array => [
+                        ->fillForm(fn (KimApplication $record): array => [
                             'inspection_scheduled_at' => $record->inspection_scheduled_at,
                         ])
                         ->action(function (KimApplication $record, array $data): void {
@@ -176,9 +177,18 @@ class KimApplicationsTable
                                 app(KimApplicationService::class)
                                     ->ensureRequiredDocumentsVerified($record->vehicle);
                             } catch (ValidationException $e) {
+                                $reason = app(ActivityLogger::class)->firstError($e);
+
+                                app(ActivityLogger::class)->failureFromValidation(
+                                    'inspection',
+                                    $record,
+                                    $e,
+                                    ['action' => 'schedule'],
+                                );
+
                                 Notification::make()
                                     ->title('Dokumen belum terverifikasi')
-                                    ->body(collect($e->errors())->flatten()->first())
+                                    ->body($reason)
                                     ->danger()
                                     ->send();
 
@@ -224,7 +234,7 @@ class KimApplicationsTable
                         }),
                     ViewAction::make(),
                 ])
-                ->icon(Heroicon::OutlinedBars3),
+                    ->icon(Heroicon::OutlinedBars3),
             ]);
     }
 }

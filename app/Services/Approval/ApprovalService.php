@@ -13,6 +13,7 @@ use App\Notifications\ApplicationApprovedByDepartment;
 use App\Notifications\ApplicationPendingDepartmentApproval;
 use App\Notifications\ApplicationPendingFinalApproval;
 use App\Notifications\ApplicationRejected;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\BeritaAcaraService;
 use App\Services\Inspection\InspectionService;
 use App\Support\AppNotifier;
@@ -92,9 +93,11 @@ class ApprovalService
             }
 
             if ($decision === ApprovalDecision::Approved && $department !== Department::Ftm) {
-                if (! $this->inspectionService->isReadyForApproval($application)) {
+                $blockers = $this->inspectionService->approvalBlockers($application);
+
+                if ($blockers !== []) {
                     throw ValidationException::withMessages([
-                        'readiness' => 'Pengajuan belum siap: checklist belum lengkap atau temuan masih terbuka.',
+                        'readiness' => 'Pengajuan belum siap: '.implode(' ', $blockers),
                     ]);
                 }
             }
@@ -186,6 +189,18 @@ class ApprovalService
                 DB::afterCommit(fn () => app(BeritaAcaraService::class)
                     ->finalizeIfReady($application->fresh()));
             }
+
+            app(ActivityLogger::class)->log(
+                'approval.'.($decision === ApprovalDecision::Approved ? 'approved' : 'rejected'),
+                $application,
+                $approver->name.' '.($decision === ApprovalDecision::Approved ? 'menyetujui' : 'menolak')
+                    .' tahap '.$department->label().' pada pengajuan '.$application->application_number.'.',
+                [
+                    'department' => $department->value,
+                    'decision' => $decision->value,
+                    'notes' => $notes,
+                ],
+            );
 
             return $approval;
         });

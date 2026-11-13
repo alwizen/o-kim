@@ -36,8 +36,16 @@ class AdminStatsOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        // Samakan dengan query di TransporterResource::getEloquentQuery(): hanya
+        // transportir yang sudah mengirim profil yang masuk antrean verifikasi.
         $pendingRegistrations = User::role('transportir')
             ->where('account_status', AccountStatus::Pending)
+            ->whereHas('transporters', fn ($query) => $query->whereNotNull('profile_submitted_at'))
+            ->count();
+
+        // Petugas internal tidak masuk antrean transportir, jadi dihitung terpisah.
+        $pendingInternal = User::where('account_status', AccountStatus::Pending)
+            ->whereDoesntHave('roles', fn ($query) => $query->where('name', 'transportir'))
             ->count();
 
         $inInspection = KimApplication::whereIn('status', [
@@ -74,6 +82,13 @@ class AdminStatsOverview extends StatsOverviewWidget
                 ->color($pendingRegistrations > 0 ? 'warning' : 'gray')
                 ->icon('heroicon-o-user-plus')
                 ->url('/admin/transporters'),
+
+            Stat::make('Pendaftaran Internal Menunggu Verifikasi', $pendingInternal)
+                ->description('Petugas internal menunggu persetujuan')
+                ->descriptionIcon('heroicon-m-identification')
+                ->color($pendingInternal > 0 ? 'warning' : 'gray')
+                ->icon('heroicon-o-identification')
+                ->url('/admin/users'),
 
             Stat::make('Pengajuan Dalam Pemeriksaan', $inInspection)
                 ->description('Termasuk yang perlu perbaikan')

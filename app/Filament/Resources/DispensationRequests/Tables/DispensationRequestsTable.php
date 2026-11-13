@@ -4,8 +4,9 @@ namespace App\Filament\Resources\DispensationRequests\Tables;
 
 use App\Enums\DispensationRequestStatus;
 use App\Models\FindingDispensationRequest;
-use App\Services\Kim\KimIssuanceService;
+use App\Services\Audit\ActivityLogger;
 use App\Services\Finding\DispensationService;
+use App\Services\Kim\KimIssuanceService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
@@ -70,16 +71,16 @@ class DispensationRequestsTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn(DispensationRequestStatus $state): string => $state->label())
-                    ->color(fn(DispensationRequestStatus $state): string => $state->color())
+                    ->formatStateUsing(fn (DispensationRequestStatus $state): string => $state->label())
+                    ->color(fn (DispensationRequestStatus $state): string => $state->color())
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(collect(DispensationRequestStatus::cases())
-                        ->mapWithKeys(fn (DispensationRequestStatus $s) => [$s->value => $s->label()]))
-                    // ->default(DispensationRequestStatus::Pending->value),
+                        ->mapWithKeys(fn (DispensationRequestStatus $s) => [$s->value => $s->label()])),
+                // ->default(DispensationRequestStatus::Pending->value),
             ])
             ->defaultSort('created_at', 'asc')
             ->recordActions([
@@ -87,7 +88,7 @@ class DispensationRequestsTable
                     ->label('Setujui')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn(FindingDispensationRequest $record): bool => $record->status->isPending())
+                    ->visible(fn (FindingDispensationRequest $record): bool => $record->status->isPending())
                     ->requiresConfirmation()
                     ->modalHeading('Setujui Pengajuan KIM Sementara')
                     ->modalDescription('Tetapkan batas waktu perbaikan. KIM sementara akan berlaku sampai tanggal tersebut.')
@@ -112,9 +113,18 @@ class DispensationRequestsTable
                                 $data['notes'] ?? null,
                             );
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'dispensation',
+                                $record->finding?->application,
+                                $e,
+                                ['action' => 'approve_request', 'request_id' => $record->id],
+                            );
+
                             Notification::make()
                                 ->title('Gagal menyetujui')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 
@@ -131,7 +141,7 @@ class DispensationRequestsTable
                     ->label('Tolak')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn(FindingDispensationRequest $record): bool => $record->status->isPending())
+                    ->visible(fn (FindingDispensationRequest $record): bool => $record->status->isPending())
                     ->modalHeading('Tolak Pengajuan KIM Sementara')
                     ->schema([
                         Textarea::make('decision_notes')
@@ -149,9 +159,18 @@ class DispensationRequestsTable
                                 $data['decision_notes'],
                             );
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'dispensation',
+                                $record->finding?->application,
+                                $e,
+                                ['action' => 'reject_request', 'request_id' => $record->id],
+                            );
+
                             Notification::make()
                                 ->title('Gagal menolak')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 
@@ -171,7 +190,7 @@ class DispensationRequestsTable
                     ->requiresConfirmation()
                     ->modalHeading('Terbitkan KIM Sementara')
                     ->modalDescription('Approval FTM dicatat dan KIM sementara langsung diterbitkan untuk kendaraan ini.')
-                    ->visible(fn(FindingDispensationRequest $record): bool => $record->status === DispensationRequestStatus::Approved
+                    ->visible(fn (FindingDispensationRequest $record): bool => $record->status === DispensationRequestStatus::Approved
                         && $record->finding?->application?->canIssueProvisional())
                     ->action(function (FindingDispensationRequest $record): void {
                         $application = $record->finding?->application;
@@ -189,9 +208,18 @@ class DispensationRequestsTable
                         try {
                             app(KimIssuanceService::class)->issueProvisional($application, auth()->user());
                         } catch (ValidationException $e) {
+                            $reason = app(ActivityLogger::class)->firstError($e);
+
+                            app(ActivityLogger::class)->failureFromValidation(
+                                'kim',
+                                $application,
+                                $e,
+                                ['action' => 'issue_provisional'],
+                            );
+
                             Notification::make()
                                 ->title('Penerbitan gagal')
-                                ->body(collect($e->errors())->flatten()->first())
+                                ->body($reason)
                                 ->danger()
                                 ->send();
 
@@ -202,6 +230,9 @@ class DispensationRequestsTable
                             ->title('KIM sementara diterbitkan')
                             ->success()
                             ->send();
+
+                        // Segarkan tabel agar baris yang sudah diterbitkan ikut terbarui.
+                        $this->resetTable();
                     }),
             ])
             ->emptyStateHeading('Tidak ada pengajuan KIM Sementara')

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AccountStatus;
 use App\Enums\ApplicationStatus;
 use App\Enums\ApplicationType;
+use App\Enums\ApprovalDecision;
 use App\Enums\Department;
 use App\Enums\InspectionResultValue;
 use App\Filament\Resources\KimApplications\Pages\ListKimApplications as AdminListKimApplications;
@@ -17,10 +18,12 @@ use App\Models\Transporter;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Application\KimApplicationService;
+use App\Services\Approval\ApprovalService;
 use App\Services\Finding\FindingService;
 use App\Services\Inspection\InspectionAttachmentService;
 use App\Services\Inspection\InspectionReportService;
 use App\Services\Inspection\InspectionService;
+use App\Services\Setting\SettingsService;
 use Database\Seeders\DocumentTypeSeeder;
 use Database\Seeders\InspectionChecklistSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -338,6 +341,139 @@ class InspectionReportTest extends TestCase
         $this->assertStringContainsString('Tindak lanjut diterima', $html);
         $this->assertStringNotContainsString('Dikirim', $html);
         $this->assertStringNotContainsString($this->owner->name.'</', $html);
+    }
+
+    /**
+     * Setujui seluruh tahap approval (fungsi, RSD, FTM) agar laporan siap ttd.
+     */
+    private function approveAllStages(): void
+    {
+        $approvals = app(ApprovalService::class);
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $pengawas = User::factory()->create(['account_status' => AccountStatus::Approved]);
+            $pengawas->assignRole('pengawas_'.$department->value);
+
+            $approvals->decide(
+                $this->application->fresh(),
+                $department,
+                ApprovalDecision::Approved,
+                $pengawas,
+            );
+        }
+
+        $rsd = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $rsd->givePermissionTo(['access_admin_panel', 'view_applications', 'approve_rsd']);
+        $approvals->decide($this->application->fresh(), Department::Rsd, ApprovalDecision::Approved, $rsd);
+
+        $ftm = User::factory()->create(['account_status' => AccountStatus::Approved]);
+        $ftm->assignRole('ftm');
+        $approvals->decide($this->application->fresh(), Department::Ftm, ApprovalDecision::Approved, $ftm);
+    }
+
+    /**
+     * Lengkapi checklist seluruh fungsi (prasyarat approval).
+     */
+    private function assessAllItems(): void
+    {
+        $officers = [
+            Department::Hsse->value => $this->hsse,
+            Department::Distribusi->value => tap(
+                User::factory()->create(['account_status' => AccountStatus::Approved]),
+                fn (User $u) => $u->assignRole('distribusi'),
+            ),
+            Department::Qq->value => tap(
+                User::factory()->create(['account_status' => AccountStatus::Approved]),
+                fn (User $u) => $u->assignRole('qq'),
+            ),
+        ];
+
+        foreach (Department::inspectingDepartments() as $department) {
+            $items = InspectionItem::whereHas(
+                'checklist',
+                fn ($query) => $query->where('department', $department->value),
+            )->get();
+
+            foreach ($items as $item) {
+                app(InspectionService::class)->recordResult(
+                    $this->application->fresh(),
+                    $item,
+                    InspectionResultValue::Compliant,
+                    $officers[$department->value],
+                );
+            }
+        }
+    }
+
+    public function test_signature_blocks_absent_until_all_approvals_complete(): void
+    {
+        $this->assessAllItems();
+
+        $this->assertSame([], app(InspectionReportService::class)->signatureBlocks($this->application->fresh()));
+    }
+
+    public function test_signature_blocks_present_after_all_approvals_complete(): void
+    {
+        $this->assessAllItems();
+        $this->approveAllStages();
+
+        $blocks = app(InspectionReportService::class)->signatureBlocks($this->application->fresh());
+
+        $this->assertCount(5, $blocks);
+        $this->assertSame(
+            [Department::Hsse, Department::Distribusi, Department::Qq, Department::Rsd, Department::Ftm],
+            array_map(fn (array $block) => $block['department'], $blocks),
+        );
+    }
+
+    public function test_signature_blocks_hidden_when_toggle_disabled(): void
+    {
+        $this->assessAllItems();
+        $this->approveAllStages();
+
+        app(SettingsService::class)->set(
+            'document.inspection_report_signature_enabled',
+            '0',
+            SettingsService::GROUP_DOCUMENT,
+        );
+
+        $this->assertSame([], app(InspectionReportService::class)->signatureBlocks($this->application->fresh()));
+    }
+
+    public function test_report_view_renders_signature_section_when_available(): void
+    {
+        $this->assessAllItems();
+        $this->approveAllStages();
+
+        $report = app(InspectionReportService::class)->buildReport($this->application->fresh());
+
+        $html = view('reports.inspection-checklist', [
+            'application' => $this->application->fresh(),
+            'departments' => $report['departments'],
+            'summary' => $report['summary'],
+            'printedAt' => now(),
+            'signatureBlocks' => app(InspectionReportService::class)->signatureBlocks($this->application->fresh()),
+        ])->render();
+
+        $this->assertStringContainsString('Disetujui Oleh', $html);
+        $this->assertStringContainsString('Fuel Terminal Manager', $html);
+    }
+
+    public function test_report_view_has_no_signature_section_before_approvals(): void
+    {
+        $this->assessAllItems();
+
+        $report = app(InspectionReportService::class)->buildReport($this->application->fresh());
+
+        $html = view('reports.inspection-checklist', [
+            'application' => $this->application->fresh(),
+            'departments' => $report['departments'],
+            'summary' => $report['summary'],
+            'printedAt' => now(),
+            'signatureBlocks' => app(InspectionReportService::class)->signatureBlocks($this->application->fresh()),
+        ])->render();
+
+        $this->assertStringNotContainsString('Disetujui Oleh', $html);
     }
 
     public function test_report_pdf_renders_without_timestamp_for_rows_without_finding(): void
